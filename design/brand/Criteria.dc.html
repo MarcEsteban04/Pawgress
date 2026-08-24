@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Public Sans",system-ui,sans-serif;color:#1c1c1c;background:#fff;-webkit-font-smoothing:antialiased}
+    a{color:#3d3d3d}a:hover{color:#000}
+    .bd{width:560px;height:1240px;background:#fff;padding:34px 30px;display:flex;flex-direction:column;gap:24px;overflow:hidden}
+    .kick{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a8a8a}
+    .h1{font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.15}
+    .p{font-size:14px;line-height:1.6;color:#4a4a4a}
+    .lbl{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9a9a9a}
+    .rule{height:1px;background:#e6e6e6}
+    .item{display:flex;gap:11px;align-items:flex-start}
+    .n{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:#1c1c1c;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:"IBM Plex Mono",monospace;margin-top:1px}
+    .it{font-size:13.5px;line-height:1.5}
+    .it b{font-weight:700}
+    .sw{height:34px;border-radius:7px;border:1px solid rgba(0,0,0,.09)}
+    .g6{display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));gap:7px}
+    .g3{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:7px}
+    .mono{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#767676}
+  </style>
+</helmet>
+
+<div class="bd">
+
+  <div>
+    <div class="kick">Sprint 05 &middot; Brand</div>
+    <div class="h1" style="margin-top:10px">What the brand<br>has to survive</div>
+    <div class="p" style="margin-top:12px">Three directions follow. Each is a complete answer, and each is judged against the same six constraints — they come from the product, not from taste.</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div style="display:flex;flex-direction:column;gap:15px">
+
+    <div class="item">
+      <div class="n">1</div>
+      <div class="it"><b>A low number must not feel like a verdict.</b> Students will see &ldquo;Genetics 42%&rdquo;. The brand decides whether that reads as information or as failure. This is the single hardest thing to get right.</div>
+    </div>
+
+    <div class="item">
+      <div class="n">2</div>
+      <div class="it"><b>Subject colour must never read as status colour.</b> A red subject would look like a failed one. Subjects get a muted, low-chroma family; status keeps the saturated end to itself.</div>
+    </div>
+
+    <div class="item">
+      <div class="n">3</div>
+      <div class="it"><b>Legible on a cheap phone at low brightness.</b> WCAG AA on body text, 16&nbsp;px floor, and never colour alone — every state pairs with an icon and a label.</div>
+    </div>
+
+    <div class="item">
+      <div class="n">4</div>
+      <div class="it"><b>Two registers, one voice.</b> Trustworthy enough for schoolwork on a laptop, warm enough to open at 11pm before an exam. Neither a toy nor a spreadsheet.</div>
+    </div>
+
+    <div class="item">
+      <div class="n">5</div>
+      <div class="it"><b>The mascot celebrates; it never apologises.</b> It appears on progress, streaks and empty states. It is absent from every error and every failure — no cute animal on a broken upload.</div>
+    </div>
+
+    <div class="item">
+      <div class="n">6</div>
+      <div class="it"><b>Type survives long words in two languages.</b> Mixed English and Filipino material is likely, so the type ramp is tested on long compounds, not on &ldquo;Lorem ipsum&rdquo;.</div>
+    </div>
+
+  </div>
+
+  <div class="rule"></div>
+
+  <div>
+    <div class="lbl" style="margin-bottom:10px">Constraint 2, made concrete</div>
+    <div class="mono" style="margin-bottom:7px">subject colours &mdash; muted, interchangeable, never semantic</div>
+    <div class="g6">
+      <div class="sw" style="background:#C8D3D9"></div>
+      <div class="sw" style="background:#D9D2C4"></div>
+      <div class="sw" style="background:#CBD6C6"></div>
+      <div class="sw" style="background:#D9CAD1"></div>
+      <div class="sw" style="background:#C9CBDA"></div>
+      <div class="sw" style="background:#DCD5BF"></div>
+    </div>
+    <div class="mono" style="margin:14px 0 7px">status colours &mdash; saturated, reserved, meaningful</div>
+    <div class="g3">
+      <div class="sw" style="background:#2F7D5B"></div>
+      <div class="sw" style="background:#B4741B"></div>
+      <div class="sw" style="background:#A83A2C"></div>
+    </div>
+    <div class="mono" style="margin-top:8px">ready &nbsp;&middot;&nbsp; needs work &nbsp;&middot;&nbsp; failed</div>
+  </div>
+
+  <div style="flex-grow:1"></div>
+
+  <div class="rule"></div>
+
+  <div>
+    <div class="lbl" style="margin-bottom:9px">How to read the three boards</div>
+    <div class="p">Every direction shows the same things in its own language: logo lockup, mascot, type ramp, palette, icon style, app icon and favicon — and then the <b>same mastery card</b>, because that is the component the whole product hangs on. Compare that card first.</div>
+  </div>
+
+  <div class="mono" style="color:#a8a8a8">Pick one. I build it out into tokens and components in Sprint 06.</div>
+
+</div>
+</x-dc>
+</body>
+</html>

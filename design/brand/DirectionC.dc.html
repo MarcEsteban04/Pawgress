@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Space Grotesk",system-ui,sans-serif;color:#14161A;background:#FBFBFC;-webkit-font-smoothing:antialiased}
+    a{color:#4A5AD8}a:hover{color:#3646B8}
+    .bd{width:720px;height:1240px;background:#FBFBFC;padding:32px 30px;display:flex;flex-direction:column;gap:22px;overflow:hidden}
+    .kick{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7C8494}
+    .disp{font-family:"Space Grotesk",sans-serif}
+    .lbl{font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:#8A92A2;font-family:"IBM Plex Mono",monospace}
+    .rule{height:1px;background:#E4E6EC}
+    .p{font-size:13.5px;line-height:1.6;color:#4A5160}
+    .mono{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#7C8494}
+    .row{display:flex;align-items:center;gap:12px}
+    .cols{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:22px;align-items:start}
+    .sw{height:52px;border-radius:5px;border:1px solid rgba(20,22,26,.08);display:flex;align-items:flex-end;padding:6px 8px}
+    .swt{font-family:"IBM Plex Mono",monospace;font-size:9.5px}
+    .g6{display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));gap:6px}
+    .card{background:#fff;border:1px solid #E4E6EC;border-radius:6px;padding:16px}
+    .btn{height:38px;border:1px solid #14161A;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:500;background:transparent;padding:0 16px}
+    .btnp{background:#4A5AD8;border-color:#4A5AD8;color:#fff}
+    .bar{height:6px;background:#E9EBF1;overflow:hidden;border-radius:1px;display:flex;gap:1px}
+    .tick{flex-grow:1;background:#E9EBF1}
+    .tick.on{background:#4A5AD8}
+    .icn{width:44px;height:44px;border:1px solid #E4E6EC;border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center}
+  </style>
+</helmet>
+
+<div class="bd">
+
+  <div>
+    <div class="kick">Direction C</div>
+    <div class="disp" style="font-size:34px;font-weight:600;letter-spacing:-0.03em;margin-top:6px">Lab</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- LOGO -->
+  <div>
+    <div class="lbl" style="margin-bottom:14px">Logotype</div>
+    <div class="row" style="gap:14px">
+      <div style="width:46px;height:46px;border-radius:7px;background:#14161A;display:flex;align-items:center;justify-content:center">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <circle cx="11" cy="13" r="5.4" stroke="#FBFBFC" stroke-width="1.9"/>
+          <circle cx="21" cy="13" r="5.4" stroke="#FBFBFC" stroke-width="1.9"/>
+          <circle cx="11" cy="13" r="1.9" fill="#4A5AD8"/>
+          <circle cx="21" cy="13" r="1.9" fill="#4A5AD8"/>
+          <path d="M16 17.5l-2.4 3.4h4.8z" fill="#FBFBFC"/>
+          <path d="M6 7l4 2M26 7l-4 2" stroke="#FBFBFC" stroke-width="1.9" stroke-linecap="round"/>
+          <path d="M11 25h10" stroke="#4A5AD8" stroke-width="1.9" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="disp" style="font-size:38px;font-weight:500;letter-spacing:0.02em">Pawgress</div>
+    </div>
+    <div class="mono" style="margin-top:12px">monogram tile &middot; letter-spaced wordmark &middot; grid-built mark</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="cols">
+
+    <!-- MASCOT -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Mascot &mdash; the owl, reduced</div>
+      <div style="background:#fff;border:1px solid #E4E6EC;border-radius:6px;padding:16px;display:flex;justify-content:center">
+        <svg width="136" height="112" viewBox="0 0 136 112" fill="none">
+          <rect x="34" y="20" width="68" height="76" rx="10" stroke="#14161A" stroke-width="2.2"/>
+          <circle cx="53" cy="46" r="13" stroke="#14161A" stroke-width="2.2"/>
+          <circle cx="83" cy="46" r="13" stroke="#14161A" stroke-width="2.2"/>
+          <circle cx="53" cy="46" r="4.6" fill="#4A5AD8"/>
+          <circle cx="83" cy="46" r="4.6" fill="#4A5AD8"/>
+          <path d="M68 54l-5 8h10z" fill="#14161A"/>
+          <path d="M34 30l-10-8M102 30l10-8" stroke="#14161A" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M48 74h40M54 84h28" stroke="#14161A" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M46 96v8M90 96v8" stroke="#14161A" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="p" style="margin-top:11px">The most restrained mascot of the three: geometric, gridded, closer to a mark than a character.</div>
+    </div>
+
+    <!-- TYPE -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Typography</div>
+      <div class="disp" style="font-size:30px;font-weight:600;line-height:1.08;letter-spacing:-0.035em">Study what<br>matters</div>
+      <div class="mono" style="margin-top:8px">Space Grotesk &middot; 600 &middot; display</div>
+      <div style="height:12px"></div>
+      <div style="font-size:15px;font-weight:600">Pinakamahalagang paksa</div>
+      <div style="font-size:14px;line-height:1.55;color:#4A5160;margin-top:5px">Genetics needs work — 42% from twelve questions across two attempts.</div>
+      <div class="mono" style="margin-top:8px">Space Grotesk &middot; 400/600 &middot; UI &amp; body</div>
+      <div style="height:10px"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;letter-spacing:-0.01em">42.0% &nbsp;n=12</div>
+      <div class="mono" style="margin-top:6px">IBM Plex Mono &middot; every number, always tabular</div>
+    </div>
+
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- PALETTE -->
+  <div>
+    <div class="lbl" style="margin-bottom:12px">Palette</div>
+    <div style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:8px">
+      <div class="sw" style="background:#FBFBFC"><span class="swt" style="color:#7C8494">#FBFBFC</span></div>
+      <div class="sw" style="background:#FFFFFF"><span class="swt" style="color:#7C8494">#FFFFFF</span></div>
+      <div class="sw" style="background:#E4E6EC"><span class="swt" style="color:#545C6C">#E4E6EC</span></div>
+      <div class="sw" style="background:#4A5160"><span class="swt" style="color:#E8EAF0">#4A5160</span></div>
+      <div class="sw" style="background:#14161A"><span class="swt" style="color:#D4D8E0">#14161A</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:8px;margin-top:8px">
+      <div class="sw" style="background:#4A5AD8"><span class="swt" style="color:#E4E7FA">#4A5AD8</span></div>
+      <div class="sw" style="background:#1F7A5A"><span class="swt" style="color:#E2F3EC">#1F7A5A</span></div>
+      <div class="sw" style="background:#9A6A10"><span class="swt" style="color:#F8EEDA">#9A6A10</span></div>
+      <div class="sw" style="background:#A02F2F"><span class="swt" style="color:#FAE6E6">#A02F2F</span></div>
+      <div class="sw" style="background:#FBFBFC;border-style:dashed"><span class="swt" style="color:#7C8494">subject &rarr;</span></div>
+    </div>
+    <div class="mono" style="margin:12px 0 7px">subject tints &mdash; single hue family, varied only by lightness</div>
+    <div class="g6">
+      <div style="height:26px;border-radius:3px;background:#C9CEE8;border:1px solid rgba(20,22,26,.06)"></div>
+      <div style="height:26px;border-radius:3px;background:#D2D6EC;border:1px solid rgba(20,22,26,.06)"></div>
+      <div style="height:26px;border-radius:3px;background:#C6D2E4;border:1px solid rgba(20,22,26,.06)"></div>
+      <div style="height:26px;border-radius:3px;background:#CEDAE2;border:1px solid rgba(20,22,26,.06)"></div>
+      <div style="height:26px;border-radius:3px;background:#D6D2E4;border:1px solid rgba(20,22,26,.06)"></div>
+      <div style="height:26px;border-radius:3px;background:#DADEE8;border:1px solid rgba(20,22,26,.06)"></div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="cols">
+
+    <!-- ICONS -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Icons &amp; app icon</div>
+      <div class="row" style="gap:8px">
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14161A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14161A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14161A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"><path d="M4 5h16v10H9l-5 4z"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14161A" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        </div>
+      </div>
+      <div class="mono" style="margin-top:9px">1.5&nbsp;px stroke &middot; square caps &middot; drafting, not doodling</div>
+
+      <div class="row" style="gap:12px;margin-top:16px;align-items:flex-end">
+        <div style="width:66px;height:66px;border-radius:10px;background:#14161A;display:flex;align-items:center;justify-content:center">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
+            <circle cx="11" cy="13" r="5.4" stroke="#FBFBFC" stroke-width="1.9"/><circle cx="21" cy="13" r="5.4" stroke="#FBFBFC" stroke-width="1.9"/>
+            <circle cx="11" cy="13" r="1.9" fill="#4A5AD8"/><circle cx="21" cy="13" r="1.9" fill="#4A5AD8"/>
+            <path d="M16 17.5l-2.4 3.4h4.8z" fill="#FBFBFC"/>
+            <path d="M6 7l4 2M26 7l-4 2" stroke="#FBFBFC" stroke-width="1.9" stroke-linecap="round"/>
+            <path d="M11 25h10" stroke="#4A5AD8" stroke-width="1.9" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div style="width:32px;height:32px;border-radius:5px;background:#14161A;display:flex;align-items:center;justify-content:center">
+          <svg width="21" height="21" viewBox="0 0 32 32" fill="none">
+            <circle cx="11" cy="14" r="5.4" stroke="#FBFBFC" stroke-width="2.2"/><circle cx="21" cy="14" r="5.4" stroke="#FBFBFC" stroke-width="2.2"/>
+            <circle cx="11" cy="14" r="2" fill="#4A5AD8"/><circle cx="21" cy="14" r="2" fill="#4A5AD8"/>
+            <path d="M16 19l-2.4 3.4h4.8z" fill="#FBFBFC"/>
+          </svg>
+        </div>
+        <div style="width:16px;height:16px;border-radius:3px;background:#14161A;display:flex;align-items:center;justify-content:center">
+          <svg width="13" height="13" viewBox="0 0 32 32" fill="none">
+            <circle cx="11" cy="15" r="6" fill="#FBFBFC"/><circle cx="21" cy="15" r="6" fill="#FBFBFC"/>
+            <circle cx="11" cy="15" r="2.6" fill="#4A5AD8"/><circle cx="21" cy="15" r="2.6" fill="#4A5AD8"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mono" style="margin-top:9px">64 &middot; 32 &middot; 16&nbsp;px &mdash; reduces to two eyes</div>
+    </div>
+
+    <!-- CARD -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">The mastery card</div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div style="font-size:15px;font-weight:600">Genetics</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8494">n=12</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;letter-spacing:-0.02em;margin-top:9px">42.0%</div>
+        <div class="bar" style="margin-top:9px">
+          <div class="tick on"></div><div class="tick on"></div><div class="tick on"></div><div class="tick on"></div>
+          <div class="tick"></div><div class="tick"></div><div class="tick"></div><div class="tick"></div><div class="tick"></div><div class="tick"></div>
+        </div>
+        <div class="mono" style="margin-top:9px">2 attempts &middot; last: 6/10 &middot; trend +8</div>
+        <div class="row" style="gap:8px;margin-top:13px">
+          <div class="btn btnp">Review</div>
+          <div class="btn">Practise</div>
+        </div>
+      </div>
+      <div class="p" style="margin-top:11px">Instrument, not verdict. Sample size and trend sit beside the number, so the figure is framed as a measurement.</div>
+    </div>
+
+  </div>
+
+  <div style="flex-grow:1"></div>
+  <div class="rule"></div>
+
+  <div class="cols" style="gap:20px">
+    <div>
+      <div class="lbl" style="margin-bottom:8px">Why this</div>
+      <div class="p">The product's real claim is that it <i>measures</i> what you know. This brand makes that claim credible: tabular numerals, sample sizes, trends. It ages best as the data features land, and it suits the college student most.</div>
+    </div>
+    <div>
+      <div class="lbl" style="margin-bottom:8px">The trade-off</div>
+      <div class="p">Coolest of the three, and the least comforting at 11pm before an exam — a Grade 11 student may read it as another gradebook. Indigo-on-white is also the most common look in this category.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

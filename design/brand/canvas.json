@@ -1,0 +1,39 @@
+{
+  "artboards": [
+    { "file": "Criteria.dc.html", "title": "What the brand has to survive", "x": 0, "y": 0, "w": 560, "h": 1240 },
+    { "file": "Main.dc.html", "title": "A · Study Desk — recommended", "x": 680, "y": 0, "w": 720, "h": 1240 },
+    { "file": "DirectionB.dc.html", "title": "B · Trail", "x": 1480, "y": 0, "w": 720, "h": 1240 },
+    { "file": "DirectionC.dc.html", "title": "C · Lab", "x": 2280, "y": 0, "w": 720, "h": 1240 }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -300,
+      "w": 620,
+      "text": "Pawgress branding — Sprint 05\n\nThree complete directions, not three shades of one. Each carries a logo lockup, mascot, type ramp, palette, icon style, app icon and favicon — plus the SAME mastery card, because that is the component the whole product hangs on.\n\nCompare the mastery cards first. Everything else follows from how \"42%\" feels."
+    },
+    {
+      "id": "note-pick",
+      "x": 700,
+      "y": -240,
+      "w": 460,
+      "text": "A is my recommendation, and the honest reason is defensive: the product's biggest emotional risk is making a student feel judged. Warm paper lets the app say something unflattering without it stinging — and it looks nothing like the purple-gradient AI study apps."
+    },
+    {
+      "id": "note-axes",
+      "x": 1500,
+      "y": -240,
+      "w": 460,
+      "text": "These differ on a real axis, not on taste: A treats a low score as INFORMATION, B treats it as MOMENTUM, C treats it as MEASUREMENT. Pick the one whose answer to \"Genetics 42%\" you believe."
+    },
+    {
+      "id": "note-next",
+      "x": 2300,
+      "y": -240,
+      "w": 460,
+      "text": "Whichever you pick becomes design tokens and components in Sprint 06 — the palette, type ramp and icon rules here are already written to drop straight into Tailwind + shadcn/ui. Nothing here is locked until you choose."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

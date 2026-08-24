@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Figtree",system-ui,sans-serif;color:#10221A;background:#F3F7F4;-webkit-font-smoothing:antialiased}
+    a{color:#14452F}a:hover{color:#0A2A1D}
+    .bd{width:720px;height:1240px;background:#F3F7F4;padding:32px 30px;display:flex;flex-direction:column;gap:22px;overflow:hidden}
+    .kick{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6E8478}
+    .disp{font-family:"Bricolage Grotesque","Public Sans",sans-serif}
+    .lbl{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#7E9488}
+    .rule{height:1px;background:#D8E3DB}
+    .p{font-size:13.5px;line-height:1.6;color:#3E5449}
+    .mono{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#6E8478}
+    .row{display:flex;align-items:center;gap:12px}
+    .cols{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:22px;align-items:start}
+    .sw{height:52px;border-radius:10px;border:1px solid rgba(16,34,26,.07);display:flex;align-items:flex-end;padding:6px 8px}
+    .swt{font-family:"IBM Plex Mono",monospace;font-size:9.5px}
+    .g6{display:grid;grid-template-columns:repeat(6, minmax(0, 1fr));gap:6px}
+    .card{background:#fff;border:1px solid #D8E3DB;border-radius:16px;padding:16px}
+    .btn{height:40px;border:1.5px solid #14452F;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;background:transparent;padding:0 18px}
+    .btnp{background:#14452F;border-color:#14452F;color:#F3F7F4}
+    .bar{height:11px;border-radius:6px;background:#DFE9E2;overflow:hidden}
+    .bar i{display:block;height:100%;background:#E8A33D;border-radius:6px}
+    .icn{width:44px;height:44px;border:1px solid #D8E3DB;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+  </style>
+</helmet>
+
+<div class="bd">
+
+  <div>
+    <div class="kick">Direction B</div>
+    <div class="disp" style="font-size:34px;font-weight:700;letter-spacing:-0.02em;margin-top:6px">Trail</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- LOGO -->
+  <div>
+    <div class="lbl" style="margin-bottom:14px">Logotype</div>
+    <div class="row" style="gap:13px">
+      <div style="width:46px;height:46px;border-radius:14px;background:#14452F;display:flex;align-items:center;justify-content:center">
+        <svg width="27" height="27" viewBox="0 0 48 48" fill="none">
+          <circle cx="16" cy="17" r="5.2" fill="#E8A33D"/>
+          <circle cx="25.5" cy="13.5" r="5.2" fill="#E8A33D"/>
+          <circle cx="35" cy="17" r="5.2" fill="#E8A33D"/>
+          <path d="M25.5 23.5c5.6 0 10.3 4.3 10.3 9.2 0 3.9-2.9 5.8-6.5 5.8-2.4 0-3.1-.9-3.8-.9s-1.4.9-3.8.9c-3.6 0-6.5-1.9-6.5-5.8 0-4.9 4.7-9.2 10.3-9.2Z" fill="#E8A33D"/>
+        </svg>
+      </div>
+      <div class="disp" style="font-size:42px;font-weight:800;letter-spacing:-0.035em">Pawgress</div>
+    </div>
+    <div class="mono" style="margin-top:12px">badge lockup &middot; heavy wordmark &middot; tight tracking</div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="cols">
+
+    <!-- MASCOT -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Mascot &mdash; the trail dog</div>
+      <div style="background:#fff;border:1px solid #D8E3DB;border-radius:16px;padding:16px;display:flex;justify-content:center">
+        <svg width="140" height="112" viewBox="0 0 140 112" fill="none">
+          <path d="M40 30l4 20 14-8z" fill="#14452F"/>
+          <path d="M100 30l-4 20-14-8z" fill="#14452F"/>
+          <rect x="42" y="34" width="56" height="50" rx="22" fill="#14452F"/>
+          <rect x="58" y="60" width="24" height="20" rx="10" fill="#F3F7F4"/>
+          <circle cx="57" cy="53" r="3.6" fill="#F3F7F4"/>
+          <circle cx="83" cy="53" r="3.6" fill="#F3F7F4"/>
+          <circle cx="70" cy="67" r="3.4" fill="#14452F"/>
+          <path d="M70 71c0 3 -4 4 -6 2" stroke="#14452F" stroke-width="2" stroke-linecap="round"/>
+          <path d="M70 71c0 3 4 4 6 2" stroke="#14452F" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="24" cy="96" r="4" fill="#E8A33D"/>
+          <circle cx="42" cy="100" r="4.6" fill="#E8A33D"/>
+          <circle cx="62" cy="97" r="5.2" fill="#E8A33D"/>
+          <circle cx="84" cy="100" r="5.8" fill="#E8A33D"/>
+          <circle cx="110" cy="96" r="6.4" fill="#E8A33D"/>
+        </svg>
+      </div>
+      <div class="p" style="margin-top:11px">Flat geometric shapes. The paw trail underneath <i>is</i> the progress metaphor — it grows as you go.</div>
+    </div>
+
+    <!-- TYPE -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Typography</div>
+      <div class="disp" style="font-size:31px;font-weight:800;line-height:1.02;letter-spacing:-0.035em">STUDY WHAT<br>MATTERS</div>
+      <div class="mono" style="margin-top:8px">Bricolage Grotesque &middot; 800 &middot; display</div>
+      <div style="height:12px"></div>
+      <div style="font-size:15px;font-weight:600">Pinakamahalagang paksa</div>
+      <div style="font-size:14px;line-height:1.55;color:#3E5449;margin-top:5px">Genetics needs work — 42% from twelve questions across two attempts.</div>
+      <div class="mono" style="margin-top:8px">Figtree &middot; 400/600 &middot; UI &amp; body</div>
+      <div style="height:10px"></div>
+      <div class="disp" style="font-size:30px;font-weight:800;letter-spacing:-0.03em">42% &middot; 6/10</div>
+      <div class="mono" style="margin-top:6px">display face doubles as the numeral voice</div>
+    </div>
+
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- PALETTE -->
+  <div>
+    <div class="lbl" style="margin-bottom:12px">Palette</div>
+    <div style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:8px">
+      <div class="sw" style="background:#F3F7F4"><span class="swt" style="color:#6E8478">#F3F7F4</span></div>
+      <div class="sw" style="background:#FFFFFF"><span class="swt" style="color:#6E8478">#FFFFFF</span></div>
+      <div class="sw" style="background:#D8E3DB"><span class="swt" style="color:#4E645A">#D8E3DB</span></div>
+      <div class="sw" style="background:#3E5449"><span class="swt" style="color:#E4EEE8">#3E5449</span></div>
+      <div class="sw" style="background:#14452F"><span class="swt" style="color:#CFE2D7">#14452F</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5, minmax(0, 1fr));gap:8px;margin-top:8px">
+      <div class="sw" style="background:#E8A33D"><span class="swt" style="color:#3A2606">#E8A33D</span></div>
+      <div class="sw" style="background:#2F8F6B"><span class="swt" style="color:#E6F5EE">#2F8F6B</span></div>
+      <div class="sw" style="background:#C87A1E"><span class="swt" style="color:#FCF1E0">#C87A1E</span></div>
+      <div class="sw" style="background:#A8382B"><span class="swt" style="color:#FBE9E6">#A8382B</span></div>
+      <div class="sw" style="background:#F3F7F4;border-style:dashed"><span class="swt" style="color:#6E8478">subject &rarr;</span></div>
+    </div>
+    <div class="mono" style="margin:12px 0 7px">subject tints &mdash; desaturated cousins of the accent family</div>
+    <div class="g6">
+      <div style="height:26px;border-radius:7px;background:#CCDFD4;border:1px solid rgba(16,34,26,.06)"></div>
+      <div style="height:26px;border-radius:7px;background:#E5DAC3;border:1px solid rgba(16,34,26,.06)"></div>
+      <div style="height:26px;border-radius:7px;background:#CFDCE5;border:1px solid rgba(16,34,26,.06)"></div>
+      <div style="height:26px;border-radius:7px;background:#E2D3D8;border:1px solid rgba(16,34,26,.06)"></div>
+      <div style="height:26px;border-radius:7px;background:#D6D5E4;border:1px solid rgba(16,34,26,.06)"></div>
+      <div style="height:26px;border-radius:7px;background:#DDE4C8;border:1px solid rgba(16,34,26,.06)"></div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="cols">
+
+    <!-- ICONS -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">Icons &amp; app icon</div>
+      <div class="row" style="gap:8px">
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14452F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14452F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14452F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/></svg>
+        </div>
+        <div class="icn">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#14452F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+        </div>
+      </div>
+      <div class="mono" style="margin-top:9px">2.2&nbsp;px stroke &middot; round caps &middot; bolder to match the type</div>
+
+      <div class="row" style="gap:12px;margin-top:16px;align-items:flex-end">
+        <div style="width:66px;height:66px;border-radius:18px;background:#14452F;display:flex;align-items:center;justify-content:center">
+          <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+            <circle cx="16" cy="17" r="5.2" fill="#E8A33D"/><circle cx="25.5" cy="13.5" r="5.2" fill="#E8A33D"/><circle cx="35" cy="17" r="5.2" fill="#E8A33D"/>
+            <path d="M25.5 23.5c5.6 0 10.3 4.3 10.3 9.2 0 3.9-2.9 5.8-6.5 5.8-2.4 0-3.1-.9-3.8-.9s-1.4.9-3.8.9c-3.6 0-6.5-1.9-6.5-5.8 0-4.9 4.7-9.2 10.3-9.2Z" fill="#E8A33D"/>
+          </svg>
+        </div>
+        <div style="width:32px;height:32px;border-radius:9px;background:#14452F;display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+            <circle cx="16" cy="17" r="5.2" fill="#E8A33D"/><circle cx="25.5" cy="13.5" r="5.2" fill="#E8A33D"/><circle cx="35" cy="17" r="5.2" fill="#E8A33D"/>
+            <path d="M25.5 23.5c5.6 0 10.3 4.3 10.3 9.2 0 3.9-2.9 5.8-6.5 5.8-2.4 0-3.1-.9-3.8-.9s-1.4.9-3.8.9c-3.6 0-6.5-1.9-6.5-5.8 0-4.9 4.7-9.2 10.3-9.2Z" fill="#E8A33D"/>
+          </svg>
+        </div>
+        <div style="width:16px;height:16px;border-radius:5px;background:#14452F;display:flex;align-items:center;justify-content:center">
+          <svg width="12" height="12" viewBox="0 0 48 48" fill="none">
+            <path d="M25 20c6 0 11 4.6 11 9.8 0 4.2-3.1 6.2-7 6.2-2.6 0-3.3-1-4-1s-1.5 1-4.1 1c-3.9 0-7-2-7-6.2C14 24.6 19 20 25 20Z" fill="#E8A33D"/>
+            <circle cx="16" cy="13" r="5" fill="#E8A33D"/><circle cx="34" cy="13" r="5" fill="#E8A33D"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mono" style="margin-top:9px">64 &middot; 32 &middot; 16&nbsp;px &mdash; high contrast holds at 16</div>
+    </div>
+
+    <!-- CARD -->
+    <div>
+      <div class="lbl" style="margin-bottom:12px">The mastery card</div>
+      <div class="card">
+        <div style="font-size:16px;font-weight:700">Genetics</div>
+        <div class="row" style="gap:10px;margin-top:11px">
+          <div class="bar" style="flex-grow:1"><i style="width:42%"></i></div>
+          <div class="disp" style="font-size:20px;font-weight:800;letter-spacing:-0.03em">42%</div>
+        </div>
+        <div class="mono" style="margin-top:7px">from 12 questions</div>
+        <div style="font-size:13.5px;line-height:1.5;color:#3E5449;margin-top:11px">Two sessions would move this the most.</div>
+        <div class="row" style="gap:8px;margin-top:13px">
+          <div class="btn btnp">Review</div>
+          <div class="btn">Practise</div>
+        </div>
+      </div>
+      <div class="p" style="margin-top:11px">Amber on pine: the bar reads as <i>fuel</i> rather than a warning. Big numerals make progress feel like a score.</div>
+    </div>
+
+  </div>
+
+  <div style="flex-grow:1"></div>
+  <div class="rule"></div>
+
+  <div class="cols" style="gap:20px">
+    <div>
+      <div class="lbl" style="margin-bottom:8px">Why this</div>
+      <div class="p">Momentum is the thing students actually lack, and this brand is built to supply it — the paw trail, the big numerals, the room for streaks and celebrations later. It is the most memorable of the three and the easiest to grow into gamification.</div>
+    </div>
+    <div>
+      <div class="lbl" style="margin-bottom:8px">The trade-off</div>
+      <div class="p">Energy cuts both ways: a bold brand makes 42% louder too, and it can tip toward a kids' app. The heavy display face also needs discipline to stay out of the UI.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

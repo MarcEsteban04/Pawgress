@@ -21,6 +21,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/navigation.md`](docs/navigation.md) | Navigation model, route tree, screen inventory |
 | [`docs/states.md`](docs/states.md) | Empty / loading / error state inventory and copy rules |
 | [`docs/wireframes.md`](docs/wireframes.md) | Low-fidelity screen layouts, mobile constraints, responsive plan |
+| [`docs/branding.md`](docs/branding.md) | Brand directions, constraints, palettes and type ramps |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
