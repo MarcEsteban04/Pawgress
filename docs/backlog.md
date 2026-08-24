@@ -21,13 +21,12 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 05 | Branding — "Study Desk" locked: logo, mascot, type ramp, palette, icons, favicon | done |
 | 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done |
 | 07 | Application architecture — route groups, app shell, DAL + `proxy.ts` auth, AI abstraction, job contract, error strategy | done |
-| 08 | CI/CD foundation — lint, typecheck, build on push; dev/staging/prod environments | todo |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 09 | Supabase setup — project, connection, env wiring, local dev | 08 |
+| 09 | Supabase setup — project, connection, env wiring, local dev | 07 |
 | 10 | Registration + email verification | 09 |
 | 11 | Sign in, sign out, session persistence — **and delete the preview-session branch** | 10 |
 
@@ -38,7 +37,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 Ordered by dependency, not by preference. `Pri` follows the PRD (**M** = MVP, **V1**, **L** = later).
 Row numbers are local to their epic, so adding work to one epic never renumbers another.
 
-### E00 — Foundation (Phase 1–2, Sprints 01–08)
+### E00 — Foundation (Phase 1–2, Sprints 01–07)
 
 | # | Item | Pri | Sprint | Notes |
 |---|---|---|---|---|
@@ -61,8 +60,6 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 14 | AI service abstraction (interface, quotas, usage accounting, citations) | M | 07 | **done** — `lib/ai/types.ts`; providers in Sprint 31 |
 | 15 | Background job strategy for long AI work | M | 07 | **done, decided** — Postgres queue with sliced work. `after()` was ruled out: it shares the route duration cap. `server/jobs/types.ts`, `architecture.md` §5 |
 | 16 | Update `conventions.md` for Next.js 16 | M | 07 | **done** |
-| 17 | CI: typecheck, lint, format, build on push | M | 08 | NFR-O1 |
-| 18 | Dev / staging / production environments | M | 08 | |
 
 ### E01 — Authentication (Phase 3, Sprints 09–12)
 

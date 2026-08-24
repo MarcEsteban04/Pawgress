@@ -299,7 +299,7 @@ single largest financial risk in this build.
 
 | ID | Requirement |
 |---|---|
-| NFR-O1 | CI blocks merge on typecheck, lint, format, and build |
+| NFR-O1 | `npm run check` (typecheck, lint, format) and `npm run build` pass locally before any commit reaches `main` |
 | NFR-O2 | Server errors and failed AI jobs are captured with enough context to reproduce |
 | NFR-O3 | Every schema change ships as a migration in `supabase/migrations/` |
 

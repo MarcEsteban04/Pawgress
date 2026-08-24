@@ -34,7 +34,9 @@ Native mobile clients stay a post-V1 possibility, outside this roadmap.
 
 # Roadmap Structure
 
-**Total: 84 sprints**
+**Total: 83 sprints**
+
+Sprint numbering runs 01–84. Sprint 08 (CI/CD foundation) was removed and its number retired, so 08 is intentionally absent — every later sprint keeps its original number to stay consistent with the other planning docs.
 
 Each sprint should represent one focused development milestone. A sprint can be shortened or expanded depending on workload, but the order is intentional.
 
@@ -43,7 +45,7 @@ Each sprint should represent one focused development milestone. A sprint can be 
 | Phase | Sprints | Focus |
 |---|---:|---|
 | 1 | 01–04 | Product foundation |
-| 2 | 05–08 | Design system & architecture |
+| 2 | 05–07 | Design system & architecture |
 | 3 | 09–12 | Authentication |
 | 4 | 13–18 | Database & storage |
 | 5 | 19–24 | Subjects & organization |
@@ -226,19 +228,6 @@ Define application boundaries.
 - AI service abstraction
 - Storage architecture
 - Error-handling strategy
-
----
-
-## Sprint 08 — CI/CD Foundation
-
-### Deliverables
-- GitHub workflow
-- Development environment
-- Staging environment
-- Production environment
-- Automated linting
-- Automated type checking
-- Automated builds
 
 ---
 
@@ -1345,7 +1334,7 @@ Public Launch
 
 # MVP Milestone
 
-A useful early MVP can be reached before all 84 sprints.
+A useful early MVP can be reached before all 83 sprints.
 
 ### MVP Target
 

@@ -65,7 +65,7 @@ The app runs at http://localhost:3000.
 | `npm run lint` | ESLint |
 | `npm run lint:fix` | ESLint with autofix |
 | `npm run format` | Prettier write |
-| `npm run format:check` | Prettier check (CI) |
+| `npm run format:check` | Prettier check |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run check` | typecheck + lint + format check — run before committing |
 
@@ -124,6 +124,6 @@ into a client component.
 | Phase | Sprints | Status |
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
-| 2 — Design system & architecture | 05–08 | Sprints 05–07 ✅ · Sprint 08 next |
-| 3 — Authentication | 09–12 | Not started |
+| 2 — Design system & architecture | 05–07 | Complete ✅ |
+| 3 — Authentication | 09–12 | Sprint 09 next |
 | 4+ | 13–84 | Not started |

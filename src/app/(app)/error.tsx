@@ -19,7 +19,7 @@ export default function AppError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Sprint 08 wires this to real error tracking (NFR-O2).
+    // Sprint 77 (production release) wires this to real error tracking (NFR-O2).
     console.error("Unhandled error in app shell:", error);
   }, [error]);
 

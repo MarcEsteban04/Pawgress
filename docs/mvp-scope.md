@@ -98,7 +98,7 @@ Plus, on the engineering side:
 - Every table has RLS, verified by an unauthorized-access test
 - A failed upload or failed processing job is visible, explained, and retryable
 - AI usage is quota-limited and logged per user
-- `npm run check` and the CI pipeline pass on `main`
+- `npm run check` and `npm run build` pass before every commit to `main`
 
 ---
 
