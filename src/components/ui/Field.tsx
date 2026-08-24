@@ -1,3 +1,4 @@
+import { Search } from "lucide-react";
 import { type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
@@ -19,15 +20,48 @@ const controlBase = [
 ];
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(controlBase, "h-11 px-3", className)} {...props} />;
+  return <input className={cn(controlBase, "h-11 px-4", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cn(controlBase, "min-h-28 px-3 py-2.5", className)} {...props} />;
+  return <textarea className={cn(controlBase, "min-h-28 px-4 py-3", className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cn(controlBase, "h-11 px-3 pr-8", className)} {...props} />;
+  return <select className={cn(controlBase, "h-11 px-4 pr-9", className)} {...props} />;
+}
+
+/**
+ * The wide pill search in the page header.
+ *
+ * A real `<input type="search">` inside a `<label>`, not a button that opens a
+ * modal: a student with six subjects and thirty files reaches for this
+ * constantly, and a search box you have to open first is one interaction slower
+ * every single time.
+ */
+export function SearchField({
+  label = "Search subjects, materials and topics",
+  className,
+  ...props
+}: Omit<ComponentProps<"input">, "type"> & { label?: string }) {
+  return (
+    <label
+      className={cn(
+        "group flex h-11 items-center gap-2.5 rounded-[var(--radius-pill)]",
+        "border border-rule bg-surface px-4",
+        "transition-colors focus-within:border-rule-strong hover:border-rule-strong",
+        className,
+      )}
+    >
+      <Search className="size-[1.125rem] shrink-0 text-ink-subtle" aria-hidden />
+      <span className="sr-only">{label}</span>
+      <input
+        type="search"
+        className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-subtle"
+        {...props}
+      />
+    </label>
+  );
 }
 
 export type FieldProps = {
@@ -45,7 +79,7 @@ export type FieldProps = {
 export function Field({ label, htmlFor, hint, error, optional, children, className }: FieldProps) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={htmlFor} className="flex items-baseline gap-2 text-[0.9375rem] font-semibold">
+      <label htmlFor={htmlFor} className="flex items-baseline gap-2 text-[0.9375rem] font-medium">
         {label}
         {optional && <span className="text-xs font-normal text-ink-subtle">optional</span>}
       </label>

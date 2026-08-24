@@ -5,8 +5,9 @@ export const metadata = { title: "Ask" };
 
 export default function Page() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <PageHeader
+        eyebrow="Answers grounded in your own files"
         title="Ask"
         description="Ask questions about your own uploaded material, with citations you can open."
       />

@@ -19,14 +19,14 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
           alignItems: "center",
           justifyContent: "center",
           padding: "2rem",
-          background: "#faf6ef",
-          color: "#23201c",
+          background: "#eef1f6",
+          color: "#14161c",
           fontFamily: "ui-sans-serif, system-ui, sans-serif",
         }}
       >
         <div style={{ maxWidth: "32rem" }}>
           <h1 style={{ fontSize: "1.5rem", margin: "0 0 0.75rem" }}>Pawgress could not start</h1>
-          <p style={{ lineHeight: 1.6, color: "#5c554b", margin: "0 0 1.5rem" }}>
+          <p style={{ lineHeight: 1.6, color: "#656c7a", margin: "0 0 1.5rem" }}>
             Something failed before the page could load. Nothing you have uploaded is affected.
             Reloading usually fixes it.
           </p>
@@ -35,7 +35,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
               style={{
                 fontFamily: "ui-monospace, monospace",
                 fontSize: "0.75rem",
-                color: "#8c8478",
+                color: "#99a0af",
                 margin: "0 0 1.5rem",
               }}
             >
@@ -50,9 +50,9 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             style={{
               padding: "0.75rem 1.25rem",
               border: "none",
-              borderRadius: "0.5rem",
-              background: "#a8502f",
-              color: "#fffdf9",
+              borderRadius: "9999px",
+              background: "#14161c",
+              color: "#ffffff",
               fontWeight: 600,
               fontSize: "1rem",
               cursor: "pointer",

@@ -5,8 +5,9 @@ export const metadata = { title: "Progress" };
 
 export default function Page() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <PageHeader
+        eyebrow="What you know, and what you do not yet"
         title="Progress"
         description="Topic mastery, quiz history and the topics holding you back."
       />

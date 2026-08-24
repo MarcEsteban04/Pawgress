@@ -6,8 +6,18 @@
  * docs/design-system.md.
  */
 
-export { Button, buttonStyles, type ButtonProps } from "./Button";
-export { Card, CardHeader, CardTitle, CardBody, CardFooter, SectionLabel, Hairline } from "./Card";
+export { Button, IconButton, buttonStyles, type ButtonProps } from "./Button";
+export {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardActions,
+  CardBody,
+  CardFooter,
+  SectionLabel,
+  Hairline,
+  TintRow,
+} from "./Card";
 export { Chip, ChipGroup, Tag, SourceChip, type SourceChipProps } from "./Chip";
 export {
   Dialog,
@@ -25,10 +35,11 @@ export {
   SegmentedNav,
   SegmentedNavItem,
   Avatar,
+  UserPill,
   type SegmentedNavItemProps,
   type AvatarProps,
 } from "./Nav";
-export { Field, Input, Textarea, Select, type FieldProps } from "./Field";
+export { Field, Input, Textarea, Select, SearchField, type FieldProps } from "./Field";
 export {
   EmptyState,
   ErrorState,
@@ -40,3 +51,5 @@ export {
 } from "./Feedback";
 export { MasteryBar, type MasteryBarProps } from "./MasteryBar";
 export { StatusBadge, statusLabel, type StatusBadgeProps } from "./StatusBadge";
+export { Donut, type DonutSegment } from "./Donut";
+export { TrendChart, type TrendPoint } from "./TrendChart";

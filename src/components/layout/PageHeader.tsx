@@ -2,34 +2,62 @@ import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Page title plus its primary action.
+ * The page head: a quiet eyebrow line, a large display title, and the page's
+ * own controls on the right — the reference's "Manage and track your projects /
+ * Project Dashboard / [search]" block, in Pawgress's voice.
  *
  * On a website the primary action belongs in the page header, not pinned to the
- * bottom of the window — that is native-app chrome. Below 640px the action
- * drops to its own full-width row so it stays reachable.
+ * bottom of the window — that is native-app chrome. Below 768px everything
+ * stacks and the controls take a full-width row so they stay reachable.
  */
 export function PageHeader({
+  eyebrow,
   title,
   description,
   action,
+  toolbar,
   className,
 }: {
+  /** The small line above the title. One short sentence, sentence case. */
+  eyebrow?: string;
   title: string;
   description?: string;
+  /** Search, filters, or the page's primary button. */
   action?: ReactNode;
+  /**
+   * The same control the shell shows centred in the top bar. Rendered here
+   * below `lg`, where the top bar has no room for it — so the control is never
+   * simply missing at a narrower width.
+   */
+  toolbar?: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-start", className)}>
-      <div className="min-w-0 flex-1">
-        <h1 className="font-display text-2xl font-medium tracking-tight sm:text-[1.75rem]">
-          {title}
-        </h1>
-        {description && (
-          <p className="mt-2 max-w-[60ch] leading-relaxed text-ink-muted">{description}</p>
+    <div className={cn("flex flex-col gap-4", className)}>
+      {toolbar && <div className="lg:hidden">{toolbar}</div>}
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="min-w-0 flex-1">
+          {eyebrow && <p className="text-sm text-ink-muted">{eyebrow}</p>}
+          <h1
+            className={cn(
+              "font-display text-[1.75rem] leading-tight font-semibold tracking-[-0.02em] sm:text-[2rem]",
+              eyebrow && "mt-1",
+            )}
+          >
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-2 max-w-[60ch] leading-relaxed text-ink-muted">{description}</p>
+          )}
+        </div>
+
+        {action && (
+          <div className="flex shrink-0 items-center gap-2 max-md:w-full md:w-[22rem] lg:w-[26rem]">
+            {action}
+          </div>
         )}
       </div>
-      {action && <div className="flex shrink-0 gap-2 max-sm:w-full">{action}</div>}
     </div>
   );
 }

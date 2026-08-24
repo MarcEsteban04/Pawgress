@@ -26,7 +26,7 @@ export function EmptyState({ Icon, title, description, action, className }: Empt
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-dashed border-rule bg-surface px-6 py-10 text-center",
+        "flex flex-col items-center gap-3 rounded-[var(--radius-card)] border border-dashed border-rule-strong bg-surface px-6 py-12 text-center",
         className,
       )}
     >
@@ -67,7 +67,7 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col gap-2 rounded-[var(--radius-card)] border border-bad bg-bad-soft p-4",
+        "flex flex-col gap-2 rounded-[var(--radius-card)] border border-bad/30 bg-bad-soft p-4",
         className,
       )}
     >
@@ -75,7 +75,7 @@ export function ErrorState({
       <p className="text-sm leading-relaxed text-ink-muted">{nextStep}</p>
       {onRetry && (
         <div className="mt-1">
-          <Button variant="outline" size="sm" onClick={onRetry}>
+          <Button variant="subtle" size="sm" onClick={onRetry}>
             {retryLabel}
           </Button>
         </div>
@@ -106,18 +106,21 @@ export function QuotaMeter({ label, used, limit, resetsAt, className }: QuotaMet
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm text-ink-muted">{label}</span>
-        <span className="tabular text-xs">
+        <span className="tabular text-xs font-medium">
           {used} / {limit}
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full border border-rule bg-surface-sunken">
+      <div className="h-1.5 overflow-hidden rounded-[var(--radius-pill)] bg-surface-sunken">
         <div
-          className={cn("h-full rounded-full", exhausted ? "bg-warn" : "bg-ink-muted")}
+          className={cn(
+            "h-full rounded-[var(--radius-pill)]",
+            exhausted ? "bg-warn" : "bg-ink-muted",
+          )}
           style={{ width: `${pct * 100}%` }}
         />
       </div>
       {resetsAt && (
-        <p className="font-mono text-xs text-ink-subtle">
+        <p className="text-xs text-ink-subtle">
           {exhausted ? `Limit reached — resets at ${resetsAt}` : `Resets at ${resetsAt}`}
         </p>
       )}

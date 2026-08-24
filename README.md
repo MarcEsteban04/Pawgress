@@ -124,6 +124,6 @@ into a client component.
 | Phase | Sprints | Status |
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
-| 2 — Design system & architecture | 05–07 | Complete ✅ |
+| 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
 | 3 — Authentication | 09–12 | Sprint 09 next |
 | 4+ | 13–84 | Not started |

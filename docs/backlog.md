@@ -12,21 +12,22 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 ## Now
 
-| Sprint | Item | Status |
-|---|---|---|
-| 01 | Project initialization — repo, Next.js, TS, ESLint, Prettier, env, conventions, folder architecture | done |
-| 02 | Product requirements — PRD, MVP scope, user stories, acceptance criteria, backlog | done |
-| 03 | User flow mapping — flow diagrams, navigation structure, screen inventory, state inventory | done |
-| 04 | UX wireframes — MVP screens desktop-led, adapted to 360 px, plus responsive layout plan | done |
-| 05 | Branding — "Study Desk" locked: logo, mascot, type ramp, palette, icons, favicon | done |
-| 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done |
-| 07 | Application architecture — route groups, app shell, DAL + `proxy.ts` auth, AI abstraction, job contract, error strategy | done |
+| Sprint | Item | Status | Note |
+|---|---|---|---|
+| 01 | Project initialization — repo, Next.js, TS, ESLint, Prettier, env, conventions, folder architecture | done | |
+| 02 | Product requirements — PRD, MVP scope, user stories, acceptance criteria, backlog | done | |
+| 03 | User flow mapping — flow diagrams, navigation structure, screen inventory, state inventory | done | |
+| 04 | UX wireframes — MVP screens desktop-led, adapted to 360 px, plus responsive layout plan | done | |
+| 05 | Branding — logo, mascot, type ramp, palette, icons, favicon | done | superseded by the "Daylight" redesign |
+| 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done | re-cut for "Daylight" |
+| 07 | Application architecture — route groups, app shell, DAL + `proxy.ts` auth, AI abstraction, job contract, error strategy | done | |
+| — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 09 | Supabase setup — project, connection, env wiring, local dev | 07 |
+| 09 | Supabase setup — project, connection, env wiring, local dev | 07 | |
 | 10 | Registration + email verification | 09 |
 | 11 | Sign in, sign out, session persistence — **and delete the preview-session branch** | 10 |
 
@@ -46,11 +47,13 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 3 | Empty / loading / partial / error / working / over-quota state inventory | M | 03 | **done** — `states.md`; NFR-A4 is now a checklist |
 | 4 | Low-fidelity wireframes, desktop-led, MVP screens 1–23 and 27 | M | 04 | **done** — `wireframes.md` + canvas in `design/wireframes/` |
 | 5 | Responsive plan (1440 → 360) and cross-device constraints | M | 04 | **done** — `wireframes.md` §12–13 |
-| 6 | Brand locked to "Study Desk" — logo, mascot, type ramp, palette, icon rules, favicon | M | 05 | **done** — `branding.md`, `app/icon.svg`, `components/shared/Logo.tsx` |
+| 6 | Brand — logo, mascot, type ramp, palette, icon rules, favicon | M | 05 | **done, then replaced** — direction "Daylight" supersedes "Study Desk"; both recorded in `branding.md` §7 |
 | 7 | Design tokens (light + dark), type ramp via `next/font`, `cn()` | M | 06 | **done** — `app/globals.css`, `app/layout.tsx`, `lib/utils.ts` |
 | 8 | Primitive set — Button, Card, Field/Input/Textarea/Select, Chip/ChipGroup/Tag, SourceChip, MasteryBar, QuotaMeter, EmptyState, ErrorState, Skeleton, Dialog/ConfirmDialog, Menu, SegmentedNav, Avatar | M | 06 | **done** — `components/ui/`, documented in `design-system.md` |
 | 9 | `StatusBadge` driven by the shared `JobStatus` vocabulary | M | 06 | **done** — `states.md` §3 encoded in `types/index.ts` |
-| 10 | Landing page built from the primitives, as the smoke test | M | 06 | **done** — `app/page.tsx` |
+| 10 | Landing page built from the primitives, as the smoke test | M | 06 | **done** — `app/(marketing)/page.tsx`; hero is the real `Donut` and `MasteryBar`, not a screenshot |
+| 10e | Data-visualisation rules and a machine-checked chart palette | M | 06 | **done** — `design-system.md` §3; `Donut`, `TrendChart`, `MasteryBar` tones |
+| 10f | Dashboard grid built against sample data, labelled as sample on screen | M | 06 | **done** — `features/dashboard/`; delete the sample file in Sprint 70 |
 | 10b | Toasts | M | 10 | **deferred with reason** — nothing to announce until the first server action exists |
 | 10c | App shell: `SideNav`, top bar, `FocusShell`, `PageHeader`, theme toggle | M | 07 | **done** — `components/layout/`; `SidePanel` waits for the assistant (Sprint 39) |
 | 10d | Domain composites: `EntityCard`, `ListRow`, `QuizOption`, `Flashcard`, `UploadDropzone` | M | 19+ | Belong to their features, not to `ui/` |

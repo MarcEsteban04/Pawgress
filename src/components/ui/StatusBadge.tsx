@@ -44,10 +44,10 @@ export type StatusBadgeProps = {
 export function StatusBadge({ status, detail, className }: StatusBadgeProps) {
   const { label, Icon, tone } = STATUS[status];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 text-xs", tone, className)}>
+    <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium", tone, className)}>
       {/* Brand icon spec: 1.7px stroke on a 24px grid (docs/branding.md). */}
       <Icon className="size-3.5 shrink-0" aria-hidden />
-      <span className="font-mono">{detail ?? label}</span>
+      <span>{detail ?? label}</span>
     </span>
   );
 }

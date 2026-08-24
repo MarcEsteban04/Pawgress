@@ -6,22 +6,31 @@ import { cn } from "@/lib/utils";
  * Chips replace dropdowns wherever the option set is small — topic, question
  * count, difficulty. Three taps beats opening a picker, and the whole option
  * set stays visible.
+ *
+ * Selected is an ink fill, matching every other solid control in "Daylight".
+ *
+ * Two sizes on purpose: `md` is the 44px touch target used anywhere a student
+ * is choosing something (quiz setup, filters on a phone); `sm` is the 32px
+ * chrome toggle used in dashboard headers, where the pointer is a mouse and a
+ * 44px pill would overwhelm the panel it sits in.
  */
 export function Chip({
   className,
   selected = false,
+  size = "md",
   ...props
-}: ComponentProps<"button"> & { selected?: boolean }) {
+}: ComponentProps<"button"> & { selected?: boolean; size?: "sm" | "md" }) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-[var(--radius-pill)] border px-4",
-        "text-[0.9375rem] whitespace-nowrap transition-colors",
+        "inline-flex items-center gap-2 rounded-[var(--radius-pill)]",
+        "whitespace-nowrap transition-colors",
+        size === "sm" ? "h-8 px-3.5 text-sm" : "h-11 px-4 text-[0.9375rem]",
         selected
-          ? "border-ink bg-ink font-semibold text-paper"
-          : "border-rule bg-surface text-ink hover:border-rule-strong",
+          ? "bg-ink font-medium text-on-ink shadow-[var(--shadow-pill)]"
+          : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
         className,
       )}
       {...props}
@@ -29,11 +38,23 @@ export function Chip({
   );
 }
 
-/** Horizontally scrollable at narrow widths rather than wrapping unpredictably. */
-export function ChipGroup({ className, ...props }: ComponentProps<"div">) {
+/**
+ * The pill track a set of chips sits in — the segmented control in the top bar.
+ * Horizontally scrollable at narrow widths rather than wrapping unpredictably.
+ */
+export function ChipGroup({
+  className,
+  inset = false,
+  ...props
+}: ComponentProps<"div"> & { inset?: boolean }) {
   return (
     <div
-      className={cn("flex flex-wrap gap-2 max-sm:flex-nowrap max-sm:overflow-x-auto", className)}
+      className={cn(
+        "flex items-center gap-1 max-sm:overflow-x-auto",
+        inset && "rounded-[var(--radius-pill)] border border-rule bg-surface p-1",
+        !inset && "flex-wrap gap-2 max-sm:flex-nowrap",
+        className,
+      )}
       {...props}
     />
   );
@@ -44,7 +65,7 @@ export function Tag({ className, ...props }: ComponentProps<"span">) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-rule bg-surface-sunken px-2.5 py-1 text-xs text-ink-muted",
+        "inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-surface-sunken px-2.5 py-1 text-xs font-medium text-ink-muted",
         className,
       )}
       {...props}
@@ -72,13 +93,13 @@ export function SourceChip({ material, page, href, className }: SourceChipProps)
   const label = page ? `${material} · p.${page}` : material;
   const inner = (
     <>
-      <FileText className="size-3 shrink-0" aria-hidden />
-      <span className="font-mono text-xs">{label}</span>
+      <FileText className="size-3.5 shrink-0" aria-hidden />
+      <span className="tabular text-xs">{label}</span>
     </>
   );
   const styles = cn(
-    "inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-rule bg-surface px-2 py-1 text-ink-muted",
-    href && "transition-colors hover:border-ink hover:text-ink",
+    "inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-2.5 py-1 text-ink-muted",
+    href && "transition-colors hover:border-rule-strong hover:text-ink",
     className,
   );
 

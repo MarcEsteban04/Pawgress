@@ -1,31 +1,28 @@
 import type { Metadata } from "next";
-import { Newsreader, Public_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import { themeScript } from "@/components/layout/ThemeToggle";
 import { siteConfig } from "@/config/site";
 import { publicEnv } from "@/config/env";
 import "./globals.css";
 
 /**
- * Type ramp for brand direction "Study Desk" — see docs/branding.md.
- * Newsreader carries display voice, Public Sans the UI, Plex Mono every number.
+ * Type ramp for brand direction "Daylight" — see docs/branding.md.
+ *
+ * Two faces, no mono. Outfit is the geometric display voice used on page
+ * titles, the wordmark and hero figures; Inter carries every other pixel of UI
+ * text. Numbers use Inter with tabular figures (the `.tabular` class) rather
+ * than a third font, so a changing score never jitters and never shifts voice.
  */
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["500", "600"],
   display: "swap",
 });
 
-const publicSans = Public_Sans({
-  variable: "--font-public-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
   display: "swap",
 });
 
@@ -43,11 +40,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${publicSans.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${inter.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         {/* Applies a stored theme choice before first paint, so a dark-mode
-            student never gets a flash of warm paper. */}
+            student never gets a flash of the light canvas. */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col">{children}</body>

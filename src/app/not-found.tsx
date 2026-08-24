@@ -12,7 +12,9 @@ export default function NotFound() {
     <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-5 text-center">
       <Logo />
       <div>
-        <h1 className="font-display text-3xl font-medium">This page isn&rsquo;t here</h1>
+        <h1 className="font-display text-3xl font-semibold tracking-[-0.02em]">
+          This page isn&rsquo;t here
+        </h1>
         <p className="mt-3 max-w-[42ch] leading-relaxed text-ink-muted">
           The link may be out of date, or whatever was here was deleted. Nothing else is affected.
         </p>

@@ -7,9 +7,9 @@ export const metadata = { title: "Sign in" };
 export default function LoginPage() {
   return (
     <Card>
-      <CardBody className="flex flex-col gap-5 pt-5">
+      <CardBody className="flex flex-col gap-5 pt-6">
         <div>
-          <h1 className="font-display text-2xl font-medium">Welcome back</h1>
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em]">Welcome back</h1>
           <p className="mt-2 text-[0.9375rem] text-ink-muted">
             New here?{" "}
             <Link href="/register" className="font-semibold text-accent underline">

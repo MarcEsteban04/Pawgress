@@ -1,20 +1,23 @@
 # Pawgress — Design System
 
-**Sprint 06 deliverable.** The primitive set every feature builds on, and the standards that keep it
-coherent. Brand values live in [`branding.md`](branding.md); the layouts these serve are in
-[`wireframes.md`](wireframes.md).
+The primitive set every feature builds on, and the standards that keep it coherent. Brand values live
+in [`branding.md`](branding.md); the layouts these serve are in [`wireframes.md`](wireframes.md).
+
+Originally a Sprint 06 deliverable in direction "Study Desk"; re-cut for direction **"Daylight"**.
 
 ---
 
 ## 1. Where things live
 
 ```text
-src/app/globals.css          design tokens (light + dark), base layer, icon defaults
-src/app/layout.tsx           type ramp wired via next/font
-src/lib/utils.ts             cn() — class merge, so callers can always override
-src/types/index.ts           JobStatus vocabulary + mastery thresholds
-src/components/ui/           the primitives, exported from index.ts
-src/components/shared/       Logo, PawMark
+src/app/globals.css              design tokens (light + dark), base layer, icon defaults
+src/app/layout.tsx               type ramp wired via next/font
+src/lib/utils.ts                 cn() — class merge, so callers can always override
+src/types/index.ts               JobStatus vocabulary + mastery thresholds
+src/components/ui/               the primitives, exported from index.ts
+src/components/layout/           AppShell, SideNav, PageHeader, FocusShell, ThemeToggle
+src/components/shared/           Logo, PawMark, AppMark, NotBuiltYet, SampleDataNotice
+src/features/<feature>/          feature components — promoted to ui/ only when a second feature needs them
 ```
 
 Import from the barrel, not the file:
@@ -25,78 +28,152 @@ import { Button, Card, MasteryBar, StatusBadge } from "@/components/ui";
 
 ## 2. Tokens, not values
 
-Colour, radius and type come from tokens. Tailwind utilities map onto them, so
-`bg-surface text-ink border-rule` is the vocabulary — never `bg-[#FFFDF9]`.
+Colour, radius, shadow and type come from tokens. Tailwind utilities map onto them, so
+`bg-surface text-ink border-rule` is the vocabulary — never `bg-[#FFFFFF]`.
 
 | Tailwind class | Token |
 |---|---|
 | `bg-paper` `bg-surface` `bg-surface-sunken` | surfaces |
-| `text-ink` `text-ink-muted` `text-ink-subtle` | ink ramp |
+| `text-ink` `text-ink-muted` `text-ink-subtle` `text-on-ink` | ink ramp |
 | `border-rule` `border-rule-strong` | hairlines |
-| `bg-accent` `text-accent` `bg-accent-soft` `text-on-accent` | the one accent |
+| `bg-accent` `text-accent` `bg-accent-soft` `text-on-accent` | brand accent |
 | `text-good` `text-warn` `text-bad` (+ `-soft` grounds) | status |
-| `bg-subject-1` … `bg-subject-6` | subject tints, no meaning attached |
-| `font-display` `font-sans` `font-mono` | type ramp |
-| `rounded-[var(--radius-card)]` `rounded-[var(--radius-control)]` | density |
+| `bg-cat-1` … `bg-cat-5`, `bg-cat-1-soft` … | categorical — subject **identity** |
+| `bg-mastery-1` … `bg-mastery-4`, `bg-mastery-none` | the ordinal mastery ramp |
+| `font-display` `font-sans`, `.tabular` | type ramp and tabular figures |
+| `rounded-[var(--radius-canvas\|card\|tile\|control\|pill)]` | density |
+| `shadow-[var(--shadow-canvas\|card\|pill\|pop)]` | elevation |
 
 Adding a colour means adding a token in all three theme blocks in `globals.css`, never a one-off hex
-in a component.
+in a component. The one sanctioned exception is a chart passing `var(--cat-3)` as an SVG `stroke` or
+`fill`, where a Tailwind class cannot reach.
 
-## 3. The primitives
+## 3. Data visualisation
+
+The dashboard is the product, so the chart rules are part of the design system rather than a matter
+of taste per panel.
+
+**The four colour jobs.** Every hue on screen is doing exactly one of these:
+
+| Job | Token set | Rule |
+|---|---|---|
+| Identity (which subject) | `--cat-1..5` | Fixed slot order, never cycled, never recoloured by rank |
+| Magnitude (how much mastery) | `--mastery-1..4` | One hue, light→dark. The ramp direction *is* the meaning |
+| State (ready / failed / over quota) | `--good` `--warn` `--bad` | Reserved. Never a data series, never colour alone |
+| Chrome | ink / surface / rule | Everything else |
+
+**Hard rules.**
+
+- **Never a dual-axis chart.** Two measures of different units get two charts or a common index. A
+  second y-scale invents a correlation that is not in the data. `TrendChart` takes two series only
+  because both are percentages on one 0–100 axis.
+- **Colour follows the entity, not its rank.** Filtering a list must not repaint the survivors.
+- **No value-ramp on nominal categories.** Bar length already encodes magnitude; spending hue on it
+  too burns the only channel left for identity.
+- **Legend always present for two or more series**, so identity is never colour-alone.
+- **Thin marks, solid hairline grid.** Dashed gridlines read as a threshold that is not there. 2 px
+  lines with `vectorEffect="non-scaling-stroke"`, ≥ 8 px hover markers with a 2 px surface ring, a
+  2 px surface gap between adjacent fills instead of a drawn border.
+- **Axis labels are real HTML around the SVG**, not `<text>` inside it — so labels never scale with
+  the plot, never clip, and a card never grows a nested scrollbar to reach its x-axis.
+- **Values are printed, not hidden behind hover** wherever there is room. `Donut` puts every count and
+  percentage in the legend; hovering only emphasises. A tooltip that is the *only* way to read a
+  number fails on touch and in print.
+
+**Both palettes are validated, not eyeballed.** The categorical set and the ordinal ramp were checked
+against a lightness band, a chroma floor, colour-vision-deficiency separation on adjacent pairs, and
+contrast against each mode's surface — in light *and* dark. Re-run the checks before changing any
+`--cat-*` or `--mastery-*` value:
+
+```bash
+# categorical, per mode
+node <dataviz-skill>/scripts/validate_palette.js "#7C3AED,#E11D48,#2563EB,#0E9F6E,#C2410C" --mode light
+node <dataviz-skill>/scripts/validate_palette.js "#9575F0,#EE5A78,#4E8DF0,#0FA36F,#D9682F" --mode dark
+
+# ordinal mastery ramp, per mode
+node <dataviz-skill>/scripts/validate_palette.js "#8FB6F8,#5B93F3,#2E6FE0,#1A4AA8" --ordinal --mode light
+node <dataviz-skill>/scripts/validate_palette.js "#2F5296,#3F73CE,#5E97F2,#9DC1FB" --ordinal --mode dark
+```
+
+## 4. The primitives
 
 | Component | Notes |
 |---|---|
-| `Button` | Variants `primary` `outline` `subtle` `ghost` `danger`; sizes `sm` `md` `lg` `icon`; `block` for full width. Defaults to `type="button"`. No `asChild` — style a link with `buttonStyles()` instead |
-| `Card` + `CardHeader/Title/Body/Footer` | Self-contained panel. `SectionLabel` is the uppercase kicker; `Hairline` the divider |
-| `MasteryBar` | **The one to read first.** Enforces evidence counts and withholds low-evidence numbers |
+| `Button` | Variants `primary` (ink) `accent` `subtle` `quiet` `ghost` `danger`; sizes `sm` `md` `lg` `icon`; `shape` `pill` (default) or `square`; `block` for full width. Defaults to `type="button"`. No `asChild` — style a link with `buttonStyles()` |
+| `IconButton` | The circular icon action in a card header or top bar. `label` is **required** and becomes the accessible name |
+| `Card` + `CardHeader/Title/Actions/Body/Footer` | Self-contained panel. `CardActions` right-aligns header icons; `SectionLabel` is the quiet kicker; `Hairline` the divider |
+| `TintRow` | A list row carrying a subject's identity tint. `tone` is the subject's fixed slot |
+| `MasteryBar` | **The one to read first.** Enforces evidence counts and withholds low-evidence numbers. `tone` switches the fill from the mastery ramp to a subject's hue |
+| `Donut` | Part-to-whole across ordered bands, values in the legend, headline figure in the centre. Six segments maximum |
+| `TrendChart` | Two same-unit series, one axis, crosshair + tooltip, clamped smoothing that cannot overshoot the data |
 | `StatusBadge` | The single job-status vocabulary. Icon + label, never colour alone |
 | `QuotaMeter` | Used / limit / reset time, shown before a limit blocks anyone |
 | `EmptyState` | Illustration slot, explanation, and exactly one action |
 | `ErrorState` | `title` (what happened) + `nextStep` (what to do) — both required |
 | `Skeleton` | Shaped like what it replaces, so nothing shifts on load |
 | `Field` + `Input` `Textarea` `Select` | Label, hint, error scaffolding. 16 px text, 44 px controls |
-| `Chip` `ChipGroup` `Tag` | Chips replace dropdowns for small option sets; scroll rather than wrap at narrow widths |
+| `SearchField` | The wide pill search in a page header. A real `<input type="search">`, not a button that opens a modal |
+| `Chip` `ChipGroup` `Tag` | Chips replace dropdowns for small option sets. `size="sm"` is pointer-first chrome only; `md` is the 44 px touch target |
 | `SourceChip` | A citation. Renders as a real link when given `href` |
 | `Dialog` + `ConfirmDialog` | Sheet under 640 px, centred dialog above. `ConfirmDialog` requires a consequences line with counts |
 | `Menu` | Overflow and account menus. Secondary actions only |
-| `SegmentedNav` | Route links, not a JS tab widget — each view stays linkable |
-| `Avatar` | Initials fallback, no image library for a 32 px circle |
-| `Logo` / `PawMark` | Brand marks |
+| `SegmentedNav` | Route links in a pill track, not a JS tab widget — each view stays linkable |
+| `Avatar` / `UserPill` | Initials fallback with an optional identity tint; `UserPill` adds name + context |
+| `Logo` / `PawMark` / `AppMark` | Brand marks |
 
-## 4. Standards
+### Shell
+
+| Component | Notes |
+|---|---|
+| `AppShell` | The floating canvas: icon rail + top bar + content column. Pinned viewport with an internal scroll from 768 px; full-bleed with page scroll below it |
+| `SideNav` | One nav, two containers — 72 px icon rail with tooltips, labelled drawer below 768 px |
+| `PageHeader` | Eyebrow, display title, and the page's own controls. Also re-renders the shell's toolbar below `lg` |
+| `FocusShell` | Quizzes and flashcards. No rail, no top bar, one deliberate exit, capped at 720 px at every width |
+| `ThemeToggle` | System / light / dark, read straight off the DOM so there is no flash and no cascading render |
+
+## 5. Standards
 
 **Server by default.** A component gets `"use client"` only when it needs state, effects or browser
-APIs. `Dialog` and `Menu` are client (focus management); everything else renders on the server.
-`ErrorState` becomes client at the point a caller passes `onRetry`.
+APIs. `AppShell`, `SideNav`, `Dialog`, `Menu`, `ThemeToggle`, `Donut` and `TrendChart` are client;
+everything else renders on the server. `ErrorState` becomes client at the point a caller passes
+`onRetry`.
 
 **Every component takes `className` and merges it through `cn()`.** A caller can always override a
 default without forking the component.
 
-**Composition over configuration.** `Card` is four small parts rather than a dozen props. When a
+**Composition over configuration.** `Card` is five small parts rather than a dozen props. When a
 component needs a fifth boolean, it wants splitting.
 
 **Real links for anything navigable.** Cards and rows that lead somewhere are `<a>`/`<Link>`, so
 ctrl-click and middle-click open a new tab. Never an `onClick` on a `div` that navigates.
 
+**A page owns its top-bar control via the `@toolbar` parallel route**, not via a prop threaded down
+through the layout. The layout must never have to know which page is underneath it.
+
 **States are the component's job, not the caller's.** If a surface can be empty, loading, or failed,
 the primitive covers it — see [`states.md`](states.md).
 
-**Accessibility is not a later pass.** Every interactive element is keyboard reachable with a visible
-focus ring and an accessible name; every status carries an icon and a label; `aria-valuetext` on
-`MasteryBar` reads the evidence count, not just the percentage.
+**Placeholder data says so on screen.** `SampleDataNotice` and `NotBuiltYet` are how an unfinished
+screen admits what it is. A designed dashboard full of invented figures that does not label them is
+the fastest way for this product to lose the trust its whole pitch depends on.
 
-## 5. Deliberately not built yet
+**Accessibility is not a later pass.** Every interactive element is keyboard reachable with a visible
+focus ring and an accessible name; every icon-only control carries both an `sr-only` label and a
+visible tooltip; every status carries an icon and a label; `aria-valuetext` on `MasteryBar` reads the
+evidence count, not just the percentage.
+
+## 6. Deliberately not built yet
 
 Named so nobody assumes they exist.
 
 | Missing | Why, and when |
 |---|---|
 | **Toasts** | Nothing to announce yet — there are no mutations until Sprint 10. A toast system built before that would be guesswork. Lands with the first server action |
-| **App shell** (`SideNav`, `TopBar`, `SidePanel`, `FocusShell`) | Needs the route groups from Sprint 07. Building it before the routing model would hard-code the wrong structure |
-| **Domain composites** (`EntityCard`, `ListRow`, `QuizOption`, `Flashcard`, `UploadDropzone`) | These are feature components. They belong to their features (Sprints 19+), not to `ui/` — promoting them early would fix decisions the features have not made yet |
-| **Theme toggle** | Tokens already support `data-theme`; the control needs somewhere to live, which is the app shell |
+| **Real dashboard data** | Every panel renders `src/features/dashboard/sample-data.ts` and says so on screen. The tables land in Sprint 13, the writes in Sprint 19+, the real dashboard in Sprint 70 — deleting that file is part of its definition of done |
+| **Domain composites** (`EntityCard`, `QuizOption`, `Flashcard`, `UploadDropzone`) | Feature components. They belong to their features (Sprints 19+), not to `ui/` — promoting them early would fix decisions the features have not made yet |
+| **Notifications and help** | The top-bar buttons exist as chrome with no destination. They stay inert until there is something to notify about |
 
-## 6. Why not the shadcn/ui CLI
+## 7. Why not the shadcn/ui CLI
 
 The specification names shadcn/ui, and this **is** its architecture: Radix primitives for behaviour,
 `cva` for variants, `tailwind-merge` so callers can override. What we skip is the registry.
@@ -109,15 +186,19 @@ person cannot tell which one is authoritative, and `bg-background` and `bg-surfa
 Authoring in-repo costs a little more up front and buys one vocabulary, no upgrade drift, and
 components that already know product rules a generic registry cannot — that `MasteryBar` must
 withhold a low-evidence number, that `ConfirmDialog` needs a consequences line with counts, that
-`StatusBadge` uses one shared status vocabulary.
+`StatusBadge` uses one shared status vocabulary, that a subject's hue is fixed for its lifetime.
 
 Radix is still a dependency wherever behaviour is genuinely hard: focus trapping, restore-on-close,
 typeahead in menus. Reimplementing those by hand would be the actual mistake.
 
-## 7. Proving it
+## 8. Proving it
 
-The landing page at `/` is built entirely from these primitives, including a live `MasteryBar` group.
-It is the smoke test: if a token or a primitive is wrong, that page shows it.
+Two smoke tests, both built entirely from these primitives:
+
+- **`/`** — the landing page, whose hero is the real `Donut` and `MasteryBar`, not a screenshot.
+- **`/dashboard`** — the full three-column grid, every panel, both charts, light and dark.
+
+If a token or a primitive is wrong, one of those two pages shows it.
 
 ```bash
 npm run dev     # http://localhost:3000

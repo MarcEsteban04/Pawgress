@@ -1,127 +1,204 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
- * Pawgress design tokens — brand direction "Study Desk" (docs/branding.md)
+ * Pawgress design tokens — brand direction "Daylight" (docs/branding.md)
+ *
+ * The shell is a soft, floating canvas: a tinted gradient page, one large
+ * rounded panel holding the whole app, and white cards with hairline borders
+ * and low, wide shadows. Chrome is near-monochrome; saturated colour is spent
+ * almost entirely on data.
  *
  * Rules that matter here:
  *  - Every colour is defined on bare `:root` first, then overridden for dark.
  *    Nothing gets its only definition inside a media query.
- *  - `--color-subject-*` are deliberately quiet and carry NO meaning. Status
- *    colours own the saturated end of the palette. A subject must never be
- *    mistakable for a failed one.
- *  - Status is never signalled by colour alone in the UI — pair it with an
- *    icon and a label (NFR-A3).
+ *  - `--cat-*` carry IDENTITY (which subject), never magnitude. They are
+ *    assigned in fixed order and a subject keeps its hue everywhere it appears,
+ *    so filtering a list never repaints the survivors.
+ *  - `--mastery-*` is a single-hue ordinal ramp, weak -> strong. Mastery is
+ *    ordered magnitude, so it is a ramp and never a rainbow — and deliberately
+ *    never red, because 42% is an instruction about what to study next, not a
+ *    grade (docs/branding.md §1).
+ *  - Status owns reserved steps and is never signalled by colour alone — every
+ *    status ships with an icon and a label (NFR-A3).
+ *
+ * Both palettes are machine-checked (lightness band, chroma floor, CVD
+ * separation, contrast) rather than eyeballed — see docs/design-system.md §3.
  * ------------------------------------------------------------------------- */
 
 :root {
-  /* Surfaces — warm paper, not white */
-  --paper: #faf6ef;
-  --surface: #fffdf9;
-  --surface-sunken: #f4efe6;
-  --rule: #e3dcd0;
-  --rule-strong: #d3c9b8;
+  /* Page gradient behind the floating canvas */
+  --page-1: #f6c99a;
+  --page-2: #eef1f6;
+  --page-3: #9dc0ea;
+
+  /* Surfaces */
+  --paper: #fbfbfd;
+  --surface: #ffffff;
+  --surface-sunken: #f3f4f8;
+  --rule: #ecedf2;
+  --rule-strong: #dcdee6;
 
   /* Ink */
-  --ink: #23201c;
-  --ink-muted: #5c554b;
-  --ink-subtle: #8c8478;
+  --ink: #14161c;
+  --ink-muted: #656c7a;
+  --ink-subtle: #99a0af;
+  --on-ink: #ffffff;
 
-  /* Accent — the single brand colour */
-  --accent: #a8502f;
-  --accent-hover: #8d4026;
-  --accent-soft: #f3e4dc;
-  --on-accent: #fffdf9;
+  /* Accent — brand moments and links. Solid controls use ink, as in the shell. */
+  --accent: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-soft: #f3eeff;
+  --on-accent: #ffffff;
 
-  /* Status — saturated, reserved, meaningful */
-  --good: #5e7a5a;
-  --good-soft: #e7eee5;
-  --warn: #b4741b;
-  --warn-soft: #f8eede;
-  --bad: #8c3a2b;
-  --bad-soft: #f6e3de;
+  /* Status — reserved steps, never reused as a data series */
+  --good: #047857;
+  --good-soft: #e6f5ef;
+  --warn: #b45309;
+  --warn-soft: #fdf1e3;
+  --bad: #be123c;
+  --bad-soft: #fdeaef;
 
-  /* Focus */
-  --focus: #23201c;
+  --focus: #14161c;
 
-  /* Subject tints — interchangeable, never semantic */
-  --subject-1: #cfd9dd;
-  --subject-2: #ded6c6;
-  --subject-3: #d2dccd;
-  --subject-4: #decfd5;
-  --subject-5: #cfd1de;
-  --subject-6: #e0d9c2;
+  /* Categorical — subject identity. Fixed order, never cycled past 5. */
+  --cat-1: #7c3aed;
+  --cat-2: #e11d48;
+  --cat-3: #2563eb;
+  --cat-4: #0e9f6e;
+  --cat-5: #c2410c;
+
+  /* Their tinted row surfaces — the pastel list rows */
+  --cat-1-soft: #f4efff;
+  --cat-2-soft: #fdedf1;
+  --cat-3-soft: #ebf2ff;
+  --cat-4-soft: #e7f7f1;
+  --cat-5-soft: #fdefe7;
+
+  /* Mastery — ordinal ramp, weak -> strong, plus a neutral for "no data" */
+  --mastery-1: #8fb6f8;
+  --mastery-2: #5b93f3;
+  --mastery-3: #2e6fe0;
+  --mastery-4: #1a4aa8;
+  --mastery-none: #d8dbe3;
+
+  /* Elevation. Low and wide — the canvas floats, cards barely lift. */
+  --shadow-canvas: 0 1px 1px rgb(16 20 32 / 0.04), 0 24px 60px -18px rgb(16 20 32 / 0.28);
+  --shadow-card: 0 1px 2px rgb(16 20 32 / 0.04), 0 6px 20px -10px rgb(16 20 32 / 0.12);
+  --shadow-pill: 0 1px 2px rgb(16 20 32 / 0.08);
+  --shadow-pop: 0 4px 8px -4px rgb(16 20 32 / 0.1), 0 16px 40px -12px rgb(16 20 32 / 0.24);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #1a1815;
-    --surface: #221f1b;
-    --surface-sunken: #141210;
-    --rule: #383430;
-    --rule-strong: #4b463f;
+    --page-1: #3b2f4d;
+    --page-2: #14161d;
+    --page-3: #1d3350;
 
-    --ink: #f2ece2;
-    --ink-muted: #b8afa2;
-    --ink-subtle: #8b8377;
+    --paper: #101218;
+    --surface: #171a21;
+    --surface-sunken: #1e222b;
+    --rule: #262a34;
+    --rule-strong: #343a47;
 
-    --accent: #d9764f;
-    --accent-hover: #e88c66;
-    --accent-soft: #3a2419;
-    --on-accent: #1a1815;
+    --ink: #eef0f4;
+    --ink-muted: #9aa2b1;
+    --ink-subtle: #6b7382;
+    --on-ink: #14161c;
 
-    --good: #8aa885;
-    --good-soft: #232b21;
-    --warn: #d5a054;
-    --warn-soft: #33260f;
-    --bad: #d18470;
-    --bad-soft: #35201b;
+    --accent: #a78bfa;
+    --accent-hover: #c4b5fd;
+    --accent-soft: #241d38;
+    --on-accent: #14161c;
 
-    --focus: #f2ece2;
+    --good: #34d399;
+    --good-soft: #10241d;
+    --warn: #fbbf24;
+    --warn-soft: #2a1f0d;
+    --bad: #fb7185;
+    --bad-soft: #2c1219;
 
-    --subject-1: #46545a;
-    --subject-2: #565040;
-    --subject-3: #47533f;
-    --subject-4: #56454c;
-    --subject-5: #454859;
-    --subject-6: #565039;
+    --focus: #eef0f4;
+
+    --cat-1: #9575f0;
+    --cat-2: #ee5a78;
+    --cat-3: #4e8df0;
+    --cat-4: #0fa36f;
+    --cat-5: #d9682f;
+
+    --cat-1-soft: #221d33;
+    --cat-2-soft: #2d181f;
+    --cat-3-soft: #16223a;
+    --cat-4-soft: #0f2620;
+    --cat-5-soft: #2c1c13;
+
+    --mastery-1: #2f5296;
+    --mastery-2: #3f73ce;
+    --mastery-3: #5e97f2;
+    --mastery-4: #9dc1fb;
+    --mastery-none: #333845;
+
+    --shadow-canvas: 0 1px 1px rgb(0 0 0 / 0.3), 0 24px 60px -18px rgb(0 0 0 / 0.6);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px -10px rgb(0 0 0 / 0.45);
+    --shadow-pill: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-pop: 0 4px 8px -4px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.7);
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #1a1815;
-  --surface: #221f1b;
-  --surface-sunken: #141210;
-  --rule: #383430;
-  --rule-strong: #4b463f;
+  --page-1: #3b2f4d;
+  --page-2: #14161d;
+  --page-3: #1d3350;
 
-  --ink: #f2ece2;
-  --ink-muted: #b8afa2;
-  --ink-subtle: #8b8377;
+  --paper: #101218;
+  --surface: #171a21;
+  --surface-sunken: #1e222b;
+  --rule: #262a34;
+  --rule-strong: #343a47;
 
-  --accent: #d9764f;
-  --accent-hover: #e88c66;
-  --accent-soft: #3a2419;
-  --on-accent: #1a1815;
+  --ink: #eef0f4;
+  --ink-muted: #9aa2b1;
+  --ink-subtle: #6b7382;
+  --on-ink: #14161c;
 
-  --good: #8aa885;
-  --good-soft: #232b21;
-  --warn: #d5a054;
-  --warn-soft: #33260f;
-  --bad: #d18470;
-  --bad-soft: #35201b;
+  --accent: #a78bfa;
+  --accent-hover: #c4b5fd;
+  --accent-soft: #241d38;
+  --on-accent: #14161c;
 
-  --focus: #f2ece2;
+  --good: #34d399;
+  --good-soft: #10241d;
+  --warn: #fbbf24;
+  --warn-soft: #2a1f0d;
+  --bad: #fb7185;
+  --bad-soft: #2c1219;
 
-  --subject-1: #46545a;
-  --subject-2: #565040;
-  --subject-3: #47533f;
-  --subject-4: #56454c;
-  --subject-5: #454859;
-  --subject-6: #565039;
+  --focus: #eef0f4;
+
+  --cat-1: #9575f0;
+  --cat-2: #ee5a78;
+  --cat-3: #4e8df0;
+  --cat-4: #0fa36f;
+  --cat-5: #d9682f;
+
+  --cat-1-soft: #221d33;
+  --cat-2-soft: #2d181f;
+  --cat-3-soft: #16223a;
+  --cat-4-soft: #0f2620;
+  --cat-5-soft: #2c1c13;
+
+  --mastery-1: #2f5296;
+  --mastery-2: #3f73ce;
+  --mastery-3: #5e97f2;
+  --mastery-4: #9dc1fb;
+  --mastery-none: #333845;
+
+  --shadow-canvas: 0 1px 1px rgb(0 0 0 / 0.3), 0 24px 60px -18px rgb(0 0 0 / 0.6);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px -10px rgb(0 0 0 / 0.45);
+  --shadow-pill: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 4px 8px -4px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.7);
 }
 
 @theme inline {
-  /* Colours */
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-sunken: var(--surface-sunken);
@@ -131,6 +208,7 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-ink-subtle: var(--ink-subtle);
+  --color-on-ink: var(--on-ink);
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
@@ -144,22 +222,40 @@
   --color-bad: var(--bad);
   --color-bad-soft: var(--bad-soft);
 
-  --color-subject-1: var(--subject-1);
-  --color-subject-2: var(--subject-2);
-  --color-subject-3: var(--subject-3);
-  --color-subject-4: var(--subject-4);
-  --color-subject-5: var(--subject-5);
-  --color-subject-6: var(--subject-6);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+
+  --color-cat-1-soft: var(--cat-1-soft);
+  --color-cat-2-soft: var(--cat-2-soft);
+  --color-cat-3-soft: var(--cat-3-soft);
+  --color-cat-4-soft: var(--cat-4-soft);
+  --color-cat-5-soft: var(--cat-5-soft);
+
+  --color-mastery-1: var(--mastery-1);
+  --color-mastery-2: var(--mastery-2);
+  --color-mastery-3: var(--mastery-3);
+  --color-mastery-4: var(--mastery-4);
+  --color-mastery-none: var(--mastery-none);
 
   /* Type — faces are wired up in app/layout.tsx via next/font */
-  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", monospace;
 
-  /* Radius — 8–12px, the "Study Desk" density */
-  --radius-card: 0.75rem;
-  --radius-control: 0.5rem;
+  /* Radius — the "Daylight" density: generous, consistently rounded */
+  --radius-canvas: 1.75rem;
+  --radius-card: 1.25rem;
+  --radius-tile: 1rem;
+  --radius-control: 0.75rem;
   --radius-pill: 9999px;
+
+  --shadow-canvas: var(--shadow-canvas);
+  --shadow-card: var(--shadow-card);
+  --shadow-pill: var(--shadow-pill);
+  --shadow-pop: var(--shadow-pop);
 }
 
 @layer base {
@@ -172,7 +268,16 @@
   }
 
   body {
-    background-color: var(--paper);
+    /* The tinted ground the canvas floats on. Fixed so it does not slide under
+       the panel while the page scrolls. */
+    background-color: var(--page-2);
+    background-image: linear-gradient(
+      135deg,
+      var(--page-1) 0%,
+      var(--page-2) 46%,
+      var(--page-3) 100%
+    );
+    background-attachment: fixed;
     color: var(--ink);
     font-family: var(--font-sans);
     /* 16px floor: anything smaller triggers zoom-on-focus on iOS and is
@@ -192,20 +297,27 @@
     color: var(--ink);
   }
 
-  /* Brand icon spec: 1.7px stroke, round caps, 24px grid (docs/branding.md).
+  /* Brand icon spec: 1.6px stroke, round caps, 24px grid (docs/branding.md).
      CSS beats lucide's stroke-width presentation attribute, so this applies
      app-wide without threading a prop through every icon. */
   .lucide {
-    stroke-width: 1.7;
+    stroke-width: 1.6;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
-  /* Numbers must not jitter as they change — mastery bars and scores
-     update in place. */
+  /* Numbers must not jitter as they change — mastery bars and scores update in
+     place. "Daylight" carries no mono face, so this is the UI face with
+     fixed-width figures rather than a font swap. */
   .tabular {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /* Keeps a scrolling panel from cutting a grey channel through the canvas. */
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
   }
 }
 
