@@ -6,9 +6,15 @@ Pawgress lets high school and college students upload their school materials, th
 materials into reviewers, flashcards, and quizzes — and tracks what they actually understand, so the
 app can tell them what to study next.
 
-**Product spec:** [`docs/pawgress.md`](docs/pawgress.md)
-**Roadmap (84 sprints):** [`docs/pawgress_development_roadmap.md`](docs/pawgress_development_roadmap.md)
-**Coding conventions:** [`docs/conventions.md`](docs/conventions.md)
+| Document | What it is |
+|---|---|
+| [`docs/pawgress.md`](docs/pawgress.md) | Product specification |
+| [`docs/pawgress_development_roadmap.md`](docs/pawgress_development_roadmap.md) | Roadmap (84 sprints) |
+| [`docs/requirements.md`](docs/requirements.md) | Product requirements — scope contract, FR/NFR ids, open decisions |
+| [`docs/mvp-scope.md`](docs/mvp-scope.md) | What ships in v0.1, and what is deliberately deferred |
+| [`docs/user-stories.md`](docs/user-stories.md) | User stories with acceptance criteria |
+| [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
+| [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
 ---
 
@@ -97,7 +103,7 @@ into a client component.
 
 | Phase | Sprints | Status |
 |---|---|---|
-| 1 — Product foundation | 01–04 | Sprint 01 ✅ |
+| 1 — Product foundation | 01–04 | Sprints 01–02 ✅ · Sprint 03 next |
 | 2 — Design system & architecture | 05–08 | Not started |
 | 3 — Authentication | 09–12 | Not started |
 | 4+ | 13–84 | Not started |
