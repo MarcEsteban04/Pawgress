@@ -133,7 +133,7 @@ export function SideNav({ drawer = false, onNavigate, quota, className }: SideNa
       aria-label="Main"
       className={cn(
         "flex h-full flex-col",
-        drawer ? "w-[17rem] gap-1 bg-paper p-4" : "w-[4.5rem] items-center gap-1.5 py-5",
+        drawer ? "w-[17rem] gap-1 bg-frame p-4" : "w-[4.5rem] items-center gap-1.5 py-5",
         className,
       )}
     >

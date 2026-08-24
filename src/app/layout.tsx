@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Caveat, Inter, Outfit } from "next/font/google";
 import { themeScript } from "@/components/layout/ThemeToggle";
 import { siteConfig } from "@/config/site";
 import { publicEnv } from "@/config/env";
@@ -26,6 +26,18 @@ const inter = Inter({
   display: "swap",
 });
 
+/**
+ * One handwriting face, used in exactly one place: the pinned note in the
+ * landing hero. It is there because a real sticky note is the most direct way
+ * to say "your own messy material goes in here" — not as a decorative script.
+ */
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["500"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.appUrl),
   title: {
@@ -40,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${inter.variable} h-full antialiased`}
+      className={`${outfit.variable} ${inter.variable} ${caveat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

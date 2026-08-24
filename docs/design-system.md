@@ -33,6 +33,7 @@ Colour, radius, shadow and type come from tokens. Tailwind utilities map onto th
 
 | Tailwind class | Token |
 |---|---|
+| `bg-page` `bg-frame` `.dot-grid` | the ground, the white window, its textured panel |
 | `bg-paper` `bg-surface` `bg-surface-sunken` | surfaces |
 | `text-ink` `text-ink-muted` `text-ink-subtle` `text-on-ink` | ink ramp |
 | `border-rule` `border-rule-strong` | hairlines |
@@ -40,9 +41,10 @@ Colour, radius, shadow and type come from tokens. Tailwind utilities map onto th
 | `text-good` `text-warn` `text-bad` (+ `-soft` grounds) | status |
 | `bg-cat-1` … `bg-cat-5`, `bg-cat-1-soft` … | categorical — subject **identity** |
 | `bg-mastery-1` … `bg-mastery-4`, `bg-mastery-none` | the ordinal mastery ramp |
-| `font-display` `font-sans`, `.tabular` | type ramp and tabular figures |
-| `rounded-[var(--radius-canvas\|card\|tile\|control\|pill)]` | density |
-| `shadow-[var(--shadow-canvas\|card\|pill\|pop)]` | elevation |
+| `font-display` `font-sans` `font-hand`, `.tabular` | type ramp and tabular figures |
+| `rounded-[var(--radius-frame\|canvas\|card\|tile\|control\|pill)]` | density |
+| `shadow-[var(--shadow-canvas\|card\|pill\|pop\|float)]` | elevation |
+| `.drift` | the hero objects' slow float; collapses under `prefers-reduced-motion` |
 
 Adding a colour means adding a token in all three theme blocks in `globals.css`, never a one-off hex
 in a component. The one sanctioned exception is a chart passing `var(--cat-3)` as an SVG `stroke` or
@@ -58,9 +60,13 @@ of taste per panel.
 | Job | Token set | Rule |
 |---|---|---|
 | Identity (which subject) | `--cat-1..5` | Fixed slot order, never cycled, never recoloured by rank |
-| Magnitude (how much mastery) | `--mastery-1..4` | One hue, light→dark. The ramp direction *is* the meaning |
+| Magnitude (how much mastery) | `--mastery-1..4` | One hue (teal), light→dark. The ramp direction *is* the meaning |
 | State (ready / failed / over quota) | `--good` `--warn` `--bad` | Reserved. Never a data series, never colour alone |
+| Action (press this) | `--accent` | The CTA blue. Never a data mark |
 | Chrome | ink / surface / rule | Everything else |
+
+The mastery ramp is teal specifically so it cannot collide with the other two blues in the system —
+the accent and the `cat-3` subject hue. A bar that reads as a button, or as Mathematics, is a bug.
 
 **Hard rules.**
 
@@ -91,8 +97,8 @@ node <dataviz-skill>/scripts/validate_palette.js "#7C3AED,#E11D48,#2563EB,#0E9F6
 node <dataviz-skill>/scripts/validate_palette.js "#9575F0,#EE5A78,#4E8DF0,#0FA36F,#D9682F" --mode dark
 
 # ordinal mastery ramp, per mode
-node <dataviz-skill>/scripts/validate_palette.js "#8FB6F8,#5B93F3,#2E6FE0,#1A4AA8" --ordinal --mode light
-node <dataviz-skill>/scripts/validate_palette.js "#2F5296,#3F73CE,#5E97F2,#9DC1FB" --ordinal --mode dark
+node <dataviz-skill>/scripts/validate_palette.js "#63BFB7,#33A29A,#147B75,#0B504C" --ordinal --mode light
+node <dataviz-skill>/scripts/validate_palette.js "#175E5A,#22857E,#3FB3AA,#7FD6CE" --ordinal --mode dark
 ```
 
 ## 4. The primitives
@@ -125,11 +131,28 @@ node <dataviz-skill>/scripts/validate_palette.js "#2F5296,#3F73CE,#5E97F2,#9DC1F
 
 | Component | Notes |
 |---|---|
-| `AppShell` | The floating canvas: icon rail + top bar + content column. Pinned viewport with an internal scroll from 768 px; full-bleed with page scroll below it |
+| `AppShell` | The white frame: icon rail + top bar + content column. Pinned viewport with an internal scroll from 768 px; full-bleed with page scroll below it |
 | `SideNav` | One nav, two containers — 72 px icon rail with tooltips, labelled drawer below 768 px |
 | `PageHeader` | Eyebrow, display title, and the page's own controls. Also re-renders the shell's toolbar below `lg` |
 | `FocusShell` | Quizzes and flashcards. No rail, no top bar, one deliberate exit, capped at 720 px at every width |
 | `ThemeToggle` | System / light / dark, read straight off the DOM so there is no flash and no cascading render |
+
+### Marketing hero objects
+
+`src/features/marketing/components/` holds the objects scattered around the landing hero —
+`StickyNote`, `CheckTile`, `MarkTile`, `PlanCard`, `ReminderCard`, `FormatsCard`, `Stopwatch`.
+Two rules keep them from rotting:
+
+- **They are built from real primitives.** `PlanCard` is `MasteryBar`, `ReminderCard` is
+  `StatusBadge`, `FormatsCard` is `SourceChip`. A hero assembled from bespoke mock markup drifts
+  away from the product within one sprint; this one breaks loudly instead.
+- **Composition is separate from content.** `HeroObjects` renders plain blocks; `HeroDecor` places
+  them. Below 1280 px the scattered layout is dropped entirely for `HeroStack` — a single card —
+  because the composition needs horizontal room a laptop does not have, and shrinking it produces a
+  mess rather than a smaller version.
+
+The whole cluster is `aria-hidden`: every claim it makes is also made in real text on the page, so
+announcing six decorative cards ahead of the headline would be hostile with nothing gained.
 
 ## 5. Standards
 

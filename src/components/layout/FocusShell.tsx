@@ -36,7 +36,7 @@ export function FocusShell({
   meta,
 }: FocusShellProps) {
   return (
-    <div className="flex min-h-dvh flex-col bg-paper">
+    <div className="flex min-h-dvh flex-col bg-frame">
       <header className="flex h-16 shrink-0 items-center gap-4 border-b border-rule px-4 sm:px-6">
         <Link
           href={exitHref}

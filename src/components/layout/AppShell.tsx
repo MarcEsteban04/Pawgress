@@ -54,11 +54,11 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh p-0 sm:p-4 md:h-dvh lg:p-6">
+    <div className="min-h-dvh p-0 sm:p-3 sm:p-5 md:h-dvh">
       <div
         className={cn(
-          "flex min-h-dvh overflow-hidden border-rule bg-paper sm:min-h-0",
-          "sm:rounded-[var(--radius-canvas)] sm:border sm:shadow-[var(--shadow-canvas)]",
+          "flex min-h-dvh overflow-hidden bg-frame sm:min-h-0",
+          "sm:rounded-[var(--radius-frame)] sm:shadow-[var(--shadow-canvas)]",
           "md:h-full",
         )}
       >

@@ -1,32 +1,36 @@
 import { ArrowRight, BrainCircuit, ClipboardCheck, TrendingUp, UploadCloud } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
-import {
-  buttonStyles,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Donut,
-  MasteryBar,
-  SourceChip,
-  Tag,
-} from "@/components/ui";
+import { buttonStyles, Card, CardBody, Donut, MasteryBar, SourceChip } from "@/components/ui";
+import { HeroDecor, HeroStack } from "@/features/marketing/components/HeroDecor";
+import { MarkTile } from "@/features/marketing/components/HeroObjects";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 /**
  * Landing page — screen 1 in docs/navigation.md.
  *
- * One idea, shown rather than described: the hero visual is the real dashboard
- * built from the real components, not a screenshot and not a mock. If the
- * product cannot carry its own landing page, the landing page is lying.
+ * The whole site sits in one white frame floating on a neutral ground, and the
+ * hero is a dot-textured panel inside that frame with the product's own
+ * surfaces scattered around a centred headline.
  *
- * No feature grid, no testimonials, no pricing. The loop is the marketing, and
- * "Recursion 31% — study this" does the persuading.
+ * Two things make the composition work rather than just look busy:
+ *
+ *  1. The objects are cropped by the panel edge. A card cut off by the frame
+ *     reads as part of a larger surface continuing past the window; a card that
+ *     fits neatly inside reads as a sticker.
+ *  2. Everything in them is real. The bars are `MasteryBar` with its real
+ *     low-evidence rule, the citation is `SourceChip`. A hero built from mock
+ *     screenshots drifts away from the product within one sprint.
  *
  * Server Component: nothing here needs state or effects.
  */
+
+const NAV = [
+  { href: "#how", label: "How it works" },
+  { href: "#trust", label: "Why trust it" },
+  { href: "#loop", label: "The loop" },
+];
 
 const LOOP = [
   {
@@ -55,7 +59,7 @@ const LOOP = [
   },
 ] as const;
 
-const TONE_CHIP = {
+const TONE_TILE = {
   1: "bg-cat-1-soft text-cat-1",
   3: "bg-cat-3-soft text-cat-3",
   4: "bg-cat-4-soft text-cat-4",
@@ -64,165 +68,158 @@ const TONE_CHIP = {
 
 export default function LandingPage() {
   return (
-    <div className="mx-auto flex w-full max-w-[78rem] flex-1 flex-col px-4 sm:px-6">
-      {/* Floating nav pill, matching the shell's chrome. */}
-      <header className="sticky top-3 z-40 mt-3 sm:top-5 sm:mt-5">
-        <div className="flex h-16 items-center gap-4 rounded-[var(--radius-pill)] border border-rule bg-paper/85 px-4 shadow-[var(--shadow-card)] backdrop-blur-md sm:px-6">
-          <Link href="/" aria-label="Pawgress home">
+    <div className="flex-1 px-3 py-3 sm:px-5 sm:py-5">
+      {/* The frame. Everything on the page lives inside this one white window. */}
+      <div className="mx-auto w-full max-w-[92rem] overflow-hidden rounded-[var(--radius-frame)] bg-frame shadow-[var(--shadow-canvas)]">
+        {/* ---- Nav ---------------------------------------------------- */}
+        <header className="flex h-16 items-center gap-4 px-4 sm:h-[4.5rem] sm:px-7">
+          <Link href="/" aria-label="Pawgress home" className="shrink-0">
             <Logo />
           </Link>
-          <div className="flex-1" />
-          <Link href="/login" className={buttonStyles({ variant: "ghost", size: "sm" })}>
-            Sign in
-          </Link>
-          <Link href="/register" className={buttonStyles({ size: "sm" })}>
-            Get started
-          </Link>
-        </div>
-      </header>
 
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-[1fr_1.05fr] lg:gap-14">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-rule bg-paper/80 px-3 py-1.5 text-xs font-medium text-ink-muted backdrop-blur">
-              For high school and college students
-            </span>
+          <nav aria-label="Primary" className="flex-1 justify-center gap-9 max-lg:hidden lg:flex">
+            {NAV.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-[0.9375rem] text-ink-muted transition-colors hover:text-ink"
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <div className="flex-1 lg:hidden" />
 
-            <h1 className="mt-5 font-display text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.03em] text-balance sm:text-[3.5rem]">
-              Don&rsquo;t just study more. Study what matters.
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/login"
+              className="rounded-[var(--radius-pill)] px-3 py-2 text-[0.9375rem] text-ink-muted transition-colors hover:text-ink max-sm:hidden"
+            >
+              Sign in
+            </Link>
+            <Link href="/register" className={buttonStyles({ variant: "subtle", size: "sm" })}>
+              Get started
+            </Link>
+          </div>
+        </header>
+
+        {/* ---- Hero ---------------------------------------------------- */}
+        <section className="dot-grid relative mx-2 mb-2 overflow-hidden rounded-[0.625rem] sm:mx-2.5 sm:mb-2.5">
+          <HeroDecor />
+
+          <div className="relative flex min-h-[34rem] flex-col items-center justify-center gap-7 px-5 py-16 text-center sm:px-8 sm:py-20 xl:min-h-[42rem]">
+            <MarkTile className="drift" />
+
+            {/* The two-tone headline: the promise in ink, the payoff in grey. */}
+            <h1
+              className={cn(
+                "font-display font-semibold tracking-[-0.035em] text-balance",
+                "text-[clamp(2.5rem,6.4vw,5rem)] leading-[1.04]",
+              )}
+            >
+              Upload it, understand it,
+              <br />
+              <span className="text-ink-subtle">know what to study next</span>
             </h1>
 
-            <p className="mt-6 max-w-[46ch] text-lg leading-relaxed text-ink-muted">
-              Upload your schoolwork. Pawgress turns it into reviewers, flashcards and quizzes —
-              then tells you which topic is actually holding you back, and how long to spend on it
-              today.
+            <p className="max-w-[46ch] text-base leading-relaxed text-ink-muted sm:text-lg">
+              Pawgress turns your own schoolwork into reviewers, flashcards and quizzes — then tells
+              you which topic is actually holding you back.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/register" className={buttonStyles({ size: "lg" })}>
-                Get started — it&rsquo;s free
-                <ArrowRight />
-              </Link>
-              <span className="text-sm text-ink-muted">No credit card. No app to install.</span>
-            </div>
+            <Link href="/register" className={buttonStyles({ variant: "accent", size: "lg" })}>
+              Get started — it&rsquo;s free
+              <ArrowRight />
+            </Link>
 
-            <div className="mt-9 flex flex-wrap gap-2">
-              {["PDF", "PPTX", "DOCX", "Images", "Your own notes"].map((format) => (
-                <Tag key={format} className="bg-paper/80 backdrop-blur">
-                  {format}
-                </Tag>
+            <p className="text-sm text-ink-subtle">No credit card. No app to install.</p>
+
+            <HeroStack />
+          </div>
+        </section>
+
+        {/* ---- The loop ------------------------------------------------ */}
+        <section id="how" className="scroll-mt-6 px-5 py-16 sm:px-10 sm:py-20">
+          <div className="mx-auto max-w-[70rem]">
+            <p className="text-sm text-ink-muted">How it works</p>
+            <h2 className="mt-2 font-display text-[clamp(1.875rem,3.4vw,2.75rem)] leading-tight font-semibold tracking-[-0.025em]">
+              One loop, four steps
+            </h2>
+            <p className="mt-3 max-w-[54ch] leading-relaxed text-ink-muted">
+              Every reviewer and every question comes from the material you uploaded — and every
+              answer you give feeds back into what Pawgress recommends next.
+            </p>
+
+            <ol id="loop" className="mt-10 grid scroll-mt-6 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {LOOP.map(({ Icon, label, note, tone }, i) => (
+                <li key={label}>
+                  <Card className="h-full">
+                    <CardBody className="flex h-full flex-col gap-3 pt-5">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={cn(
+                            "flex size-10 items-center justify-center rounded-[0.75rem]",
+                            TONE_TILE[tone],
+                          )}
+                        >
+                          <Icon className="size-5" aria-hidden />
+                        </span>
+                        <span className="tabular text-sm text-ink-subtle">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+                      <h3 className="font-display text-xl font-semibold">{label}</h3>
+                      <p className="text-sm leading-relaxed text-ink-muted">{note}</p>
+                    </CardBody>
+                  </Card>
+                </li>
               ))}
-            </div>
-          </div>
-
-          {/* The product, not a picture of the product. */}
-          <div className="relative">
-            <div className="flex flex-col gap-4 rounded-[var(--radius-canvas)] border border-rule bg-paper/70 p-4 shadow-[var(--shadow-canvas)] backdrop-blur-sm sm:p-5">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Topic mastery</CardTitle>
-                </CardHeader>
-                <CardBody>
-                  <Donut
-                    segments={[
-                      { label: "Not started", value: 4, step: "none" },
-                      { label: "Weak", value: 5, step: 1 },
-                      { label: "Developing", value: 7, step: 2 },
-                      { label: "Strong", value: 6, step: 4 },
-                    ]}
-                    centerValue="68%"
-                    centerLabel="ready"
-                  />
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>After your first quiz</CardTitle>
-                </CardHeader>
-                <CardBody className="flex flex-col gap-4">
-                  <MasteryBar
-                    dense
-                    hideEvidence
-                    label="Recursion"
-                    value={0.31}
-                    questionCount={16}
-                  />
-                  <MasteryBar
-                    dense
-                    hideEvidence
-                    label="Cell structure"
-                    value={0.88}
-                    questionCount={22}
-                  />
-                  <MasteryBar
-                    dense
-                    hideEvidence
-                    label="Photosynthesis"
-                    value={1}
-                    questionCount={4}
-                  />
-
-                  <div className="border-t border-rule pt-4">
-                    <p className="text-[0.9375rem] leading-relaxed">
-                      Recursion is holding you back. Twenty minutes of review and practice would
-                      move it more than anything else today.
-                    </p>
-                    <div className="mt-3">
-                      <SourceChip material="Lecture 9.pdf" page={4} />
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
+            </ol>
           </div>
         </section>
 
-        {/* The loop */}
-        <section className="py-14 sm:py-16">
-          <p className="text-sm text-ink-muted">How it works</p>
-          <h2 className="mt-2 font-display text-[2rem] leading-tight font-semibold tracking-[-0.02em] sm:text-[2.5rem]">
-            One loop, four steps
-          </h2>
-          <p className="mt-3 max-w-[54ch] leading-relaxed text-ink-muted">
-            Every reviewer and every question comes from the material you uploaded — and every
-            answer you give feeds back into what Pawgress recommends next.
-          </p>
+        {/* ---- What it actually tells you ------------------------------ */}
+        <section className="px-5 pb-16 sm:px-10 sm:pb-20">
+          <div className="mx-auto grid max-w-[70rem] items-center gap-8 lg:grid-cols-2 lg:gap-14">
+            <div>
+              <p className="text-sm text-ink-muted">What you get back</p>
+              <h2 className="mt-2 font-display text-[clamp(1.875rem,3.4vw,2.75rem)] leading-tight font-semibold tracking-[-0.025em]">
+                A number you can argue with
+              </h2>
+              <p className="mt-4 max-w-[52ch] leading-relaxed text-ink-muted">
+                Every mastery percentage arrives with the number of questions it came from. Under
+                ten answers, Pawgress refuses to show a percentage at all and says so — because a
+                confident-looking 100% from three lucky guesses is worse than no number.
+              </p>
+            </div>
 
-          <ol className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {LOOP.map(({ Icon, label, note, tone }, i) => (
-              <li key={label}>
-                <Card className="h-full">
-                  <CardBody className="flex h-full flex-col gap-3 pt-5">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "flex size-10 items-center justify-center rounded-[var(--radius-control)]",
-                          TONE_CHIP[tone],
-                        )}
-                      >
-                        <Icon className="size-5" aria-hidden />
-                      </span>
-                      <span className="tabular text-sm text-ink-subtle">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-                    <h3 className="font-display text-xl font-semibold">{label}</h3>
-                    <p className="text-sm leading-relaxed text-ink-muted">{note}</p>
-                  </CardBody>
-                </Card>
-              </li>
-            ))}
-          </ol>
+            <Card>
+              <CardBody className="flex flex-col gap-5 pt-6">
+                <Donut
+                  segments={[
+                    { label: "Not started", value: 4, step: "none" },
+                    { label: "Weak", value: 5, step: 1 },
+                    { label: "Developing", value: 7, step: 2 },
+                    { label: "Strong", value: 6, step: 4 },
+                  ]}
+                  centerValue="68%"
+                  centerLabel="ready"
+                />
+                <div className="flex flex-col gap-4 border-t border-rule pt-5">
+                  <MasteryBar label="Recursion" value={0.31} questionCount={16} />
+                  <MasteryBar label="Photosynthesis" value={1} questionCount={4} />
+                </div>
+              </CardBody>
+            </Card>
+          </div>
         </section>
 
-        {/* Honesty section — the thing that earns trust in an AI product. */}
-        <section className="py-14 sm:py-16">
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-14">
+        {/* ---- Trust --------------------------------------------------- */}
+        <section id="trust" className="scroll-mt-6 px-5 pb-16 sm:px-10 sm:pb-20">
+          <div className="mx-auto grid max-w-[70rem] gap-8 lg:grid-cols-2 lg:gap-14">
             <div>
               <p className="text-sm text-ink-muted">Why you can trust it</p>
-              <h2 className="mt-2 font-display text-[2rem] leading-tight font-semibold tracking-[-0.02em] sm:text-[2.5rem]">
+              <h2 className="mt-2 font-display text-[clamp(1.875rem,3.4vw,2.75rem)] leading-tight font-semibold tracking-[-0.025em]">
                 Every answer cites your material
               </h2>
               <p className="mt-4 max-w-[52ch] leading-relaxed text-ink-muted">
@@ -233,7 +230,7 @@ export default function LandingPage() {
             </div>
 
             <Card>
-              <CardBody className="pt-5">
+              <CardBody className="pt-6">
                 <p className="text-[0.9375rem] leading-relaxed">
                   A Punnett square is a grid for working out which allele combinations two parents
                   can produce. Each parent&rsquo;s alleles go along one edge, and each cell is one
@@ -248,33 +245,32 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Close */}
-        <section className="pb-14 sm:pb-16">
-          <Card className="overflow-hidden">
-            <CardBody className="flex flex-col items-start gap-5 py-10 sm:items-center sm:py-14 sm:text-center">
-              <h2 className="font-display text-[2rem] leading-tight font-semibold tracking-[-0.02em] text-balance sm:text-[2.5rem]">
-                Find out what to study next
-              </h2>
-              <p className="max-w-[46ch] leading-relaxed text-ink-muted">
-                Upload one lecture and take one quiz. That is enough for Pawgress to tell you where
-                your weakest topic is.
-              </p>
-              <Link href="/register" className={buttonStyles({ size: "lg" })}>
-                Get started
-                <ArrowRight />
-              </Link>
-            </CardBody>
-          </Card>
+        {/* ---- Close --------------------------------------------------- */}
+        <section className="px-2 pb-2 sm:px-2.5 sm:pb-2.5">
+          <div className="dot-grid flex flex-col items-center gap-6 rounded-[0.625rem] px-5 py-16 text-center sm:py-24">
+            <h2 className="font-display text-[clamp(1.875rem,4vw,3rem)] leading-tight font-semibold tracking-[-0.03em] text-balance">
+              Find out what to study next
+            </h2>
+            <p className="max-w-[46ch] leading-relaxed text-ink-muted">
+              Upload one lecture and take one quiz. That is enough for Pawgress to tell you where
+              your weakest topic is.
+            </p>
+            <Link href="/register" className={buttonStyles({ variant: "accent", size: "lg" })}>
+              Get started
+              <ArrowRight />
+            </Link>
+          </div>
         </section>
-      </main>
 
-      <footer className="flex flex-col gap-2 border-t border-rule/60 py-8 text-sm text-ink-muted sm:flex-row sm:items-center">
-        <span>
-          {siteConfig.name} — {siteConfig.tagline}
-        </span>
-        <div className="flex-1" />
-        <span>Built for students, not for grading them.</span>
-      </footer>
+        {/* ---- Footer -------------------------------------------------- */}
+        <footer className="flex flex-col gap-2 px-5 py-7 text-sm text-ink-muted sm:flex-row sm:items-center sm:px-10">
+          <span>
+            {siteConfig.name} — {siteConfig.tagline}
+          </span>
+          <div className="flex-1" />
+          <span>Built for students, not for grading them.</span>
+        </footer>
+      </div>
     </div>
   );
 }
