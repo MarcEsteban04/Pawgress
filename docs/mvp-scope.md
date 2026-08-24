@@ -63,7 +63,9 @@ MVP is **Roadmap Sprints 01–59**, minus the deferrals listed below. Target mil
 
 ## Out of scope (post-V1)
 
-- Native mobile app and APK (roadmap Phases 16–18) — see open decision #1 in the PRD
+- Native mobile app or APK of any kind — Pawgress is a website; roadmap Phases 16–18 are installable
+  web app, offline tolerance, cross-browser QA and launch
+- Installable web app (manifest, standalone window) and offline reading — Sprints 78–79, after V1
 - Achievements, streaks, celebrations — FR-D4
 - Teacher, school, or parent accounts
 - Shared or public reviewers, collaboration, social features
@@ -78,7 +80,7 @@ MVP is **Roadmap Sprints 01–59**, minus the deferrals listed below. Target mil
 
 ## MVP definition of done
 
-A new student, on a phone browser, can complete this without help:
+A new student can complete this without help, in a browser, on a laptop **and** on a phone:
 
 1. Register and verify their email
 2. Sign in and land somewhere that tells them what to do first

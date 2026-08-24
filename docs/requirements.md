@@ -32,9 +32,17 @@ Upload → Extract → Review → Practice → Quiz → Track → Weak topics �
 
 ### Platform scope
 
-V1 is **web only**, responsive down to a 360 px phone browser. Roadmap Phases 16–18 (React
-Native / Android APK) are **out of scope for this PRD** and treated as post-V1; see
-[§8 Open decisions](#8-open-decisions).
+Pawgress is a **responsive web application** and nothing else. It runs in a browser — desktop,
+laptop, tablet, phone — deployed on Vercel. There is no native app, no app store, and no APK.
+
+- **Desktop and laptop browsers are the primary design target.** Layouts are designed at 1280 px
+  first, then adapted down.
+- **Mobile browsers are fully supported**, down to a 360 px viewport. Not a separate product, not a
+  cut-down version — the same website, laid out for a narrow viewport.
+- Installing to a home screen or desktop is a browser feature (web app manifest, Sprint 78), not a
+  native app.
+
+Native mobile clients are a post-V1 possibility only, and no sprint in the roadmap builds one.
 
 ---
 
@@ -42,13 +50,15 @@ Native / Android APK) are **out of scope for this PRD** and treated as post-V1; 
 
 | Persona | Context | What they need from Pawgress |
 |---|---|---|
-| **Grade 11 student** | 6–8 subjects, mostly teacher handouts and PPTX decks, studies on a mid-range Android phone over mobile data | Turn a deck they barely read into something drillable in 20 minutes; be told which subject is most at risk |
-| **2nd-year college student** | Fewer subjects, denser PDFs, exams cluster in a single week | Mock-exam-grade practice from lecture PDFs; a realistic plan across a hell week |
-| **The crammer** | Exam in 2 days, has not opened the material | Fastest possible path from upload to practice questions; no setup ceremony |
+| **Grade 11 student** | 6–8 subjects, mostly teacher handouts and PPTX decks. Uploads and studies on a laptop at home, drills on a phone browser in between classes | Turn a deck they barely read into something drillable in 20 minutes; be told which subject is most at risk |
+| **2nd-year college student** | Fewer subjects, denser PDFs, exams cluster in a single week. Works on a laptop with the material open beside the app | Mock-exam-grade practice from lecture PDFs; a realistic plan across a hell week |
+| **The crammer** | Exam in 2 days, has not opened the material, whatever device is nearest | Fastest possible path from upload to practice questions; no setup ceremony |
 
 Design consequences:
 
-- **Mobile browser is the primary target**, not a fallback. Phone-first layout, cheap-screen contrast.
+- **Desktop is where the work happens; the phone browser is where the drilling happens.** Uploading,
+  reading, and reviewing suit a large screen; flashcards and quizzes get done on a phone. Both are the
+  same website, so neither can be an afterthought.
 - **Time-to-value is measured in minutes.** Upload → usable reviewer in one sitting, no onboarding wizard.
 - Users may be **minors**. See [§6.5 Privacy](#65-privacy--data-protection).
 
@@ -281,7 +291,7 @@ single largest financial risk in this build.
 | ID | Requirement |
 |---|---|
 | NFR-A1 | WCAG 2.1 AA: contrast, keyboard reach, accessible names, visible focus |
-| NFR-A2 | Usable at 360 px width; no horizontal scrolling |
+| NFR-A2 | Usable from 1920 px down to 360 px, with no horizontal scrolling at any width |
 | NFR-A3 | State is never signalled by color alone |
 | NFR-A4 | Every screen defines empty, loading, partial, and error states |
 
@@ -313,7 +323,7 @@ Recorded rather than guessed at. Each one blocks the sprint named.
 
 | # | Decision | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | Roadmap Phases 16–18 still describe a React Native app and an APK, but the stated goal is now a website | Roadmap coherence | Retarget those phases to web work — installable PWA, offline-tolerant reading, deep polish — and move native to post-V1 |
+| 1 | ~~Roadmap Phases 16–18 describe a React Native app and an APK~~ | — | **Resolved.** Pawgress is a web app only. Phases 16–18 are now installable web app, offline tolerance, cross-browser and accessibility QA, and public launch. Native clients are post-V1 |
 | 2 | Free-only, or a paid tier once AI cost is real | 31, 77 | Ship free with hard quotas (NFR-C1); revisit with real usage data |
 | 3 | Google sign-in at launch | 10 | Add it in V1 — students lose passwords, and it removes the email-verification drop-off |
 | 4 | Mastery formula: raw percent correct vs. recency- and difficulty-weighted | 56 | Weighted, with the weights explained in-product; raw percent reads one lucky quiz as mastery |

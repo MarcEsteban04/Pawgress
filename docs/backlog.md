@@ -206,9 +206,11 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 
 | Item | Notes |
 |---|---|
-| Native mobile app and APK | Roadmap Phases 16–18; conflicts with the current website goal — PRD open decision #1 |
+| Installable web app (manifest, standalone window) | Roadmap Sprint 78 |
+| Offline-tolerant reading | Roadmap Sprint 79 |
 | Teacher and school accounts, shared reviewers | Spec-listed future features |
-| Notifications, offline mode | Spec-listed future features |
+| Notifications | Spec-listed future feature |
+| Native mobile clients | Not in this roadmap. Pawgress is a web app; Phases 16–18 are web work |
 
 ---
 

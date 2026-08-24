@@ -6,6 +6,10 @@ Pawgress lets high school and college students upload their school materials, th
 materials into reviewers, flashcards, and quizzes — and tracks what they actually understand, so the
 app can tell them what to study next.
 
+It is a **responsive web app**: one website that runs in a browser on desktops, laptops, tablets and
+phones. There is no native app and no APK — desktop browsers are the primary design target, and
+mobile browsers are fully supported down to a 360 px viewport.
+
 | Document | What it is |
 |---|---|
 | [`docs/pawgress.md`](docs/pawgress.md) | Product specification |

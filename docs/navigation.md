@@ -16,57 +16,81 @@ Companion documents: [`user-flows.md`](user-flows.md) · [`states.md`](states.md
 
 ## 1. Navigation model
 
+Pawgress is a **website**, so it navigates like one: a persistent sidebar, real URLs, a working back
+button, and no imitation of native app chrome.
+
 Three shells, chosen by what the student is doing.
 
 | Shell | Used for | Chrome |
 |---|---|---|
-| **Marketing** | Landing page | Simple header, sign in / register |
+| **Marketing** | Landing page | Top header, sign in / register |
 | **Auth** | Register, sign in, verify, reset | Centred card, logo, no nav |
-| **App** | Everything after sign-in | Bottom tabs on mobile, sidebar on desktop, plus a context header |
-| **Focus** | Taking a quiz or mock exam | No tabs, no sidebar; progress + one deliberate exit |
+| **App** | Everything after sign-in | Persistent left sidebar + top bar; sidebar becomes a drawer under 768 px |
+| **Focus** | Taking a quiz or mock exam | No sidebar, no top bar; progress + one deliberate exit |
 
 ### Primary navigation
 
-Bottom tab bar under 768 px, sidebar at and above it. Same destinations, same order, so muscle memory
-transfers between phone and laptop.
+**One navigation, two containers.** The sidebar is the nav model at every width — persistent at
+1024 px and up, an icon rail from 768 px, and a slide-in drawer below that. Same destinations, same
+order, one implementation.
 
-**MVP — 4 tabs** (planner and plan do not exist yet):
+**MVP:**
 
 ```text
 Home        Subjects        Ask        Progress
 ```
 
-**V1 — 5 tabs:**
+**V1 adds:**
 
 ```text
-Home        Subjects        Ask        Progress        Plan
+Plan        Planner
 ```
 
 Rules:
 
-- **Five destinations maximum.** A sixth tab means something belongs inside a screen, not beside it.
-- No hamburger menu on mobile. Anything worth reaching is a tab or lives inside a tab.
-- Profile and settings live behind the avatar in the header, never in the tab bar — students open
+- **Six destinations maximum.** A seventh means something belongs inside a screen, not beside it.
+- **No bottom tab bar.** Bottom tabs are a native-app idiom; on a website they read as a fake app and
+  they compete with browser chrome and the on-screen keyboard.
+- The drawer under 768 px is the conventional web pattern, and it costs one tap. To pay that back,
+  every screen's primary action stays in the content column within thumb reach, so the common actions
+  never require opening the nav.
+- Profile and settings live behind the avatar in the top bar, never in the primary nav — students open
   settings rarely and subjects constantly.
-- The Planner (V1) is reached from Home and from Plan, not its own tab. Calendars are a destination
-  students visit weekly, not daily.
+- The top bar carries global search and the account menu, and stays visible at every width.
+
+### Web-app affordances
+
+Things a website should do that a native app cannot, and which the design must therefore use:
+
+| Affordance | Behaviour |
+|---|---|
+| **Real URLs** | Every view is linkable, bookmarkable, and shareable. Filters, sort, tabs, and quiz question number live in the query string |
+| **Browser back / forward** | Always correct. Dialogs do not create history entries; a quiz exit confirms first |
+| **Open in a new tab** | Every list row and card is a real `<a href>`, so middle-click and ctrl-click work — students keep a subject open per tab |
+| **Global search** | Top-bar search across subjects, materials, and reviewers, with `/` to focus it and `⌘K` / `Ctrl+K` for the command palette (V1) |
+| **Keyboard use** | Full tab order; arrow keys and `1`–`4` on quizzes; `space` to flip a flashcard. A laptop student should never need the mouse mid-session |
+| **Browser zoom** | Layout survives 200% zoom without loss of function |
+| **Multiple tabs of the same account** | Two tabs must not corrupt one quiz attempt — attempt state is server-authoritative on submit |
+| **Print** | A reviewer prints cleanly to PDF via the browser. Students still print reviewers |
 
 ### Secondary navigation
 
 - **Subject detail** is the hub: tabs for Materials · Reviewers · Quizzes · Progress. This is where
   most sessions actually happen, so it gets the deepest local navigation.
-- **Breadcrumbs on desktop only**, from the subject level down: `Subjects / Biology / Genetics`.
-  On mobile, a single back affordance in the context header.
-- **Assistant** is reachable both as a tab (all subjects) and from within a subject (scoped). Scope is
+- **Breadcrumbs from 768 px up**, from the subject level down: `Subjects / Biology / Genetics`.
+  Below that, a single back affordance in the top bar.
+- **Assistant** is reachable from the sidebar (all subjects) and from within a subject (scoped), and
+  on wide screens it opens as a side panel beside the material rather than a separate page. Scope is
   always displayed (US-E3).
 
 ### Modal vs page
 
 | Pattern | Use for | Why |
 |---|---|---|
-| Page | Anything deep-linkable or long: subject, material, reviewer, quiz, results, progress | Must survive a shared link and a back button |
+| Page | Anything deep-linkable or long: subject, material, reviewer, quiz, results, progress | Must survive a shared link, a new tab, and a back button |
 | Dialog | Short create/rename/confirm actions | Keeps context; nothing to link to |
-| Sheet (mobile) | Filters, sort, upload picker | Thumb-reachable, dismissible |
+| Side panel | Assistant beside a material, filters on wide screens | Uses the width a browser window actually has |
+| Sheet | The same dialogs, below 768 px | Reachable and dismissible on a narrow viewport |
 | Inline | Rename in place, mark flashcard known | No interruption for a one-field change |
 
 **Never** put a quiz, a reviewer, or a material viewer in a modal. All three are content students
@@ -256,17 +280,23 @@ No orphans: every screen appears in at least one flow.
 
 | Breakpoint | Layout |
 |---|---|
-| 360–767 px *(primary target)* | Single column, bottom tabs, sheets for filters, full-width cards, sticky primary action |
-| 768–1023 px | Two columns where content earns it, sidebar collapses to icons, dialogs replace sheets |
-| 1024 px+ | Persistent sidebar, breadcrumbs, subject hub in a 2–3 column grid, assistant as a side panel next to material |
+| 1280 px+ *(primary design target)* | Persistent 240 px sidebar, breadcrumbs, content capped at 1200 px, subject hub in 2–3 columns, assistant as a side panel, progress as real tables |
+| 1024–1279 px | Persistent sidebar, 2 columns, side panel still available |
+| 768–1023 px | Sidebar collapses to a 72 px icon rail, 2 columns where content earns it, dialogs |
+| 360–767 px | Sidebar becomes a drawer, single column, sheets instead of dialogs, tables become stacked cards, primary action in the content column |
 
 Rules:
 
-- Phone layout is designed **first**, then widened. Not the reverse (NFR-A2).
-- Tables become stacked cards below 768 px. No horizontal scrolling except inside a deliberately
-  scrollable container.
-- Touch targets ≥ 44 px. Primary actions sit within thumb reach on phones.
-- The quiz attempt screen is designed for one hand on a phone — that is where it will mostly be used.
+- **Designed at 1280 px first, then adapted down** — this is a web app, and the desktop browser is
+  where a student uploads, reads, and reviews.
+- **Narrow viewports are a first-class adaptation, not a leftover.** Everything works at 360 px; the
+  same components, one implementation, different container (NFR-A2).
+- Tables become stacked cards below 768 px. No horizontal scrolling at any width except inside a
+  deliberately scrollable container.
+- Touch targets ≥ 44 px wherever touch is plausible, which now includes tablets and touch laptops.
+- Hover states must always have a non-hover equivalent — a touch user never hovers.
+- The quiz attempt screen is centred and capped at 720 px at every width: an exam-like screen should
+  feel the same on a laptop and a phone.
 
 ---
 

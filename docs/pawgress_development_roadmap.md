@@ -26,7 +26,9 @@ The original specification defines:
 - **Deployment:** Vercel + Supabase
 - **Future mobile app:** Android/iOS
 
-This roadmap keeps the specified web stack and adds a dedicated mobile layer for the final Android APK.
+Pawgress is a **responsive web application** — it runs in a browser on desktops, laptops, tablets and
+phones. There is no native app and no app store: the final deliverable is a production website.
+Native mobile clients stay a post-V1 possibility, outside this roadmap.
 
 ---
 
@@ -55,9 +57,9 @@ Each sprint should represent one focused development milestone. A sprint can be 
 | 13 | 65–69 | Personalized study plans |
 | 14 | 70–73 | Dashboard & gamification |
 | 15 | 74–77 | Web production hardening |
-| 16 | 78–80 | Mobile foundation |
-| 17 | 81–83 | Android integration & testing |
-| 18 | 84 | Release APK |
+| 16 | 78–80 | Installable web app & offline tolerance |
+| 17 | 81–83 | Cross-browser & accessibility QA |
+| 18 | 84 | Public launch |
 
 ---
 
@@ -1094,103 +1096,71 @@ Future specification includes achievements and streaks.
 
 ---
 
-# Phase 16 — Mobile Foundation
+# Phase 16 — Installable Web App & Offline Tolerance
 
-## Sprint 78 — Android App Architecture
+## Sprint 78 — Installable Web App
 
-### Goal
+### Goals
 
-Create the Pawgress mobile application.
-
-Because the original specification defines a React/Next.js web application and lists mobile as a future feature, this phase introduces a mobile client while keeping Supabase and the backend architecture shared.
+Let a student install Pawgress from the browser onto a phone home screen or a desktop — no app
+store, no download, the same website running in a standalone window.
 
 ### Deliverables
-- React Native/Expo project
-- Android project
-- Shared API/service conventions
-- Environment configuration
+- Web app manifest
+- App icons and theme colour
+- Standalone display mode
+- Install prompt handling and dismissal
+- Service worker registration strategy
 
 ---
 
-## Sprint 79 — Mobile Design System
+## Sprint 79 — Offline-Tolerant Study
 
-### Recreate
-- Pawgress branding
-- Colors
-- Typography
-- Buttons
-- Cards
-- Inputs
-- Navigation
-- Loading states
-- Error states
+### Goals
 
----
+A dropped connection should not end a study session. Material already opened stays readable, and
+anything needing the network fails clearly rather than silently.
 
-## Sprint 80 — Mobile Authentication
-
-### Features
-- Login
-- Registration
-- Logout
-- Password reset
-- Persistent session
-- Secure token storage
+### Deliverables
+- Cache strategy for opened materials and reviewers
+- Offline banner and read-only mode
+- Queued or clearly-failed writes, never a silent no-op
+- Flashcard and quiz progress preserved across a disconnection
+- Cache invalidation on deploy
 
 ---
 
-# Phase 17 — Android Feature Integration
+## Sprint 80 — Cross-Browser Compatibility
 
-## Sprint 81 — Mobile Dashboard
+### Test
+- Chrome, Edge, Firefox and Safari on desktop
+- Chrome on Android, Safari on iOS
 
-### Implement
-- Greeting
-- Next exam
-- Readiness
-- Today's study plan
-- Weak topics
-- Upcoming events
-
----
-
-## Sprint 82 — Mobile Study Experience
-
-### Implement
-- Subjects
-- Materials
-- Reviewer
-- Flashcards
-- Quiz
-- Results
-- Progress
-- Planner
+### Deliverables
+- Compatibility fixes
+- Polyfill and fallback decisions
+- Documented known issues
 
 ---
 
-## Sprint 83 — Mobile AI & Upload Integration
+# Phase 17 — Cross-Browser & Accessibility QA
 
-### Implement
-- Camera/OCR scanning
-- File upload
-- AI assistant
-- Reviewer generation
-- Quiz generation
-- RAG-backed questions
-- Offline-aware states
+## Sprint 81 — Viewport & Device QA
+
+### Test
+- 1920, 1440 and 1280 desktop widths
+- 1024 and 768 tablet widths
+- 390 and 360 phone-browser widths
+- Low-end devices and slow connections
+- Browser zoom to 200% without loss of function
 
 ---
 
-# Phase 18 — Final Android Release
+## Sprint 82 — Full Flow Regression
 
-## Sprint 84 — Final QA → APK
-
-### Functional Testing
-
-Test every major flow:
+### Test every flow end to end
 
 ```text
-Install APK
-   ↓
 Register
    ↓
 Login
@@ -1220,65 +1190,59 @@ Generate Study Plan
 Complete Study Session
 ```
 
-### Android Testing
+Plus every failure path: failed upload, failed processing, interrupted quiz, expired session,
+over-quota, offline.
 
-Test on:
+---
 
-- Low-end Android device
-- Mid-range Android device
-- High-end Android device
-- Small screen
-- Large screen
-- Slow internet
-- No internet
-- Interrupted uploads
-- Background/foreground transitions
+## Sprint 83 — Accessibility & Performance Audit
+
+### Deliverables
+- WCAG 2.1 AA audit and fixes
+- Keyboard-only navigation pass
+- Screen reader pass over the core loop
+- Core Web Vitals within budget on a mid-range device
+- Bundle size and database query budgets
+
+---
+
+# Phase 18 — Public Launch
+
+## Sprint 84 — Launch
 
 ### Final Security Checks
 
 - Remove development secrets
 - Verify production API keys
-- Verify Supabase RLS
+- Verify Supabase RLS on every table
 - Verify storage permissions
-- Verify authentication
-- Verify AI API protection
+- Verify authentication and route protection
+- Verify AI endpoint protection and per-user quotas
 
 ### Performance Checks
 
-- App startup
-- Navigation
-- Upload speed
-- AI response handling
-- Memory usage
-- Battery usage
-- Crash rate
+- First load and navigation
+- Upload throughput
+- AI response handling under load
+- Database query performance
 
-### Release Build
-
-Create:
-
-```text
-Pawgress-release.apk
-```
-
-### Release Checklist
+### Launch Checklist
 
 - [ ] Production backend configured
 - [ ] Production database configured
-- [ ] RLS enabled
+- [ ] RLS enabled and verified
 - [ ] Storage secured
-- [ ] AI service configured
-- [ ] Android package name finalized
-- [ ] App icon finalized
-- [ ] Splash screen finalized
-- [ ] Version number configured
-- [ ] App permissions reviewed
-- [ ] Release signing configured
-- [ ] APK generated
-- [ ] APK installed successfully
-- [ ] APK tested on physical Android device
+- [ ] AI service configured with quotas
+- [ ] Domain and HTTPS configured
+- [ ] Monitoring and error tracking live
+- [ ] Backup strategy in place
+- [ ] Web app manifest and icons finalised
+- [ ] Analytics decision recorded — students may be minors, so privacy constraints apply
+- [ ] Legal pages published (terms, privacy)
+- [ ] Cross-browser QA signed off
+- [ ] Accessibility audit signed off
 - [ ] Critical bugs fixed
-- [ ] Final APK archived
+- [ ] Launch announced
 
 ---
 
@@ -1309,8 +1273,8 @@ Pawgress is considered **v1 complete** when a student can:
 21. Complete study sessions.
 22. View overall progress.
 23. Use the main dashboard to understand what to study next.
-24. Use the Android application.
-25. Install and run the final APK successfully.
+24. Use Pawgress on a laptop and a phone browser with the same account.
+25. Install Pawgress from the browser to their home screen or desktop.
 
 ---
 
@@ -1363,11 +1327,13 @@ Dashboard
    ↓
 Production Web App
    ↓
-Mobile App
+Installable Web App
    ↓
-Android QA
+Offline Tolerance
    ↓
-APK
+Cross-Browser QA
+   ↓
+Public Launch
 ```
 
 ---
@@ -1421,9 +1387,9 @@ Streaks
 +
 Production Hardening
 +
-Android App
+Installable Web App
 +
-Final APK
+Public Launch
 ```
 
 ---
@@ -1456,7 +1422,7 @@ Advanced Notifications
        ↓
 Offline-First Learning
        ↓
-iOS Release
+Native Mobile Apps
 ```
 
 ---

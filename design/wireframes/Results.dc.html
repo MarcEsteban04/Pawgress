@@ -12,128 +12,173 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#1c1c1c;background:#fff;-webkit-font-smoothing:antialiased}
     a{color:#3d3d3d}a:hover{color:#000}
-    .ph{width:360px;display:flex;flex-direction:column;background:#fff;overflow:hidden}
-    .hd{flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #e4e4e4}
-    .hd .t{font-size:16px;font-weight:600;flex-grow:1}
-    .av{width:28px;height:28px;border-radius:50%;background:#ededed;border:1px solid #dcdcdc}
-    .bd{flex-grow:1;overflow:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:17px}
-    .tb{flex:0 0 56px;display:flex;border-top:1px solid #e4e4e4}
-    .tb>div{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:#9a9a9a}
-    .tb>div.on{color:#1c1c1c;font-weight:600}
-    .act{flex:0 0 auto;padding:10px 14px 14px;border-top:1px solid #efefef}
-    .btn{height:48px;border:1px solid #1c1c1c;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;background:#fff}
-    .btnp{background:#1c1c1c;color:#fff}
-    .btns{height:40px;border:1px solid #1c1c1c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-grow:1;background:#fff}
+    .ap{width:1280px;height:800px;display:flex;background:#fff;overflow:hidden}
+    .sb{flex:0 0 240px;border-right:1px solid #e4e4e4;background:#fafafa;display:flex;flex-direction:column;padding:18px 0}
+    .brand{padding:0 20px 20px;font-size:18px;font-weight:700;letter-spacing:-0.01em}
+    .nav{display:flex;flex-direction:column;gap:2px;padding:0 10px}
+    .ni{padding:10px 12px;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:11px;color:#4a4a4a}
+    .ni.on{background:#e8e8e8;color:#1c1c1c;font-weight:600}
+    .quota{margin-top:auto;padding:16px 20px 0;border-top:1px solid #e4e4e4;margin-left:10px;margin-right:10px}
+    .main{flex-grow:1;display:flex;flex-direction:column;min-width:0}
+    .top{flex:0 0 56px;display:flex;align-items:center;gap:16px;padding:0 24px;border-bottom:1px solid #e4e4e4}
+    .crumb{font-size:13px;color:#767676;flex-grow:1}
+    .av{width:30px;height:30px;border-radius:50%;background:#ededed;border:1px solid #dcdcdc}
+    .cnt{flex-grow:1;overflow:hidden;padding:24px;display:flex;flex-direction:column;gap:18px}
     .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#949494}
     .meta{font-size:12px;color:#767676;font-family:"IBM Plex Mono",ui-monospace,monospace}
     .row{display:flex;align-items:center;gap:10px}
+    .hair{height:1px;background:#ececec}
+    .card{border:1px solid #dcdcdc;border-radius:12px;padding:18px}
     .bar{height:8px;border-radius:4px;background:#e8e8e8;overflow:hidden}
     .bar i{display:block;height:100%;background:#4a4a4a}
-    .hair{height:1px;background:#ececec}
-    .cite{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#5f5f5f;border:1px solid #d8d8d8;border-radius:5px;padding:2px 6px}
+    .btn{height:38px;border:1px solid #1c1c1c;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:600;background:#fff;padding:0 16px}
+    .btnp{background:#1c1c1c;color:#fff}
+    .btns{height:34px;border:1px solid #1c1c1c;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#fff;padding:0 14px}
+    .cite{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#5f5f5f;border:1px solid #d8d8d8;border-radius:5px;padding:2px 6px;background:#fff}
+    .cols{display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1.6fr);gap:22px;align-items:start}
   </style>
 </helmet>
 
-<div class="ph" style="height:900px">
+<div class="ap">
 
-  <div class="hd">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
-    <div class="t">Results</div>
-    <div class="av"></div>
-  </div>
-
-  <div class="bd">
-
-    <div style="text-align:center;padding:6px 0 2px">
-      <div style="font-size:44px;font-weight:700;letter-spacing:-0.02em;line-height:1">7<span style="color:#a8a8a8">/10</span></div>
-      <div class="bar" style="margin:14px 0 9px"><i style="width:70%"></i></div>
-      <div style="font-size:13px;color:#5f5f5f">Better than your last try (6/10)</div>
-    </div>
-
-    <div>
-      <div class="lbl" style="margin-bottom:10px">By topic</div>
-      <div style="display:flex;flex-direction:column;gap:11px">
-        <div>
-          <div class="row" style="margin-bottom:5px">
-            <div style="flex-grow:1;font-size:14px">Cell structure</div>
-            <div class="meta">4/5</div>
-          </div>
-          <div class="bar"><i style="width:80%"></i></div>
-        </div>
-        <div>
-          <div class="row" style="margin-bottom:5px">
-            <div style="flex-grow:1;font-size:14px">Genetics</div>
-            <div class="meta">2/5</div>
-          </div>
-          <div class="bar"><i style="width:40%"></i></div>
-        </div>
+  <div class="sb">
+    <div class="brand">Pawgress</div>
+    <div class="nav">
+      <div class="ni">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v9H4z"/></svg>
+        Home
+      </div>
+      <div class="ni on">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Subjects
+      </div>
+      <div class="ni">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/></svg>
+        Ask
+      </div>
+      <div class="ni">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
+        Progress
+      </div>
+      <div style="height:12px"></div>
+      <div class="ni">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+        Settings
       </div>
     </div>
+    <div class="quota">
+      <div class="lbl" style="margin-bottom:8px">AI today</div>
+      <div class="bar"><i style="width:30%"></i></div>
+      <div class="meta" style="margin-top:6px">6 of 20 generations</div>
+    </div>
+  </div>
 
-    <div style="border:1px solid #d8d8d8;border-radius:12px;padding:14px;background:#f6f6f6;display:flex;flex-direction:column;gap:12px">
-      <div style="font-size:15px;font-weight:700">Genetics is holding you back</div>
+  <div class="main">
+
+    <div class="top">
+      <div class="crumb">Biology &nbsp;/&nbsp; Quizzes &nbsp;/&nbsp; <span style="color:#1c1c1c;font-weight:600">Attempt 2</span></div>
       <div class="row" style="gap:8px">
-        <div class="btns">Review</div>
-        <div class="btns">Practise</div>
-        <div class="btns">Retry</div>
+        <div class="av"></div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
       </div>
     </div>
 
-    <div>
-      <div class="lbl" style="margin-bottom:10px">Your answers</div>
+    <div class="cnt">
 
-      <div style="border:1px solid #dcdcdc;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:10px">
-        <div class="row" style="align-items:flex-start;gap:9px">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2.4" stroke-linecap="round" style="margin-top:2px;flex:0 0 17px"><path d="M6 6l12 12M18 6L6 18"/></svg>
-          <div style="font-size:14px;font-weight:600;line-height:1.4">3. Which describes a heterozygous genotype?</div>
+      <div class="cols">
+
+        <div style="display:flex;flex-direction:column;gap:18px">
+
+          <div class="card" style="text-align:center;padding:22px 18px">
+            <div class="lbl" style="margin-bottom:12px">Genetics quiz</div>
+            <div style="font-size:52px;font-weight:700;letter-spacing:-0.02em;line-height:1">7<span style="color:#a8a8a8">/10</span></div>
+            <div class="bar" style="margin:16px 0 10px"><i style="width:70%"></i></div>
+            <div style="font-size:13px;color:#5f5f5f">Better than your last try (6/10)</div>
+          </div>
+
+          <div class="card">
+            <div class="lbl" style="margin-bottom:13px">By topic</div>
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <div>
+                <div class="row" style="margin-bottom:6px">
+                  <div style="flex-grow:1;font-size:14px">Cell structure</div>
+                  <div class="meta">4/5</div>
+                </div>
+                <div class="bar"><i style="width:80%"></i></div>
+              </div>
+              <div>
+                <div class="row" style="margin-bottom:6px">
+                  <div style="flex-grow:1;font-size:14px">Genetics</div>
+                  <div class="meta">2/5</div>
+                </div>
+                <div class="bar"><i style="width:40%"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="background:#f6f6f6;border-color:#d8d8d8">
+            <div style="font-size:15px;font-weight:700;margin-bottom:13px">Genetics is holding you back</div>
+            <div class="row" style="gap:8px">
+              <div class="btns">Review</div>
+              <div class="btns">Practise</div>
+              <div class="btns">Retry</div>
+            </div>
+          </div>
+
+          <div class="btn btnp" style="height:44px">Study Genetics now</div>
+
         </div>
-        <div style="font-size:13px;line-height:1.7;padding-left:26px">
-          <div><span style="color:#8a8a8a">You said</span> &nbsp;Two identical alleles</div>
-          <div><span style="color:#8a8a8a">Correct</span> &nbsp;<span style="font-weight:600">Two different alleles</span></div>
+
+        <div>
+          <div class="row" style="justify-content:space-between;margin-bottom:13px">
+            <div class="lbl">Your answers</div>
+            <div class="meta">3 wrong &middot; 7 correct</div>
+          </div>
+
+          <div class="card" style="padding:16px">
+            <div class="row" style="align-items:flex-start;gap:10px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2.4" stroke-linecap="round" style="margin-top:2px;flex:0 0 18px"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              <div style="flex-grow:1;font-size:15px;font-weight:600;line-height:1.4">3. Which describes a heterozygous genotype?</div>
+              <div class="cite">p.4</div>
+            </div>
+            <div style="padding-left:28px;margin-top:11px;display:flex;flex-direction:column;gap:5px;font-size:13px">
+              <div><span style="color:#8a8a8a;display:inline-block;width:66px">You said</span>Two identical alleles</div>
+              <div><span style="color:#8a8a8a;display:inline-block;width:66px">Correct</span><span style="font-weight:600">Two different alleles</span></div>
+            </div>
+            <div style="padding-left:28px;margin-top:11px;font-size:13px;color:#4a4a4a;line-height:1.55">Heterozygous means the two alleles for a gene differ — one dominant, one recessive. Homozygous is the case where they match.</div>
+            <div class="row" style="padding-left:28px;margin-top:12px;gap:10px">
+              <div class="btns" style="height:32px;font-size:12px;border-color:#d4d4d4;font-weight:400">Ask why I got this wrong</div>
+              <div class="btns" style="height:32px;font-size:12px;border-color:#d4d4d4;font-weight:400">Open Lecture 4, p.4</div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px;margin-top:12px">
+            <div class="row" style="align-items:flex-start;gap:10px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2.4" stroke-linecap="round" style="margin-top:2px;flex:0 0 18px"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              <div style="flex-grow:1;font-size:15px;font-weight:600;line-height:1.4">7. A Punnett square is used to predict…</div>
+              <div class="cite">p.6</div>
+            </div>
+            <div style="padding-left:28px;margin-top:11px;display:flex;flex-direction:column;gap:5px;font-size:13px">
+              <div><span style="color:#8a8a8a;display:inline-block;width:66px">You said</span>Mutation rate</div>
+              <div><span style="color:#8a8a8a;display:inline-block;width:66px">Correct</span><span style="font-weight:600">Offspring genotype ratios</span></div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:14px 16px;margin-top:12px">
+            <div class="row" style="gap:10px">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 18px"><path d="M5 13l4 4L19 7"/></svg>
+              <div style="flex-grow:1;font-size:14px;color:#5f5f5f">4. A homozygous genotype has…</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+
+          <div class="meta" style="margin-top:13px">Wrong answers open by default, correct ones collapse — the score is not the point, the next action is</div>
         </div>
-        <div style="font-size:13px;color:#4a4a4a;line-height:1.5;padding-left:26px">Heterozygous means the two alleles for a gene differ — one dominant, one recessive.</div>
-        <div class="row" style="padding-left:26px;justify-content:space-between">
-          <div style="font-size:13px;font-weight:600;text-decoration:underline">Ask why I got this wrong</div>
-          <div class="cite">p.4</div>
-        </div>
+
       </div>
 
-      <div style="border:1px solid #dcdcdc;border-radius:12px;padding:13px;margin-top:9px">
-        <div class="row" style="gap:9px">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 17px"><path d="M5 13l4 4L19 7"/></svg>
-          <div style="font-size:14px;flex-grow:1;color:#5f5f5f">4. A homozygous genotype has…</div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b0b0b0" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
-        </div>
-      </div>
-    </div>
-
-    <div class="meta" style="text-align:center">Wrong answers open by default, correct ones collapse</div>
-
-  </div>
-
-  <div class="act">
-    <div class="btn btnp">Study Genetics now</div>
-  </div>
-
-  <div class="tb">
-    <div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v9H4z"/></svg>
-      Home
-    </div>
-    <div class="on">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-      Subjects
-    </div>
-    <div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/></svg>
-      Ask
-    </div>
-    <div>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
-      Progress
     </div>
   </div>
-
 </div>
 </x-dc>
 </body>

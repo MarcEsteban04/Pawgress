@@ -381,8 +381,9 @@ Conventions:
 
 Apply to every story; not repeated above.
 
-1. Works at 360 px width with no horizontal scroll (NFR-A2)
-2. Keyboard reachable, with visible focus and accessible names (NFR-A1)
+1. Works from 1920 px down to 360 px with no horizontal scroll at any width (NFR-A2)
+2. Keyboard reachable end to end, with visible focus and accessible names — a laptop student should
+   not need the mouse mid-session (NFR-A1)
 3. Empty, loading, partial, and error states defined and implemented (NFR-A4)
 4. All input validated with Zod at the server boundary; client validation is a convenience only (NFR-R3)
 5. Data access is owner-scoped and enforced by RLS (NFR-S1)

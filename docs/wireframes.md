@@ -1,7 +1,8 @@
 # Pawgress — UX Wireframes
 
-**Sprint 04 deliverable.** Low-fidelity layouts for the MVP screens, phone-first, plus the
-responsive plan and the layout primitives that Sprint 06 turns into components.
+**Sprint 04 deliverable.** Low-fidelity layouts for the MVP screens of the Pawgress **web app** —
+desktop-led, adapted down to a phone browser — plus the responsive plan and the layout primitives
+that Sprint 06 turns into components.
 
 Companion documents: [`navigation.md`](navigation.md) (screen numbers, routes) ·
 [`states.md`](states.md) (every state referenced here) · [`user-flows.md`](user-flows.md)
@@ -15,14 +16,22 @@ proportion and rhythm; this document is the source of truth for structure.
 
 ## 1. How to read these
 
-- Boxes are **44 characters wide ≈ a 360 px phone**. If it does not fit here, it does not fit on the
-  cheapest phone a student owns.
+Pawgress is a **responsive web app**: one website, from a 1920 px monitor down to a 360 px phone
+browser. It is not a mobile app and it does not imitate one — no bottom tab bar, no fake native
+chrome. See [`navigation.md` §1](navigation.md#1-navigation-model).
+
+- **Desktop is the primary design target**, drawn at 1280 px. That is where a student uploads,
+  reads, and reviews.
+- **Narrow-viewport layouts are drawn at 360 px** and are a first-class adaptation, not a leftover —
+  flashcards and quizzes get done on a phone browser between classes. Same components, one
+  implementation, different container.
+- Wide boxes (≈ 88 characters) are desktop; narrow boxes (44 characters) are the 360 px viewport.
 - These are **low fidelity on purpose**: no colour, no type choices, no illustration. Brand lands in
   Sprint 05, components in Sprint 06. Deciding visual style now would mean redrawing it twice.
-- `[ Label ]` = button · `▸` = tappable row · `▓` = filled progress · `░` = empty progress ·
-  `…` = truncation · `(A)` = avatar
-- Desktop variants are drawn only where the layout genuinely changes. A single-column screen that
-  just gets wider is noted, not redrawn.
+- `[ Label ]` = button · `▸` = link row · `▓` = filled progress · `░` = empty progress ·
+  `…` = truncation · `(A)` = avatar · `■` = current nav item
+- A screen is drawn at both widths only where the layout genuinely changes. A single-column screen
+  that just gets wider is noted, not redrawn.
 - Screen numbers match [`navigation.md` §3](navigation.md#3-screen-inventory).
 
 **Scope:** MVP screens only — 1–4, 7–10, 12–23, 27. V1 screens (planner, plan, full dashboard,
@@ -33,50 +42,66 @@ are not stale before they are built.
 
 ## 2. Global layout
 
-### Phone shell (< 768 px)
+### Desktop shell (≥ 1024 px) — the primary layout
+
+```text
+┌────────────┬────────────────────────────────────────────────────────────────────┐
+│  Pawgress  │  Subjects / Biology / Genetics    🔍 Search        (A) Ana ▾       │
+│            ├────────────────────────────────────────────────────────────────────┤
+│  ▸ Home    │                                                                    │
+│  ▸ Subjects│                                                                    │
+│  ▸ Ask     │                     content, max 1200px, centred                   │
+│  ▸ Progress│                                                                    │
+│            │                                                                    │
+│  ────────  │                                                                    │
+│  ▸ Settings│                                                                    │
+│            │                                                                    │
+│  AI today  │                                                                    │
+│  ▓▓▓░░ 6/20│                                                                    │
+└────────────┴────────────────────────────────────────────────────────────────────┘
+```
+
+Rules:
+
+- **Sidebar 240 px, persistent.** Navigation on a website is always visible; it does not hide behind
+  a button on a screen with room for it.
+- **Top bar carries breadcrumbs, global search, and the account menu.** Search is a top-level
+  affordance because a student with six subjects and thirty files needs it more than another button.
+- **Content caps at 1200 px and centres.** A 4K monitor gets margin, not 300-character lines.
+- **Quota lives in the sidebar footer.** If a limit can stop a student, they should see it coming
+  without opening settings.
+- Every nav item and card is a real `<a href>`, so ctrl-click opens a subject in a new tab.
+
+### Narrow viewport (< 768 px)
 
 ```text
 ┌────────────────────────────────────────────┐
-│ ‹ Biology                            (A)   │  header 48px, sticky
+│ ☰   Biology                    🔍    (A)   │  top bar 52px, sticky
 ├────────────────────────────────────────────┤
 │                                            │
 │                                            │
 │                 content                    │  scrolls
 │                                            │
 │                                            │
-├────────────────────────────────────────────┤
-│  [ Primary action                       ]  │  sticky, thumb zone
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │  tabs 56px
+│  [ Primary action                       ]  │  in the content column
+│                                            │
 └────────────────────────────────────────────┘
 ```
 
 Rules:
 
-- Header is **48 px and holds three things at most**: back or title, the screen name, the avatar.
-  Every pixel of chrome is a pixel not spent on the material.
-- The primary action is a **full-width sticky button**, not a floating circle. A labelled button is
-  clearer, bigger, and reachable one-handed; a FAB is a mystery icon over content.
-- Tab bar is always visible except in focus mode.
-- Total chrome: 152 px of a ~640 px viewport. That is the budget — nothing else gets to be sticky.
+- **The sidebar becomes a drawer** behind `☰` — the conventional web pattern. One nav, two
+  containers, one implementation.
+- **No bottom tab bar.** Bottom tabs are native-app chrome; on a website they read as an imitation
+  app and they fight the browser's own bottom bar and the on-screen keyboard.
+- The drawer costs one tap, so it is paid back by keeping **every screen's primary action in the
+  content column**, within thumb reach. Common actions never require opening the nav.
+- Chrome is 52 px of a ~640 px viewport. Nothing else is sticky.
 
-### Desktop shell (≥ 1024 px)
+### Focus shell (quiz, flashcards — every width)
 
-```text
-┌──────────┬──────────────────────────────────────────────────────────┐
-│ Pawgress │ Subjects / Biology / Genetics                     (A)    │
-│          ├──────────────────────────────────────────────────────────┤
-│ ▸ Home   │                                                          │
-│ ▸ Subj.  │                                                          │
-│ ▸ Ask    │                     content, max 1200px                  │
-│ ▸ Prog.  │                                                          │
-│          │                                                          │
-│ ──────── │                                                          │
-│ ▸ Settings                                                          │
-└──────────┴──────────────────────────────────────────────────────────┘
-```
-
-Sidebar 240 px, persistent, same order as the phone tabs. Breadcrumbs replace the back button.
+No sidebar, no top bar. Centred, capped at 720 px, progress plus one deliberate exit. An exam-like
+screen should feel identical on a laptop and a phone.
 
 ---
 
@@ -186,7 +211,7 @@ an email. Resend has a visible cooldown so it cannot be hammered.
 
 ```text
 ┌────────────────────────────────────────────┐
-│ Pawgress                             (A)   │
+│ ☰  Pawgress                    🔍    (A)   │
 ├────────────────────────────────────────────┤
 │                                            │
 │  Welcome to Pawgress 🐾                    │
@@ -206,8 +231,6 @@ an email. Resend has a visible cooldown so it cannot be hammered.
 │                                            │
 ├────────────────────────────────────────────┤
 │  [ Add your first subject              ]   │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
 ```
 
@@ -219,7 +242,7 @@ student the app is empty and useless. Three steps, one action, current step mark
 
 ```text
 ┌────────────────────────────────────────────┐
-│ Good morning                         (A)   │
+│ ☰  Home                        🔍    (A)   │
 ├────────────────────────────────────────────┤
 │  Pick up where you left off                │
 │  ┌──────────────────────────────────────┐  │
@@ -245,14 +268,45 @@ student the app is empty and useless. Three steps, one action, current step mark
 │  │ Biology    │ │ Math       │             │
 │  │ 4 files    │ │ 2 files    │             │
 │  └────────────┘ └────────────┘             │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
+```
+
+### 7 — Returning dashboard, desktop
+
+```text
+┌────────────┬────────────────────────────────────────────────────────────────────┐
+│  Pawgress  │  Home                             🔍 Search       (A) Ana ▾       │
+│            ├────────────────────────────────────────────────────────────────────┤
+│  ▸ Home  ■ │  Good morning, Ana                                                 │
+│  ▸ Subjects│                                                                    │
+│  ▸ Ask     │  ┌────────────────────────────────┐  ┌───────────────────────────┐ │
+│  ▸ Progress│  │ Pick up where you left off     │  │ Needs work                │ │
+│            │  │ Biology · Genetics             │  │ Genetics    ▓▓▓▓░░░░  42% │ │
+│  ────────  │  │ Flashcards — card 12 of 30     │  │ from 12 questions         │ │
+│  ▸ Settings│  │ [ Continue ]                   │  │ Inheritance ▓▓▓▓▓░░░  51% │ │
+│            │  └────────────────────────────────┘  │ from 8 questions          │ │
+│  AI today  │                                      │ [ Review ] [ Practise ]   │ │
+│  ▓▓▓░░ 6/20│  ┌────────────────────────────────┐  └───────────────────────────┘ │
+│            │  │ Still processing               │                                │
+│            │  │ ⏱ Lecture 5.pdf — indexing…    │  ┌───────────────────────────┐ │
+│            │  └────────────────────────────────┘  │ Your subjects             │ │
+│            │                                      │ 🧬 Biology     6 files  ▸ │ │
+│            │  ┌────────────────────────────────┐  │ 📐 Mathematics 2 files  ▸ │ │
+│            │  │ Recent activity                │  │ 💻 Programming 1 file   ▸ │ │
+│            │  │ Quiz · Genetics · 6/10 · Tue   │  │ [ + New subject ]         │ │
+│            │  │ Reviewer · Lecture 4 · Mon      │ └───────────────────────────┘ │
+│            │  └────────────────────────────────┘                                │
+└────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 
 Notes: the MVP home answers "what should I do today?" with the only two honest answers it has —
 *resume what you started* and *your weakest topic*. Evidence count sits under the mastery bars so a
-3-question 100% never reads as mastery. Each panel loads and fails independently (`catchError`).
+3-question 100% never reads as mastery. Each panel loads and fails independently (`catchError`), which
+is why the desktop layout is a two-column grid of independent cards rather than one composed view — a
+slow readiness query must not blank the page.
+
+The width buys **more panels visible at once**, not bigger panels. On a narrow viewport the same cards
+stack in the same order: resume, weak topics, processing, subjects, recent.
 
 ---
 
@@ -262,7 +316,7 @@ Notes: the MVP home answers "what should I do today?" with the only two honest a
 
 ```text
 ┌────────────────────────────────────────────┐
-│ Subjects                             (A)   │
+│ ☰  Subjects                    🔍    (A)   │
 ├────────────────────────────────────────────┤
 │ ┌────────────────────────────┐ ┌─────────┐ │
 │ │ 🔍 Search                  │ │ Sort ▾  │ │
@@ -286,8 +340,6 @@ Notes: the MVP home answers "what should I do today?" with the only two honest a
 │ └──────────────────────────────────────┘   │
 ├────────────────────────────────────────────┤
 │  [ + New subject                       ]   │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
 ```
 
@@ -342,7 +394,7 @@ selected — never selection by colour alone.
 
 ```text
 ┌────────────────────────────────────────────┐
-│ ‹ 🧬 Biology                      ⋯  (A)   │
+│ ‹  🧬 Biology                     ⋯  (A)   │
 ├────────────────────────────────────────────┤
 │ Materials │ Reviewers │ Quizzes │ Progress │
 │ ═════════                                  │
@@ -373,8 +425,6 @@ selected — never selection by colour alone.
 │  · Reviewer — Lecture 4 — 2 days ago       │
 ├────────────────────────────────────────────┤
 │  [ + Upload material                   ]   │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
 ```
 
@@ -383,7 +433,40 @@ the best position. Tabs keep the hub from becoming an endless scroll. Material r
 inline with the shared vocabulary from [`states.md` §3](states.md#3-job-status-vocabulary); a failed
 file gets a fix action, not just an error.
 
-Desktop: two columns — weak topic + materials left, topics + recent activity right.
+### 9 — Subject overview, desktop
+
+```text
+┌────────────┬────────────────────────────────────────────────────────────────────┐
+│  Pawgress  │  Subjects / Biology               🔍 Search       (A) Ana ▾       │
+│            ├────────────────────────────────────────────────────────────────────┤
+│  ▸ Home    │  🧬 Biology                                    [ + Upload ]  ⋯    │
+│  ▸ Subjects│  ─────────────────────────────────────────────────────────────     │
+│      ■     │  Materials │ Reviewers │ Quizzes │ Progress                        │
+│  ▸ Ask     │  ══════════                                                        │
+│  ▸ Progress│                                                                    │
+│            │  ┌──────────────────────────────────────────────────────────────┐  │
+│  ────────  │  │ Genetics is your weakest topic — 42% from 12 questions        │  │
+│  ▸ Settings│  │ [ Review ]   [ Practise ]   [ Quiz ]                          │  │
+│            │  └──────────────────────────────────────────────────────────────┘  │
+│  AI today  │                                                                    │
+│  ▓▓▓░░ 6/20│  ┌───────────────────────────────────┐  ┌──────────────────────┐  │
+│            │  │ Materials                      4  │  │ Topics               │  │
+│            │  │ 📄 Lecture 4.pdf                  │  │ ( Cell structure )   │  │
+│            │  │    ✓ Ready · Genetics · 18 p.  ▸  │  │ ( Genetics )         │  │
+│            │  │ 📄 Lecture 5.pdf                  │  │ ( + Add )            │  │
+│            │  │    ⏱ Indexing  ▓▓▓▓▓▓░░░          │  └──────────────────────┘  │
+│            │  │ 📊 Cell deck.pptx                 │  ┌──────────────────────┐  │
+│            │  │    ⚠ No readable text — a scan    │  │ Recent               │  │
+│            │  │    [ Retry ] [ How to fix ]       │  │ Quiz · 6/10 · Tue    │  │
+│            │  │ 📝 My notes — mitosis             │  │ Reviewer · L4 · Mon  │  │
+│            │  │    ✓ Ready · Cell structure    ▸  │  └──────────────────────┘  │
+│            │  └───────────────────────────────────┘                            │
+└────────────┴────────────────────────────────────────────────────────────────────┘
+```
+
+Notes: two columns — materials get the wide one because that is the working list; topics and recent
+activity are reference. The primary action moves **into the page header** on desktop (`[ + Upload ]`),
+where a web app puts it, rather than pinning a bar to the bottom of the window.
 
 ### 12 — Topic detail `/subjects/:id/topics/:id`
 
@@ -501,8 +584,6 @@ disabled — by a row pointing at the processing material.
 │  └──────────────────────────────────────┘  │
 ├────────────────────────────────────────────┤
 │  [ Quiz me on this                     ]   │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
 ```
 
@@ -510,7 +591,44 @@ Notes: **page citations on every section** — the product principle made visibl
 student builds trust. The AI notice is stated once at the top, not repeated per section. The sticky
 action is `Quiz me`, because the reviewer exists to lead into the loop, not to be read and closed.
 
-Desktop: summary and concepts left, a sticky right rail with terms and the two session cards.
+### 14 — Reviewer + assistant side panel, desktop
+
+The layout that only a browser window can give you: read the reviewer and interrogate it at once.
+
+```text
+┌────────────┬──────────────────────────────────────────┬─────────────────────────┐
+│  Pawgress  │ Biology / Reviewers / Genetics    (A) ▾  │  Ask                 ✕  │
+│            ├──────────────────────────────────────────┼─────────────────────────┤
+│  ▸ Home    │ From Lecture 4.pdf · today               │ Asking about            │
+│  ▸ Subjects│ ✨ AI-generated — check what matters      │ ( Genetics reviewer ▾ ) │
+│      ■     │                                          │ ─────────────────────── │
+│  ▸ Ask     │ Summary                                  │        ┌──────────────┐ │
+│  ▸ Progress│ Genetics studies how traits pass from     │        │ Explain      │ │
+│            │ parents to offspring. Mendel's work on    │        │ Punnett      │ │
+│  ────────  │ pea plants established dominant and       │        │ squares      │ │
+│  ▸ Settings│ recessive inheritance…            p.2 ▸   │        └──────────────┘ │
+│            │                                          │ ┌─────────────────────┐ │
+│  AI today  │ Key concepts                        5    │ │ A Punnett square is │ │
+│  ▓▓▓░░ 6/20│ ▸ Dominant vs recessive          p.3     │ │ a grid for working  │ │
+│            │ ▸ Genotype vs phenotype          p.4     │ │ out what offspring  │ │
+│            │ ▸ Punnett squares                p.6     │ │ two parents can…    │ │
+│            │                                          │ │ 📄 p.6  📄 p.7      │ │
+│            │ Key terms                          12    │ └─────────────────────┘ │
+│            │ ▸ Allele — one version of a gene         │                         │
+│            │ ▸ Homozygous — two identical alleles     │ ┌─────────────────────┐ │
+│            │                          Show all        │ │ Ask about this…  ➤  │ │
+│            │                                          │ └─────────────────────┘ │
+│            │ [ 24 flashcards ]  [ 12 practice ]       │ 14 of 20 left today     │
+│            │ [ Quiz me on this ]                      │                         │
+└────────────┴──────────────────────────────────────────┴─────────────────────────┘
+```
+
+Notes: the panel is scoped to **the thing on screen** — "Asking about: Genetics reviewer" — so the
+student never has to explain context. Below 1024 px the panel becomes a full-page route (`/assistant`)
+and the scope selector carries over. Same components either way.
+
+Narrow viewport: summary and concepts stack; terms and the two session cards follow; the sticky right
+rail becomes inline cards.
 
 ### 15 — Flashcards `.../flashcards`
 
@@ -687,7 +805,7 @@ whole app.
 
 ```text
 ┌────────────────────────────────────────────┐
-│ Progress                             (A)   │
+│ ☰  Progress                    🔍    (A)   │
 ├────────────────────────────────────────────┤
 │  ( All time )( This week )                 │
 │                                            │
@@ -712,8 +830,6 @@ whole app.
 │  💻 Programming   ▓▓▓▓▓▓▓▓░░  78%    ▸     │
 │                                            │
 │  ⓘ How mastery is calculated               │
-├────────────────────────────────────────────┤
-│   Home     Subjects     Ask     Progress   │
 └────────────────────────────────────────────┘
 ```
 
@@ -809,23 +925,41 @@ able to see it coming without hunting (NFR-C1).
 
 ---
 
-## 12. Mobile considerations
+## 12. Cross-device considerations
 
-The primary target, not an adaptation.
+One website, two very different contexts. Neither is a second-class citizen.
+
+### Desktop and laptop browsers *(primary)*
 
 | Concern | Decision |
 |---|---|
-| **Thumb zone** | Every primary action within the bottom third. Destructive actions deliberately out of it |
+| **Use the width, don't fill it** | Extra width buys more panels visible at once, not wider text. Content caps at 1200 px |
+| **Primary action in the page header** | Where a web app puts it. Nothing pinned to the bottom of the window |
+| **Keyboard first** | Full tab order, visible focus, `/` for search, `⌘K`/`Ctrl+K` palette (V1), `1`–`4` and arrows in quizzes, `space` to flip a flashcard |
+| **Real links** | Cards and rows are `<a href>`, so ctrl-click and middle-click open a subject in a new tab. Students keep one tab per subject |
+| **Hover is a bonus, never the only route** | Every hover affordance has a persistent equivalent — touch laptops and tablets exist |
+| **Side panels over navigation** | Assistant beside a material, filters beside a list. Fewer round trips than pushing a new page |
+| **Drag and drop upload** | The window is the dropzone; the file picker stays as the accessible path |
+| **Browser zoom** | Function preserved to 200%. A student with poor eyesight zooms rather than squinting |
+| **Multiple tabs** | Two tabs of the same account must not corrupt one quiz attempt — submission is server-authoritative |
+| **Print** | A reviewer prints cleanly to PDF from the browser. Students still print reviewers before exams |
+
+### Phone and tablet browsers
+
+| Concern | Decision |
+|---|---|
+| **Thumb zone** | Primary action sits in the content column within thumb reach. Destructive actions deliberately out of it |
 | **Touch targets** | ≥ 44 × 44 px, ≥ 8 px apart. Quiz options are full-width rows, not radio dots |
-| **Chrome budget** | 48 px header + 56 px tabs + 56 px action = 152 px. Nothing else may be sticky |
-| **Keyboard** | The assistant composer and note editor sit above the keyboard; the focused field is never covered. No sticky footer competing with the keyboard |
+| **Chrome budget** | 52 px top bar and nothing else sticky — the browser already owns part of the viewport |
+| **No fake native chrome** | No bottom tab bar, no imitation status bar. It is a website in a browser and should look like one |
+| **On-screen keyboard** | The assistant composer and note editor stay above the keyboard; the focused field is never covered |
 | **One-handed quiz** | Options, navigation, and progress all reachable with one thumb — quizzes get taken on buses |
-| **Data cost** | No autoplay, no decorative imagery, lazy-loaded material previews. Students are on metered data |
-| **Interruption** | Every long action survives backgrounding. Quiz answers and flashcard progress persist locally on each interaction |
-| **Cheap screens** | WCAG AA minimum, tested at low brightness. Never colour alone (NFR-A3) |
+| **Data cost** | No autoplay, no decorative imagery, lazy-loaded previews. Students are often on metered data |
+| **Interruption** | Backgrounding the browser must not lose an attempt. Quiz answers and flashcard progress persist locally on every interaction |
+| **Cheap screens** | WCAG AA minimum, checked at low brightness. Never colour alone (NFR-A3) |
 | **Small text** | 16 px body minimum — anything smaller triggers iOS zoom-on-focus and is unreadable in daylight |
-| **Long file names** | Middle-truncate: `Lecture 4 — Genet….pdf`, with the full name available on the detail screen |
-| **Offline** | Persistent banner; reads served from cache where possible, writes blocked with a clear reason rather than silently dropped |
+| **Long file names** | Middle-truncate: `Lecture 4 — Genet….pdf`, with the full name on the detail screen |
+| **Offline** | Persistent banner; reads from cache where possible, writes blocked with a clear reason rather than silently dropped |
 
 ---
 
@@ -833,20 +967,22 @@ The primary target, not an adaptation.
 
 | Breakpoint | Shell | Grid | Notable changes |
 |---|---|---|---|
-| **360–599 px** *(primary)* | Bottom tabs, sticky action | 1 column, 16 px gutters | Sheets for filters and upload. Tables become cards. Subject hub tabs scroll horizontally |
-| **600–767 px** | Bottom tabs | 1 column, 24 px gutters, max 640 px | Subject cards 2-up. Larger type scale |
-| **768–1023 px** | Icon-rail sidebar 72 px | 2 columns | Dialogs replace sheets. Subject hub becomes 2-column. Breadcrumbs appear |
-| **1024–1439 px** | Full sidebar 240 px | 2–3 columns, max 1200 px | Assistant available as a right panel. Reviewer gets a sticky right rail. Progress tables render as tables |
-| **1440 px+** | Full sidebar | Content stays 1200 px, centred | No new layout — extra width becomes margin, not longer lines |
+| **1440 px+** | Sidebar 240 px | Content stays 1200 px, centred | Extra width becomes margin, not longer lines |
+| **1280–1439 px** *(primary design width)* | Sidebar 240 px | 2–3 columns, max 1200 px | Assistant as a right panel. Reviewer gets a sticky right rail. Progress renders as real tables. Subject hub 2-column |
+| **1024–1279 px** | Sidebar 240 px | 2 columns | Side panel still available; tables narrow before stacking |
+| **768–1023 px** | Icon rail 72 px | 2 columns where content earns it | Dialogs, not sheets. Breadcrumbs still shown. Subject cards 2-up |
+| **600–767 px** | Drawer behind `☰` | 1 column, 24 px gutters, max 640 px | Tables become cards. Back affordance replaces breadcrumbs |
+| **360–599 px** | Drawer behind `☰` | 1 column, 16 px gutters | Sheets for filters and upload. Subject hub tabs scroll horizontally. Primary action in the content column |
 
 Cross-breakpoint rules:
 
-1. **Phone layout is authored first.** Every screen is designed at 360 px and widened, never narrowed.
-2. **Content width caps at 1200 px.** Reading lines stay 60–75 characters; a 4K monitor does not get 300-character paragraphs.
-3. **Focus mode ignores breakpoints.** The quiz attempt is centred, max 720 px, no shell at any width — an exam-like screen should feel the same everywhere.
-4. **One component per screen, not two.** Responsive containers, not a mobile and a desktop implementation. Divergent implementations drift.
-5. **Tabs → sidebar is the only navigation swap.** Same destinations, same order, so muscle memory transfers.
-6. **Test at 360, 768, and 1280 px.** Those three catch essentially everything.
+1. **Desktop is authored first, at 1280 px, then adapted down.** That is where uploading, reading and reviewing happen.
+2. **Narrow viewports are adapted, never amputated.** Every feature works at 360 px. Nothing is desktop-only.
+3. **Content width caps at 1200 px.** Reading lines stay 60–75 characters; a 4K monitor does not get 300-character paragraphs.
+4. **Focus mode ignores breakpoints.** The quiz attempt is centred, max 720 px, no shell at any width.
+5. **One component per screen, not two.** Responsive containers, not a mobile build and a desktop build. Divergent implementations drift.
+6. **Sidebar → icon rail → drawer is the only navigation change.** Same destinations, same order, one implementation.
+7. **Test at 1440, 1280, 768 and 360 px.** Those four catch essentially everything.
 
 ---
 
@@ -856,10 +992,13 @@ What the wireframes above actually need built. This is the shopping list for the
 
 | Primitive | Used by | Notes |
 |---|---|---|
-| `AppShell` | every app screen | Header + tabs/sidebar + sticky action slot |
-| `FocusShell` | flashcards, quiz attempt | Progress + single exit, no nav |
-| `PageHeader` | all | Back or title, actions, avatar |
-| `StickyAction` | most | Full-width primary action, safe-area aware |
+| `AppShell` | every app screen | Sidebar + top bar + content column; sidebar renders as rail or drawer by width |
+| `SideNav` | app shell | One nav, three containers: 240 px sidebar, 72 px rail, drawer |
+| `TopBar` | app shell | Breadcrumbs or back, global search, account menu |
+| `SidePanel` | assistant, filters | Right-hand panel ≥ 1024 px; becomes a route or sheet below |
+| `FocusShell` | flashcards, quiz attempt | Progress + single exit, no nav, capped at 720 px |
+| `PageHeader` | all | Title, primary action, overflow menu — the desktop home for primary actions |
+| `PrimaryAction` | narrow viewports | Full-width action in the content column, safe-area aware |
 | `EntityCard` | subjects, reviewers, quizzes | Icon, title, meta, progress, next-action hint |
 | `ListRow` | materials, terms, answers | Icon, two-line text, status, `⋯` menu, chevron |
 | `StatusBadge` | materials, generations | Drives the [job-status vocabulary](states.md#3-job-status-vocabulary) — icon + label |
