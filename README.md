@@ -16,6 +16,7 @@ app can tell them what to study next.
 | [`docs/user-flows.md`](docs/user-flows.md) | Flow diagrams for every journey, including recovery |
 | [`docs/navigation.md`](docs/navigation.md) | Navigation model, route tree, screen inventory |
 | [`docs/states.md`](docs/states.md) | Empty / loading / error state inventory and copy rules |
+| [`docs/wireframes.md`](docs/wireframes.md) | Low-fidelity screen layouts, mobile constraints, responsive plan |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
@@ -83,7 +84,9 @@ src/
   styles/               Global style partials beyond app/globals.css
 supabase/
   migrations/           SQL migrations (Sprint 13+)
-docs/                   Product spec, roadmap, conventions
+docs/                   Product spec, roadmap, requirements, flows, wireframes
+design/
+  wireframes/           Canvas artboards behind docs/wireframes.md (Sprint 04)
 ```
 
 A `feature` module owns its own components, server logic, and types:
@@ -106,7 +109,7 @@ into a client component.
 
 | Phase | Sprints | Status |
 |---|---|---|
-| 1 — Product foundation | 01–04 | Sprints 01–03 ✅ · Sprint 04 next |
-| 2 — Design system & architecture | 05–08 | Not started |
+| 1 — Product foundation | 01–04 | Complete ✅ |
+| 2 — Design system & architecture | 05–08 | Sprint 05 next |
 | 3 — Authentication | 09–12 | Not started |
 | 4+ | 13–84 | Not started |

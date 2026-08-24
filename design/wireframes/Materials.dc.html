@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#1c1c1c;background:#fff;-webkit-font-smoothing:antialiased}
+    a{color:#3d3d3d}a:hover{color:#000}
+    .ph{width:360px;display:flex;flex-direction:column;background:#fff;overflow:hidden;position:relative}
+    .hd{flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #e4e4e4}
+    .hd .t{font-size:16px;font-weight:600;flex-grow:1}
+    .av{width:28px;height:28px;border-radius:50%;background:#ededed;border:1px solid #dcdcdc}
+    .bd{flex-grow:1;overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:12px}
+    .card{border:1px solid #dcdcdc;border-radius:12px;padding:0}
+    .meta{font-size:12px;color:#767676;font-family:"IBM Plex Mono",ui-monospace,monospace}
+    .row{display:flex;align-items:center;gap:10px}
+    .bar{height:6px;border-radius:3px;background:#e8e8e8;overflow:hidden}
+    .bar i{display:block;height:100%;background:#4a4a4a}
+    .hair{height:1px;background:#ececec}
+    .fld{flex-grow:1;height:38px;border:1px solid #d4d4d4;border-radius:9px;display:flex;align-items:center;gap:8px;padding:0 11px;font-size:13px;color:#9a9a9a}
+    .pill{height:38px;border:1px solid #d4d4d4;border-radius:9px;display:flex;align-items:center;gap:5px;padding:0 11px;font-size:13px}
+    .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #d0d0d0;border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.14);padding:16px 14px 18px;display:flex;flex-direction:column;gap:13px}
+    .scrim{position:absolute;inset:0;background:rgba(28,28,28,.28)}
+    .btn{height:46px;border:1px solid #1c1c1c;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;background:#fff}
+    .btnp{background:#1c1c1c;color:#fff}
+  </style>
+</helmet>
+
+<div class="ph" style="height:900px">
+
+  <div class="hd">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+    <div class="t">Materials</div>
+    <div class="av"></div>
+  </div>
+
+  <div class="bd">
+    <div class="row" style="gap:8px">
+      <div class="fld">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+        Search
+      </div>
+      <div class="pill">Type
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="pill">Sort
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="padding:12px;gap:11px;align-items:flex-start">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="1.8" stroke-linejoin="round" style="margin-top:2px"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+        <div style="flex-grow:1">
+          <div style="font-size:14px;font-weight:600">Lecture 4.pdf</div>
+          <div class="meta" style="margin-top:3px">18 pages &middot; 2.1 MB &middot; Genetics</div>
+          <div class="row" style="gap:6px;margin-top:5px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            <div class="meta">Ready</div>
+          </div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#b0b0b0" style="margin-top:3px"><circle cx="12" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18" r="1.6"/></svg>
+      </div>
+
+      <div class="hair"></div>
+
+      <div class="row" style="padding:12px;gap:11px;align-items:flex-start">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="1.8" stroke-linejoin="round" style="margin-top:2px"><path d="M4 4h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+        <div style="flex-grow:1">
+          <div style="font-size:14px;font-weight:600">My notes — mitosis</div>
+          <div class="meta" style="margin-top:3px">Edited today &middot; Cell structure</div>
+          <div class="row" style="gap:6px;margin-top:5px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+            <div class="meta">Ready</div>
+          </div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#b0b0b0" style="margin-top:3px"><circle cx="12" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18" r="1.6"/></svg>
+      </div>
+
+      <div class="hair"></div>
+
+      <div class="row" style="padding:12px;gap:11px;align-items:flex-start">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="1.8" stroke-linejoin="round" style="margin-top:2px"><path d="M4 5h16v11H4z"/><path d="M9 20h6"/><path d="M12 16v4"/></svg>
+        <div style="flex-grow:1">
+          <div style="font-size:14px;font-weight:600">Cell deck.pptx</div>
+          <div class="row" style="gap:6px;margin-top:5px;align-items:flex-start">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3d3d3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:2px"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+            <div style="font-size:12px;color:#3d3d3d;line-height:1.35">Failed — no readable text</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta" style="text-align:center;padding-top:2px">Notes sit beside files — both are source material</div>
+  </div>
+
+  <div class="scrim"></div>
+
+  <div class="sheet">
+    <div class="row">
+      <div style="font-size:17px;font-weight:700;flex-grow:1">Upload to Biology</div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </div>
+
+    <div style="border:1.5px dashed #c4c4c4;border-radius:12px;padding:22px 14px;text-align:center;background:#fafafa">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5"/><path d="M7 10l5-5 5 5"/><path d="M4 19h16"/></svg>
+      <div style="font-size:14px;font-weight:600;margin-top:9px">Choose files, or drop here</div>
+      <div class="meta" style="margin-top:5px">PDF, DOCX, PPTX &middot; up to 25 MB each</div>
+    </div>
+
+    <div>
+      <div class="row" style="gap:9px;margin-bottom:9px">
+        <div style="flex-grow:1;font-size:13px">Lecture 5.pdf</div>
+        <div class="meta">68%</div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </div>
+      <div class="bar"><i style="width:68%"></i></div>
+    </div>
+
+    <div class="row" style="gap:9px">
+      <div style="flex-grow:1;font-size:13px">Lecture 6.pdf</div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      <div class="meta">Uploaded</div>
+    </div>
+
+    <div style="border:1px solid #dcdcdc;border-radius:10px;padding:11px;background:#fafafa">
+      <div class="row" style="gap:8px;align-items:flex-start">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3d3d3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:2px"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+        <div style="flex-grow:1">
+          <div style="font-size:13px;font-weight:600">Huge.pdf</div>
+          <div style="font-size:12px;color:#5f5f5f;margin-top:2px">This file is 34 MB. The limit is 25 MB.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn">Done</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

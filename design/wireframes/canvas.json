@@ -1,0 +1,66 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "1 · First run", "x": 0, "y": 0, "w": 360, "h": 840 },
+    { "file": "Subjects.dc.html", "title": "2 · Subjects", "x": 480, "y": 0, "w": 360, "h": 840 },
+    { "file": "SubjectHub.dc.html", "title": "3 · Subject hub", "x": 960, "y": 0, "w": 360, "h": 900 },
+    { "file": "Materials.dc.html", "title": "4 · Materials + upload", "x": 1440, "y": 0, "w": 360, "h": 900 },
+    { "file": "Reviewer.dc.html", "title": "5 · Reviewer", "x": 1920, "y": 0, "w": 360, "h": 900 },
+    { "file": "Flashcards.dc.html", "title": "6 · Flashcards (focus)", "x": 0, "y": 1060, "w": 360, "h": 840 },
+    { "file": "QuizSetup.dc.html", "title": "7 · Quiz setup", "x": 480, "y": 1060, "w": 360, "h": 840 },
+    { "file": "QuizAttempt.dc.html", "title": "8 · Quiz attempt (focus)", "x": 960, "y": 1060, "w": 360, "h": 840 },
+    { "file": "Results.dc.html", "title": "9 · Results", "x": 1440, "y": 1060, "w": 360, "h": 900 },
+    { "file": "Assistant.dc.html", "title": "10 · Assistant", "x": 1920, "y": 1060, "w": 360, "h": 840 }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -290,
+      "w": 460,
+      "text": "Pawgress MVP wireframes — Sprint 04\n\nLow fidelity on purpose: greyscale, no brand, no type personality. Colour, mascot and icon set are Sprint 05; components are Sprint 06.\n\nAll frames are 360px wide — the cheapest phone a student owns. Top row: onboard, organise, upload, review. Bottom row: practise, assess, ask."
+    },
+    {
+      "id": "note-nofab",
+      "x": 560,
+      "y": -230,
+      "w": 340,
+      "text": "No floating action button. A full-width labelled button is bigger, clearer and reachable one-handed. Chrome budget: 48px header + 56px tabs + 56px action — nothing else gets to be sticky."
+    },
+    {
+      "id": "note-citations",
+      "x": 1920,
+      "y": -230,
+      "w": 400,
+      "text": "Page citations on every section are the product, not decoration. A reviewer that cannot cite its source is treated as a failed generation, not shown as a reviewer."
+    },
+    {
+      "id": "note-focus",
+      "x": 0,
+      "y": 2050,
+      "w": 380,
+      "text": "Focus mode: no tabs, no sidebar, one exit. Verdict buttons stay disabled until the card is flipped, so a student cannot mark a card they never read."
+    },
+    {
+      "id": "note-quota",
+      "x": 960,
+      "y": 2050,
+      "w": 400,
+      "text": "The quota cost is shown BEFORE the tap, and answers save on every tap so a phone reload never loses an attempt. Both are cheap to build now and impossible to retrofit politely."
+    },
+    {
+      "id": "note-nextaction",
+      "x": 1440,
+      "y": 2050,
+      "w": 400,
+      "text": "The score is not the point — the next action is. Wrong answers open by default, correct ones collapse, and 'ask why I got this wrong' is the highest-value link in the app."
+    },
+    {
+      "id": "note-scope",
+      "x": 1920,
+      "y": 2050,
+      "w": 380,
+      "text": "Scope is pinned to the top so 'my materials' always means something specific. A general-knowledge answer is an explicit opt-in, never silently mixed in."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

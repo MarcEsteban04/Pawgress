@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#1c1c1c;background:#fff;-webkit-font-smoothing:antialiased}
+    a{color:#3d3d3d}a:hover{color:#000}
+    .ph{width:360px;display:flex;flex-direction:column;background:#fff;overflow:hidden}
+    .hd{flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #e4e4e4}
+    .hd .t{font-size:16px;font-weight:600;flex-grow:1}
+    .av{width:28px;height:28px;border-radius:50%;background:#ededed;border:1px solid #dcdcdc}
+    .bd{flex-grow:1;overflow:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:20px}
+    .tb{flex:0 0 56px;display:flex;border-top:1px solid #e4e4e4}
+    .tb>div{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:#9a9a9a}
+    .tb>div.on{color:#1c1c1c;font-weight:600}
+    .act{flex:0 0 auto;padding:10px 14px 14px;border-top:1px solid #efefef}
+    .btn{height:48px;border:1px solid #1c1c1c;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;background:#fff}
+    .btnp{background:#1c1c1c;color:#fff}
+    .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#949494}
+    .meta{font-size:12px;color:#767676;font-family:"IBM Plex Mono",ui-monospace,monospace}
+    .row{display:flex;align-items:center;gap:10px}
+    .chip{border:1px solid #cfcfcf;border-radius:999px;padding:11px 16px;font-size:14px;background:#fff;white-space:nowrap}
+    .chip.on{background:#1c1c1c;color:#fff;border-color:#1c1c1c;font-weight:600}
+    .cb{width:22px;height:22px;flex:0 0 22px;border:1.5px solid #1c1c1c;border-radius:5px;display:flex;align-items:center;justify-content:center;background:#1c1c1c}
+  </style>
+</helmet>
+
+<div class="ph" style="height:840px">
+
+  <div class="hd">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+    <div class="t">New quiz</div>
+    <div class="av"></div>
+  </div>
+
+  <div class="bd">
+
+    <div>
+      <div class="lbl" style="margin-bottom:10px">Topic</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="chip">All</div>
+        <div class="chip">Cell structure</div>
+        <div class="chip on">Genetics</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="lbl" style="margin-bottom:10px">Questions</div>
+      <div style="display:flex;gap:8px">
+        <div class="chip">5</div>
+        <div class="chip on">10</div>
+        <div class="chip">20</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="lbl" style="margin-bottom:10px">Difficulty</div>
+      <div style="display:flex;gap:8px">
+        <div class="chip">Easy</div>
+        <div class="chip on">Mixed</div>
+        <div class="chip">Hard</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="lbl" style="margin-bottom:11px">Question types</div>
+      <div style="display:flex;flex-direction:column;gap:13px">
+        <div class="row">
+          <div class="cb">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div style="font-size:15px">Multiple choice</div>
+        </div>
+        <div class="row">
+          <div class="cb">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div style="font-size:15px">True / false</div>
+        </div>
+        <div class="row">
+          <div class="cb">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div style="font-size:15px">Identification</div>
+        </div>
+        <div class="row" style="opacity:.4">
+          <div style="width:22px;height:22px;flex:0 0 22px;border:1.5px solid #9a9a9a;border-radius:5px"></div>
+          <div style="font-size:15px">Short answer</div>
+          <div class="meta">coming later</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow:1"></div>
+
+    <div style="border:1px solid #dcdcdc;border-radius:12px;padding:13px;background:#fafafa;display:flex;flex-direction:column;gap:9px">
+      <div class="row" style="gap:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+        <div style="font-size:13px">From 2 ready materials &middot; 18 pages</div>
+      </div>
+      <div class="row" style="gap:8px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 100-16 8 8 0 000 16z"/><path d="M12 12l4-3"/></svg>
+        <div style="font-size:13px">Uses 1 of your 20 daily generations</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="act">
+    <div class="btn btnp">Generate quiz</div>
+  </div>
+
+  <div class="tb">
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v9H4z"/></svg>
+      Home
+    </div>
+    <div class="on">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      Subjects
+    </div>
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/></svg>
+      Ask
+    </div>
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
+      Progress
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#1c1c1c;background:#fff;-webkit-font-smoothing:antialiased}
+    a{color:#3d3d3d}a:hover{color:#000}
+    .ph{width:360px;display:flex;flex-direction:column;background:#fff;overflow:hidden}
+    .hd{flex:0 0 48px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid #e4e4e4}
+    .hd .t{font-size:16px;font-weight:600;flex-grow:1}
+    .av{width:28px;height:28px;border-radius:50%;background:#ededed;border:1px solid #dcdcdc}
+    .scope{flex:0 0 auto;padding:9px 14px;border-bottom:1px solid #ececec;display:flex;align-items:center;gap:8px;background:#fafafa}
+    .bd{flex-grow:1;overflow:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:14px}
+    .tb{flex:0 0 56px;display:flex;border-top:1px solid #e4e4e4}
+    .tb>div{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;color:#9a9a9a}
+    .tb>div.on{color:#1c1c1c;font-weight:600}
+    .cmp{flex:0 0 auto;padding:10px 14px 12px;border-top:1px solid #efefef;display:flex;flex-direction:column;gap:7px}
+    .meta{font-size:12px;color:#767676;font-family:"IBM Plex Mono",ui-monospace,monospace}
+    .row{display:flex;align-items:center;gap:10px}
+    .cite{font-family:"IBM Plex Mono",monospace;font-size:11px;color:#3d3d3d;border:1px solid #cfcfcf;border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:5px;background:#fff}
+    .me{align-self:flex-end;max-width:80%;background:#1c1c1c;color:#fff;border-radius:14px 14px 4px 14px;padding:11px 13px;font-size:14px;line-height:1.45}
+    .ai{align-self:flex-start;max-width:88%;border:1px solid #dcdcdc;border-radius:14px 14px 14px 4px;padding:12px 13px;display:flex;flex-direction:column;gap:10px}
+  </style>
+</helmet>
+
+<div class="ph" style="height:840px">
+
+  <div class="hd">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a4a4a" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg>
+    <div class="t">Ask</div>
+    <div class="av"></div>
+  </div>
+
+  <div class="scope">
+    <div class="meta">Asking about</div>
+    <div style="border:1px solid #cfcfcf;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;background:#fff;display:flex;align-items:center;gap:6px">
+      Biology
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <div class="meta">2 materials</div>
+  </div>
+
+  <div class="bd">
+
+    <div class="me">Explain Punnett squares simply</div>
+
+    <div class="ai">
+      <div style="font-size:14px;line-height:1.5;color:#2b2b2b">A Punnett square is a grid for working out which combinations of alleles two parents can produce. Each parent's alleles go along one edge, and each cell is one possible outcome.</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <div class="cite">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+          Lecture 4 &middot; p.6
+        </div>
+        <div class="cite">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" stroke-width="2" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+          p.7
+        </div>
+      </div>
+      <div class="row" style="gap:14px;padding-top:2px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4v-9z"/><path d="M7 11l4-7h1a2 2 0 012 2v3h4a2 2 0 012 2.4l-1.4 6A2 2 0 0116.6 20H7z"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13V4h3v9z"/><path d="M17 13l-4 7h-1a2 2 0 01-2-2v-3H6a2 2 0 01-2-2.4l1.4-6A2 2 0 017.4 4H17z"/></svg>
+      </div>
+    </div>
+
+    <div class="me">What about mitochondrial inheritance?</div>
+
+    <div style="align-self:flex-start;max-width:88%;border:1px solid #cfcfcf;border-radius:14px 14px 14px 4px;padding:12px 13px;background:#f7f7f7;display:flex;flex-direction:column;gap:10px">
+      <div class="row" style="gap:8px;align-items:flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3d3d3d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:2px;flex:0 0 15px"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+        <div style="font-size:14px;line-height:1.45">Your materials don't cover mitochondrial inheritance.</div>
+      </div>
+      <div style="border:1px solid #1c1c1c;border-radius:8px;padding:10px 13px;font-size:13px;font-weight:600;text-align:center;background:#fff">Answer without my materials</div>
+    </div>
+
+    <div style="flex-grow:1"></div>
+    <div class="meta" style="text-align:center">A general answer is always an explicit opt-in</div>
+
+  </div>
+
+  <div class="cmp">
+    <div class="row" style="gap:9px">
+      <div style="flex-grow:1;height:46px;border:1px solid #d4d4d4;border-radius:23px;display:flex;align-items:center;padding:0 16px;font-size:14px;color:#9a9a9a">Ask about Biology…</div>
+      <div style="width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:#1c1c1c;display:flex;align-items:center;justify-content:center">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>
+      </div>
+    </div>
+    <div class="meta" style="text-align:center">14 of 20 messages left today</div>
+  </div>
+
+  <div class="tb">
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v9H4z"/></svg>
+      Home
+    </div>
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      Subjects
+    </div>
+    <div class="on">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/></svg>
+      Ask
+    </div>
+    <div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V9M12 19V5M19 19v-7"/></svg>
+      Progress
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -17,15 +17,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 01 | Project initialization — repo, Next.js, TS, ESLint, Prettier, env, conventions, folder architecture | done |
 | 02 | Product requirements — PRD, MVP scope, user stories, acceptance criteria, backlog | done |
 | 03 | User flow mapping — flow diagrams, navigation structure, screen inventory, state inventory | done |
-| 04 | UX wireframes — MVP screens phone-first, plus responsive layout plan | todo |
+| 04 | UX wireframes — MVP screens phone-first, plus responsive layout plan | done |
+| 05 | Branding — logo, mascot direction, typography, color, icon style, favicon | todo |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 05 | Branding — logo, mascot direction, typography, color, icon style, favicon | 04 |
 | 06 | Design system — shadcn/ui setup, design tokens, component standards | 05 |
 | 07 | Application architecture — route groups, DAL + `proxy.ts` auth pattern, AI abstraction, background jobs, error strategy | 06 |
+| 08 | CI/CD foundation — lint, typecheck, build on push; dev/staging/prod environments | 07 |
 
 ---
 
@@ -40,19 +41,20 @@ Ordered by dependency, not by preference. `Pri` follows the PRD (**M** = MVP, **
 | 1 | Flow diagrams for F0–F9 including recovery branches | M | 03 | **done** — `user-flows.md` |
 | 2 | Navigation model, route tree, 32-screen inventory | M | 03 | **done** — `navigation.md` |
 | 3 | Empty / loading / partial / error / working / over-quota state inventory | M | 03 | **done** — `states.md`; NFR-A4 is now a checklist |
-| 4 | Low-fidelity wireframes, phone-first, MVP screens 1–23 and 27 | M | 04 | Phone layout drawn before desktop |
-| 5 | Brand identity and favicon | M | 05 | |
-| 6 | Design tokens + shadcn/ui configuration | M | 06 | Tokens land before any feature UI |
-| 7 | Core component set (button, input, select, card, dialog, tabs, dropdown, toast, progress, badge, avatar, skeleton) | M | 06 | |
-| 8 | Job status component driven by the shared status vocabulary | M | 06 | `states.md` §3 — one vocabulary across materials, reviewers, quizzes |
-| 9 | Application architecture: route groups, server-action conventions | M | 07 | Includes moving `app/page.tsx` into `(marketing)/` |
-| 10 | Auth pattern: `src/proxy.ts` optimistic check + `verifySession()` DAL memoized with React `cache()` | M | 07 | Next.js 16 deprecates `middleware.ts`; proxy must not be the only gate |
-| 11 | Error-boundary strategy: `global-error`, shell `error.tsx`, segment boundaries, `catchError` panels, `Result<T,E>` for expected failures | M | 07 | `states.md` §4 |
-| 12 | AI service abstraction design (interface, config, logging, usage accounting) | M | 07 | Designed here, built in Sprint 31 |
-| 13 | Background job strategy for long AI work | M | 07 | **Architectural risk** — Vercel request timeouts; decide the mechanism before Sprint 31 |
-| 14 | Update `conventions.md` for Next.js 16: `proxy.ts` not `middleware.ts`, DAL pattern, error conventions | M | 07 | Prevents writing a deprecated `middleware.ts` out of habit |
-| 15 | CI: typecheck, lint, format, build on push | M | 08 | NFR-O1 |
-| 16 | Dev / staging / production environments | M | 08 | |
+| 4 | Low-fidelity wireframes, phone-first, MVP screens 1–23 and 27 | M | 04 | **done** — `wireframes.md` + canvas in `design/wireframes/` |
+| 5 | Responsive layout plan and mobile constraints | M | 04 | **done** — `wireframes.md` §12–13 |
+| 6 | Brand identity and favicon | M | 05 | Open questions listed in `wireframes.md` §15 |
+| 7 | Design tokens + shadcn/ui configuration | M | 06 | Tokens land before any feature UI |
+| 8 | Layout primitives from `wireframes.md` §14 (AppShell, FocusShell, StickyAction, EntityCard, ListRow, MasteryBar, ChipGroup, SourceChip, QuizOption, Flashcard, QuotaMeter, …) | M | 06 | The wireframes are the spec for this list |
+| 9 | Job status component driven by the shared status vocabulary | M | 06 | `states.md` §3 — one vocabulary across materials, reviewers, quizzes |
+| 10 | Application architecture: route groups, server-action conventions | M | 07 | Includes moving `app/page.tsx` into `(marketing)/` |
+| 11 | Auth pattern: `src/proxy.ts` optimistic check + `verifySession()` DAL memoized with React `cache()` | M | 07 | Next.js 16 deprecates `middleware.ts`; proxy must not be the only gate |
+| 12 | Error-boundary strategy: `global-error`, shell `error.tsx`, segment boundaries, `catchError` panels, `Result<T,E>` for expected failures | M | 07 | `states.md` §4 |
+| 13 | AI service abstraction design (interface, config, logging, usage accounting) | M | 07 | Designed here, built in Sprint 31 |
+| 14 | Background job strategy for long AI work | M | 07 | **Architectural risk** — Vercel request timeouts; decide the mechanism before Sprint 31 |
+| 15 | Update `conventions.md` for Next.js 16: `proxy.ts` not `middleware.ts`, DAL pattern, error conventions | M | 07 | Prevents writing a deprecated `middleware.ts` out of habit |
+| 16 | CI: typecheck, lint, format, build on push | M | 08 | NFR-O1 |
+| 17 | Dev / staging / production environments | M | 08 | |
 
 ### E01 — Authentication (Phase 3, Sprints 09–12)
 
