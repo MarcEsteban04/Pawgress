@@ -36,8 +36,9 @@ Established in Sprint 01. These are the defaults; deviate only with a reason wor
 
 - A feature's code lives in `src/features/<feature>/`. Promote a component to
   `src/components/shared/` only when a second feature needs it.
-- `src/components/ui/` is for shadcn/ui primitives. Treat it as generated code: restyle via design
-  tokens, don't fork the API.
+- `src/components/ui/` holds the primitive set ([`design-system.md`](design-system.md)). Restyle
+  through the design tokens in `app/globals.css`; do not fork a primitive’s API. Every primitive
+  takes `className` and merges it via `cn()`, so callers override rather than fork.
 - Co-locate types with the feature (`features/quizzes/types.ts`); only cross-feature types go in
   `src/types/`.
 
@@ -45,8 +46,8 @@ Established in Sprint 01. These are the defaults; deviate only with a reason wor
 
 - Tailwind utility classes are the default. Reach for a component class only when the same long
   utility string repeats three or more times.
-- Use design tokens (CSS variables) for color and spacing rather than raw hex values — the token set
-  lands in Sprint 06.
+- Use the design tokens for colour — `bg-surface`, `text-ink-muted`, `border-rule` — never a raw hex.
+  Adding a colour means adding a token to all three theme blocks in `app/globals.css`.
 - Class order is managed by `prettier-plugin-tailwindcss`; don't hand-sort.
 
 ## Errors & validation

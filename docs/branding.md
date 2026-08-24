@@ -1,126 +1,162 @@
-# Pawgress — Branding
+# Pawgress — Brand
 
-**Sprint 05 deliverable.** Three brand directions, the constraints they were designed against, and
-the values Sprint 06 turns into design tokens.
+**Sprint 05 deliverable — decided.** Direction **"Study Desk"** is the Pawgress brand. The two
+alternatives considered are recorded in [§7](#7-considered-and-rejected) so the reasoning survives,
+but they are closed.
 
-**Visual canvas:** <https://claude.ai/code/artifact/ae93e67f-b9f2-4686-97c1-0133ea6148bd> ·
-source artboards in [`design/brand/`](../design/brand/)
-
-> **Status: awaiting a decision.** Sprint 05 is not closed until one direction is chosen. Brand
-> identity is a taste call, and three near-identical options would be no choice at all — so these
-> differ on a real axis rather than on decoration. Once a direction is picked, this document is
-> rewritten as the single brand spec and the losing directions move to an appendix.
+The values below are implemented as design tokens in [`src/app/globals.css`](../src/app/globals.css)
+— that file is the runtime source of truth, this document is the reasoning behind it.
 
 ---
 
-## 1. The constraints
+## 1. The idea
 
-Not preferences — these come out of the product, and every direction had to satisfy all six.
+**The calm of a good notebook.** Warm paper, ink text, one restrained accent.
 
-| # | Constraint | Where it comes from |
-|---|---|---|
-| 1 | **A low number must not feel like a verdict.** A student will see "Genetics 42%" | The mastery model in [`requirements.md`](requirements.md) FR-G1 makes this unavoidable, and it is the hardest thing here to get right |
-| 2 | **Subject colour must never read as status colour.** A red subject would look like a failed one | Flagged in [`wireframes.md` §15](wireframes.md) |
-| 3 | **Legible on a cheap phone at low brightness.** WCAG AA body text, 16 px floor, never colour alone | NFR-A1, NFR-A3 |
-| 4 | **Two registers, one voice** — trustworthy on a laptop, warm at 11pm before an exam | The personas in [`requirements.md` §2](requirements.md) |
-| 5 | **The mascot celebrates; it never apologises.** Progress, streaks, empty states only — absent from every error | [`states.md` §5](states.md#5-copy-rules) |
-| 6 | **Type survives long words in two languages.** English and Filipino, tested on real compounds | PRD open decision #6 |
+The product's hardest emotional problem is that it must tell a student something unflattering —
+"Genetics 42%" — without that landing as a verdict. A quiet, papery brand makes a low number read as
+*something to do next*. A bright or clinical brand makes the same number read as a grade.
 
-### Constraint 2, resolved the same way in all three
+Everything else follows from that.
 
-Subject colours are a **muted, low-chroma family** and carry no meaning; status colours keep the
-saturated end of the palette to themselves. A subject is never allowed to borrow a status colour, and
-status is always paired with an icon and a label.
+**Voice:** plain, second person, no blame, no exclamation marks. The mascot celebrates progress; it
+never apologises for a bug.
 
 ---
 
-## 2. The directions
+## 2. Colour
 
-They answer one question differently — *what is "42%"?*
+```text
+Surfaces      paper           #FAF6EF     the page
+              surface         #FFFDF9     cards, raised things
+              surface-sunken  #F4EFE6     wells, tracks, skeletons
+              rule            #E3DCD0     hairlines and borders
+              rule-strong     #D3C9B8     hover borders
 
-| | **A — Study Desk** | **B — Trail** | **C — Lab** |
+Ink           ink             #23201C     body text, headings
+              ink-muted       #5C554B     secondary text
+              ink-subtle      #8C8478     metadata, captions
+
+Accent        accent          #A8502F     the one brand colour
+              accent-hover    #8D4026
+              accent-soft     #F3E4DC     tints, selection, icon wells
+
+Status        good            #5E7A5A     ready, mastered
+              warn            #B4741B     over quota, due soon
+              bad             #8C3A2B     failed, wrong
+              (each has a -soft companion for backgrounds)
+
+Subjects      #CFD9DD  #DED6C6  #D2DCCD  #DECFD5  #CFD1DE  #E0D9C2
+```
+
+Three rules, all enforced in the token file:
+
+1. **Subject colours are deliberately quiet and carry no meaning.** Status owns the saturated end of
+   the palette. A subject must never be mistakable for a failed one.
+2. **Status is never signalled by colour alone.** Every status pairs with an icon and a text label —
+   see `StatusBadge`.
+3. **The mastery bar is not red at low values.** It uses the accent below the weak threshold and
+   `good` above it. Red would turn information into a verdict.
+
+### Dark mode
+
+Implemented, not deferred — students study at night. Tokens are redefined three ways so both the
+system preference and an explicit toggle work in both directions: bare `:root` for light,
+`@media (prefers-color-scheme: dark)` guarded by `:root:not([data-theme="light"])`, and
+`:root[data-theme="dark"]`. Paper becomes `#1A1815`, ink becomes `#F2ECE2`, and the accent lifts to
+`#D9764F` to hold contrast against a dark ground.
+
+---
+
+## 3. Type
+
+| Role | Face | Weights | Used for |
 |---|---|---|---|
-| 42% is… | information | momentum | a measurement |
-| Feeling | calm, editorial, paper | energetic, motivating | precise, instrumented |
-| Mascot | ink line-art cat, sits beside the work | flat geometric dog with a paw trail | geometric owl, closer to a mark than a character |
-| Logo logic | paw mark beside a serif wordmark | paw in a filled badge + heavy wordmark | monogram tile + letter-spaced wordmark |
-| Display face | Newsreader 500 | Bricolage Grotesque 800 | Space Grotesk 600 |
-| UI / body | Public Sans | Figtree | Space Grotesk |
-| Numerals | IBM Plex Mono | the display face | IBM Plex Mono, tabular |
-| Icon style | 1.7 px stroke, round caps | 2.2 px stroke, round caps | 1.5 px stroke, square caps |
-| Radius | 8–12 px | 16–20 px, pill buttons | 5–6 px |
-| Risk | may feel unexciting | may feel like a kids' app | may feel like another gradebook |
+| Display | **Newsreader** | 400 / 500 / 600 | Page titles, hero, empty-state headings |
+| UI & body | **Public Sans** | 400 / 500 / 600 / 700 | Everything else |
+| Numerals | **IBM Plex Mono** | 400 / 500 | Percentages, scores, counts, metadata |
 
-### A — Study Desk *(recommended)*
+Loaded through `next/font/google` in [`src/app/layout.tsx`](../src/app/layout.tsx), each with a
+fallback stack. Rules:
 
-```text
-paper      #FAF6EF      surface    #FFFDF9      rule    #E3DCD0
-muted ink  #5C554B      ink        #23201C
-accent     #A8502F      good       #5E7A5A      warn    #B4741B    bad  #8C3A2B
-subjects   #CFD9DD  #DED6C6  #D2DCCD  #DECFD5  #CFD1DE  #E0D9C2
-```
-
-**Why:** every AI study app looks like a bright purple SaaS dashboard; this looks like a good
-notebook, which is what students already trust. The warmth does real work — it lets the app tell you
-something unflattering without it stinging (constraint 1, the one that matters most).
-
-**Trade-off:** quiet by design, so it will not pop in a screenshot, and it gives up the momentum that
-streaks and celebrations trade on. A serif display needs care at 13 px and below.
-
-### B — Trail
-
-```text
-surface    #F3F7F4      card       #FFFFFF      rule    #D8E3DB
-muted ink  #3E5449      primary    #14452F
-accent     #E8A33D      good       #2F8F6B      warn    #C87A1E    bad  #A8382B
-subjects   #CCDFD4  #E5DAC3  #CFDCE5  #E2D3D8  #D6D5E4  #DDE4C8
-```
-
-**Why:** momentum is what students actually lack, and this is built to supply it — the paw trail is
-the progress metaphor, and there is room to grow into streaks and achievements later. Most memorable
-of the three.
-
-**Trade-off:** energy cuts both ways — a bold brand makes 42% louder too, and it can tip toward a
-kids' app.
-
-### C — Lab
-
-```text
-surface    #FBFBFC      card       #FFFFFF      rule    #E4E6EC
-muted ink  #4A5160      ink        #14161A
-accent     #4A5AD8      good       #1F7A5A      warn    #9A6A10    bad  #A02F2F
-subjects   #C9CEE8  #D2D6EC  #C6D2E4  #CEDAE2  #D6D2E4  #DADEE8
-```
-
-**Why:** the product's real claim is that it *measures* what you know, and this makes that claim
-credible — tabular numerals, sample sizes, trends beside every figure. Ages best as the data features
-land; suits the college persona most.
-
-**Trade-off:** coolest of the three and least comforting before an exam; indigo-on-white is also the
-most common look in this category.
+- **16 px body minimum.** Smaller triggers iOS zoom-on-focus and is unreadable in daylight.
+- **Every number is mono and tabular** (`.tabular`, or `font-mono`). Percentages update in place;
+  proportional digits make them jitter.
+- Display face is for headings only. It is not used below ~18 px.
+- The ramp was checked against long compounds in English and Filipino, not lorem ipsum.
 
 ---
 
-## 3. What a decision locks
+## 4. Logo, mascot, icons
 
-Picking a direction settles, in one go:
+**Logo** — paw mark beside the wordmark, set in the display face. Toes take ink, the pad takes the
+accent. [`src/components/shared/Logo.tsx`](../src/components/shared/Logo.tsx) exports `Logo` (mark +
+wordmark) and `PawMark` (mark alone).
 
-- **Logo** and its small-size reduction, plus the app icon at 64 / 32 px and the favicon at 16 px
-  (all three drop detail deliberately at 16 px rather than shrinking the full mark)
-- **Mascot direction** — species, drawing style, and the rule that it never appears on a failure
-- **Type ramp** — display, UI, and numeral faces, all from Google Fonts with fallback stacks
-- **Palette** — surface, ink, rule, one accent, three status colours, six subject tints
-- **Icon style** — stroke weight, cap style, 24 px grid
-- **Radius and density**, which is most of what makes the three feel different in the UI
+**App icon and favicon** — [`src/app/icon.svg`](../src/app/icon.svg): the mark on an ink tile. At
+favicon size the paw drops from four toes to three rather than shrinking all four; four toes at 16 px
+turn to mud.
 
-Then Sprint 06 turns it into `--tokens` in `app/globals.css`, a Tailwind theme, and the shadcn/ui
-component set, against the primitive list in [`wireframes.md` §14](wireframes.md).
+**Mascot** — an ink line-art cat, one stroke weight, no fill. It sits *beside* the work rather than
+performing at you. Appears on: progress milestones, streaks (V1), and empty states. **Never** on an
+error, a failed upload, or a failed generation.
 
-## 4. Deliberately still open
+**Icons** — Lucide, at **1.7 px stroke, round caps, 24 px grid**. Set once globally via the `.lucide`
+rule in `globals.css`, because CSS overrides Lucide's `stroke-width` attribute — so no icon needs a
+prop threaded through it.
 
-- **Dark mode.** A token-level decision in Sprint 06, not a retrofit. All three palettes were chosen
-  with a dark counterpart in mind, but none is drawn yet.
-- **Mascot beyond one pose.** One pose proves the style; the set (celebrating, empty state, thinking)
-  is only worth drawing once a direction is chosen.
-- **Illustration style** for empty states, beyond the mascot itself.
-- **Motion.** One considered reveal beats scattered micro-interactions; specified in Sprint 06.
+---
+
+## 5. Density
+
+| Token | Value | Used for |
+|---|---|---|
+| `--radius-card` | 12 px | Cards, dialogs, panels |
+| `--radius-control` | 8 px | Buttons, inputs, chips-as-tags |
+| `--radius-pill` | full | Chips, avatars, mastery bars |
+
+Controls are 44 px tall (`size="md"`) wherever touch is plausible; 36 px (`sm`) is for dense rows on
+pointer-first surfaces only.
+
+---
+
+## 6. Accessibility commitments
+
+- WCAG 2.1 AA on body text in both themes.
+- One focus treatment everywhere: a 2 px `--focus` outline at 2 px offset, always visible.
+- Never colour alone (NFR-A3).
+- `prefers-reduced-motion` collapses all transitions.
+- Every mastery percentage carries its evidence count, and below 10 answered questions the number is
+  withheld entirely — see [§8](#8-the-one-component-that-matters-most).
+
+---
+
+## 7. Considered and rejected
+
+Kept because the reasoning is worth more than the artwork.
+
+**"Trail"** — deep pine `#14452F` with an amber `#E8A33D` accent, Bricolage Grotesque, a geometric
+dog and a paw-print progress trail. Most memorable of the three and the easiest to grow into streaks
+and achievements. Rejected because a bold brand makes 42% louder too, and it tips toward a kids' app.
+
+**"Lab"** — near-monochrome with indigo `#4A5AD8`, Space Grotesk, tabular numerals everywhere, a
+reduced geometric owl. Most credible as a measurement tool and best suited to the college persona.
+Rejected because it is the least comforting at 11pm before an exam, and indigo-on-white is the most
+common look in this category.
+
+Neither is to be revived without being asked.
+
+---
+
+## 8. The one component that matters most
+
+`MasteryBar` ([`src/components/ui/MasteryBar.tsx`](../src/components/ui/MasteryBar.tsx)) is where the
+brand either works or fails, so two rules are enforced in the component rather than left to callers:
+
+1. A percentage is **always** shown with the number of questions it came from.
+2. Below **10** answered questions the percentage is **withheld** — the bar renders as an
+   indeterminate striped fill and the label says there is not enough data yet.
+
+A confident-looking "100%" from three lucky answers is worse than no number at all. Thresholds live in
+[`src/types/index.ts`](../src/types/index.ts) (`WEAK_TOPIC_THRESHOLD`, `LOW_EVIDENCE_QUESTIONS`) so
+the number the UI shows and the number the engine uses cannot drift apart.

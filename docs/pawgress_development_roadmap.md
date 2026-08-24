@@ -203,9 +203,14 @@ Create the visual identity.
 - Skeleton loaders
 
 ### Deliverables
-- shadcn/ui configuration
-- Pawgress design tokens
+- Pawgress design tokens (light and dark)
 - Component standards
+- Primitive set built on Radix + cva, in the shadcn/ui architecture
+
+> The specification names shadcn/ui. We use its architecture — Radix primitives, `cva` variants,
+> `tailwind-merge` — but author the components in-repo rather than pulling them from the registry.
+> Reason: registry components ship their own token vocabulary (`--background`, `--foreground`), which
+> would fight the Pawgress brand tokens. See `docs/design-system.md` §7.
 
 ---
 

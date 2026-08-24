@@ -1,26 +1,220 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ---------------------------------------------------------------------------
+ * Pawgress design tokens — brand direction "Study Desk" (docs/branding.md)
+ *
+ * Rules that matter here:
+ *  - Every colour is defined on bare `:root` first, then overridden for dark.
+ *    Nothing gets its only definition inside a media query.
+ *  - `--color-subject-*` are deliberately quiet and carry NO meaning. Status
+ *    colours own the saturated end of the palette. A subject must never be
+ *    mistakable for a failed one.
+ *  - Status is never signalled by colour alone in the UI — pair it with an
+ *    icon and a label (NFR-A3).
+ * ------------------------------------------------------------------------- */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Surfaces — warm paper, not white */
+  --paper: #faf6ef;
+  --surface: #fffdf9;
+  --surface-sunken: #f4efe6;
+  --rule: #e3dcd0;
+  --rule-strong: #d3c9b8;
+
+  /* Ink */
+  --ink: #23201c;
+  --ink-muted: #5c554b;
+  --ink-subtle: #8c8478;
+
+  /* Accent — the single brand colour */
+  --accent: #a8502f;
+  --accent-hover: #8d4026;
+  --accent-soft: #f3e4dc;
+  --on-accent: #fffdf9;
+
+  /* Status — saturated, reserved, meaningful */
+  --good: #5e7a5a;
+  --good-soft: #e7eee5;
+  --warn: #b4741b;
+  --warn-soft: #f8eede;
+  --bad: #8c3a2b;
+  --bad-soft: #f6e3de;
+
+  /* Focus */
+  --focus: #23201c;
+
+  /* Subject tints — interchangeable, never semantic */
+  --subject-1: #cfd9dd;
+  --subject-2: #ded6c6;
+  --subject-3: #d2dccd;
+  --subject-4: #decfd5;
+  --subject-5: #cfd1de;
+  --subject-6: #e0d9c2;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #1a1815;
+    --surface: #221f1b;
+    --surface-sunken: #141210;
+    --rule: #383430;
+    --rule-strong: #4b463f;
+
+    --ink: #f2ece2;
+    --ink-muted: #b8afa2;
+    --ink-subtle: #8b8377;
+
+    --accent: #d9764f;
+    --accent-hover: #e88c66;
+    --accent-soft: #3a2419;
+    --on-accent: #1a1815;
+
+    --good: #8aa885;
+    --good-soft: #232b21;
+    --warn: #d5a054;
+    --warn-soft: #33260f;
+    --bad: #d18470;
+    --bad-soft: #35201b;
+
+    --focus: #f2ece2;
+
+    --subject-1: #46545a;
+    --subject-2: #565040;
+    --subject-3: #47533f;
+    --subject-4: #56454c;
+    --subject-5: #454859;
+    --subject-6: #565039;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+:root[data-theme="dark"] {
+  --paper: #1a1815;
+  --surface: #221f1b;
+  --surface-sunken: #141210;
+  --rule: #383430;
+  --rule-strong: #4b463f;
+
+  --ink: #f2ece2;
+  --ink-muted: #b8afa2;
+  --ink-subtle: #8b8377;
+
+  --accent: #d9764f;
+  --accent-hover: #e88c66;
+  --accent-soft: #3a2419;
+  --on-accent: #1a1815;
+
+  --good: #8aa885;
+  --good-soft: #232b21;
+  --warn: #d5a054;
+  --warn-soft: #33260f;
+  --bad: #d18470;
+  --bad-soft: #35201b;
+
+  --focus: #f2ece2;
+
+  --subject-1: #46545a;
+  --subject-2: #565040;
+  --subject-3: #47533f;
+  --subject-4: #56454c;
+  --subject-5: #454859;
+  --subject-6: #565039;
+}
+
+@theme inline {
+  /* Colours */
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+
+  --color-subject-1: var(--subject-1);
+  --color-subject-2: var(--subject-2);
+  --color-subject-3: var(--subject-3);
+  --color-subject-4: var(--subject-4);
+  --color-subject-5: var(--subject-5);
+  --color-subject-6: var(--subject-6);
+
+  /* Type — faces are wired up in app/layout.tsx via next/font */
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Radius — 8–12px, the "Study Desk" density */
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --radius-pill: 9999px;
+}
+
+@layer base {
+  * {
+    border-color: var(--rule);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    /* 16px floor: anything smaller triggers zoom-on-focus on iOS and is
+       unreadable in daylight (docs/wireframes.md §12). */
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* One focus treatment everywhere, always visible. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--ink);
+  }
+
+  /* Brand icon spec: 1.7px stroke, round caps, 24px grid (docs/branding.md).
+     CSS beats lucide's stroke-width presentation attribute, so this applies
+     app-wide without threading a prop through every icon. */
+  .lucide {
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Numbers must not jitter as they change — mastery bars and scores
+     update in place. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

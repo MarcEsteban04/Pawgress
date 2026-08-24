@@ -18,15 +18,17 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 02 | Product requirements — PRD, MVP scope, user stories, acceptance criteria, backlog | done |
 | 03 | User flow mapping — flow diagrams, navigation structure, screen inventory, state inventory | done |
 | 04 | UX wireframes — MVP screens desktop-led, adapted to 360 px, plus responsive layout plan | done |
-| 05 | Branding — logo, mascot direction, typography, color, icon style, favicon | **awaiting decision** — three directions drawn, one to pick |
+| 05 | Branding — "Study Desk" locked: logo, mascot, type ramp, palette, icons, favicon | done |
+| 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done |
+| 07 | Application architecture — route groups, DAL + `proxy.ts` auth pattern, AI abstraction, background jobs, error strategy | todo |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 06 | Design system — shadcn/ui setup, design tokens, component standards | 05 decision |
-| 07 | Application architecture — route groups, DAL + `proxy.ts` auth pattern, AI abstraction, background jobs, error strategy | 06 |
 | 08 | CI/CD foundation — lint, typecheck, build on push; dev/staging/prod environments | 07 |
+| 09 | Supabase setup — project, connection, env wiring, local dev | 08 |
+| 10 | Registration + email verification | 09 |
 
 ---
 
@@ -44,11 +46,14 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 3 | Empty / loading / partial / error / working / over-quota state inventory | M | 03 | **done** — `states.md`; NFR-A4 is now a checklist |
 | 4 | Low-fidelity wireframes, desktop-led, MVP screens 1–23 and 27 | M | 04 | **done** — `wireframes.md` + canvas in `design/wireframes/` |
 | 5 | Responsive plan (1440 → 360) and cross-device constraints | M | 04 | **done** — `wireframes.md` §12–13 |
-| 6 | Brand directions — three complete options with constraints, palettes and type ramps | M | 05 | **done** — `branding.md` + canvas in `design/brand/` |
-| 7 | Lock one direction and write the single brand spec | M | 05 | **blocked on a decision** — taste call, not a technical one |
-| 8 | Design tokens + shadcn/ui configuration | M | 06 | Tokens land before any feature UI. Palette, type ramp and icon rules are already written to drop in — see `branding.md` §3 |
-| 9 | Layout primitives from `wireframes.md` §14 (AppShell, SideNav, TopBar, SidePanel, FocusShell, EntityCard, ListRow, MasteryBar, ChipGroup, SourceChip, QuizOption, Flashcard, QuotaMeter, …) | M | 06 | The wireframes are the spec for this list |
-| 10 | Job status component driven by the shared status vocabulary | M | 06 | `states.md` §3 — one vocabulary across materials, reviewers, quizzes |
+| 6 | Brand locked to "Study Desk" — logo, mascot, type ramp, palette, icon rules, favicon | M | 05 | **done** — `branding.md`, `app/icon.svg`, `components/shared/Logo.tsx` |
+| 7 | Design tokens (light + dark), type ramp via `next/font`, `cn()` | M | 06 | **done** — `app/globals.css`, `app/layout.tsx`, `lib/utils.ts` |
+| 8 | Primitive set — Button, Card, Field/Input/Textarea/Select, Chip/ChipGroup/Tag, SourceChip, MasteryBar, QuotaMeter, EmptyState, ErrorState, Skeleton, Dialog/ConfirmDialog, Menu, SegmentedNav, Avatar | M | 06 | **done** — `components/ui/`, documented in `design-system.md` |
+| 9 | `StatusBadge` driven by the shared `JobStatus` vocabulary | M | 06 | **done** — `states.md` §3 encoded in `types/index.ts` |
+| 10 | Landing page built from the primitives, as the smoke test | M | 06 | **done** — `app/page.tsx` |
+| 10b | Toasts | M | 10 | **deferred with reason** — nothing to announce until the first server action exists |
+| 10c | App shell: `SideNav`, `TopBar`, `SidePanel`, `FocusShell`, theme toggle | M | 07 | Needs the route groups first, or it hard-codes the wrong structure |
+| 10d | Domain composites: `EntityCard`, `ListRow`, `QuizOption`, `Flashcard`, `UploadDropzone` | M | 19+ | Belong to their features, not to `ui/` |
 | 11 | Application architecture: route groups, server-action conventions | M | 07 | Includes moving `app/page.tsx` into `(marketing)/` |
 | 12 | Auth pattern: `src/proxy.ts` optimistic check + `verifySession()` DAL memoized with React `cache()` | M | 07 | Next.js 16 deprecates `middleware.ts`; proxy must not be the only gate |
 | 13 | Error-boundary strategy: `global-error`, shell `error.tsx`, segment boundaries, `catchError` panels, `Result<T,E>` for expected failures | M | 07 | `states.md` §4 |

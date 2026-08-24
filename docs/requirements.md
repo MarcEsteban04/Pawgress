@@ -307,7 +307,8 @@ single largest financial risk in this build.
 
 ## 7. Constraints & assumptions
 
-- The stack is fixed by the specification: Next.js + TypeScript + Tailwind + shadcn/ui, Supabase
+- The stack is fixed by the specification: Next.js + TypeScript + Tailwind + shadcn/ui-style
+  primitives (Radix + `cva`, authored in-repo — see `design-system.md` §7), Supabase
   (Postgres, Auth, Storage, RLS), an LLM API with embeddings, deployed on Vercel + Supabase.
 - Vercel serverless request timeouts mean long AI work must be **backgrounded**, not held open inside
   a request. This is a hard architectural constraint for Sprints 31–36.

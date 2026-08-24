@@ -21,7 +21,8 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/navigation.md`](docs/navigation.md) | Navigation model, route tree, screen inventory |
 | [`docs/states.md`](docs/states.md) | Empty / loading / error state inventory and copy rules |
 | [`docs/wireframes.md`](docs/wireframes.md) | Low-fidelity screen layouts, mobile constraints, responsive plan |
-| [`docs/branding.md`](docs/branding.md) | Brand directions, constraints, palettes and type ramps |
+| [`docs/branding.md`](docs/branding.md) | Brand spec — palette, type ramp, logo, mascot, icon rules |
+| [`docs/design-system.md`](docs/design-system.md) | Primitive set, token vocabulary, component standards |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
@@ -33,7 +34,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 |---|---|
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript (strict) |
-| UI | React 19, Tailwind CSS v4, shadcn/ui *(Sprint 06)* |
+| UI | React 19, Tailwind CSS v4, Radix primitives, Lucide icons |
 | Backend | Supabase — PostgreSQL, Auth, Storage, RLS *(Sprint 09+)* |
 | AI | LLM API + embeddings / vector search *(Sprint 31+)* |
 | Hosting | Vercel + Supabase |
@@ -73,8 +74,8 @@ The app runs at http://localhost:3000.
 src/
   app/                  App Router routes, layouts, and route handlers
   components/
-    ui/                 shadcn/ui primitives (generated, rarely hand-edited)
-    layout/             Shells: header, sidebar, nav
+    ui/                 Primitive set — see docs/design-system.md
+    layout/             Shells: sidebar, top bar, focus shell (Sprint 07)
     shared/             App-wide composites used by 2+ features
   features/             Feature modules (subjects, materials, quizzes, ...)
   hooks/                Shared React hooks
@@ -91,7 +92,8 @@ supabase/
   migrations/           SQL migrations (Sprint 13+)
 docs/                   Product spec, roadmap, requirements, flows, wireframes
 design/
-  wireframes/           Canvas artboards behind docs/wireframes.md (Sprint 04)
+  wireframes/           Wireframe artboards, reference only (Sprint 04)
+  brand/                Brand exploration artboards, reference only (Sprint 05)
 ```
 
 A `feature` module owns its own components, server logic, and types:
@@ -115,6 +117,6 @@ into a client component.
 | Phase | Sprints | Status |
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
-| 2 — Design system & architecture | 05–08 | Sprint 05 next |
+| 2 — Design system & architecture | 05–08 | Sprints 05–06 ✅ · Sprint 07 next |
 | 3 — Authentication | 09–12 | Not started |
 | 4+ | 13–84 | Not started |
