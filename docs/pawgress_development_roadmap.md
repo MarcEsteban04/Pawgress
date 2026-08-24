@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build **Pawgress** from initial project setup to a production-ready **Android APK**.
+Build **Pawgress** from initial project setup to a production-ready **Website**.
 
 Pawgress is an AI-powered study companion for high school and college students. The core product is based on the provided specification:
 
