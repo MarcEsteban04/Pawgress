@@ -20,15 +20,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 04 | UX wireframes — MVP screens desktop-led, adapted to 360 px, plus responsive layout plan | done |
 | 05 | Branding — "Study Desk" locked: logo, mascot, type ramp, palette, icons, favicon | done |
 | 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done |
-| 07 | Application architecture — route groups, DAL + `proxy.ts` auth pattern, AI abstraction, background jobs, error strategy | todo |
+| 07 | Application architecture — route groups, app shell, DAL + `proxy.ts` auth, AI abstraction, job contract, error strategy | done |
+| 08 | CI/CD foundation — lint, typecheck, build on push; dev/staging/prod environments | todo |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 08 | CI/CD foundation — lint, typecheck, build on push; dev/staging/prod environments | 07 |
 | 09 | Supabase setup — project, connection, env wiring, local dev | 08 |
 | 10 | Registration + email verification | 09 |
+| 11 | Sign in, sign out, session persistence — **and delete the preview-session branch** | 10 |
 
 ---
 
@@ -52,14 +53,14 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 9 | `StatusBadge` driven by the shared `JobStatus` vocabulary | M | 06 | **done** — `states.md` §3 encoded in `types/index.ts` |
 | 10 | Landing page built from the primitives, as the smoke test | M | 06 | **done** — `app/page.tsx` |
 | 10b | Toasts | M | 10 | **deferred with reason** — nothing to announce until the first server action exists |
-| 10c | App shell: `SideNav`, `TopBar`, `SidePanel`, `FocusShell`, theme toggle | M | 07 | Needs the route groups first, or it hard-codes the wrong structure |
+| 10c | App shell: `SideNav`, top bar, `FocusShell`, `PageHeader`, theme toggle | M | 07 | **done** — `components/layout/`; `SidePanel` waits for the assistant (Sprint 39) |
 | 10d | Domain composites: `EntityCard`, `ListRow`, `QuizOption`, `Flashcard`, `UploadDropzone` | M | 19+ | Belong to their features, not to `ui/` |
-| 11 | Application architecture: route groups, server-action conventions | M | 07 | Includes moving `app/page.tsx` into `(marketing)/` |
-| 12 | Auth pattern: `src/proxy.ts` optimistic check + `verifySession()` DAL memoized with React `cache()` | M | 07 | Next.js 16 deprecates `middleware.ts`; proxy must not be the only gate |
-| 13 | Error-boundary strategy: `global-error`, shell `error.tsx`, segment boundaries, `catchError` panels, `Result<T,E>` for expected failures | M | 07 | `states.md` §4 |
-| 14 | AI service abstraction design (interface, config, logging, usage accounting) | M | 07 | Designed here, built in Sprint 31 |
-| 15 | Background job strategy for long AI work | M | 07 | **Architectural risk** — Vercel request timeouts; decide the mechanism before Sprint 31 |
-| 16 | Update `conventions.md` for Next.js 16: `proxy.ts` not `middleware.ts`, DAL pattern, error conventions | M | 07 | Prevents writing a deprecated `middleware.ts` out of habit |
+| 11 | Route groups `(marketing)` `(auth)` `(app)`, plus `(focus)` reserved | M | 07 | **done** — nested layouts compose, so focus mode needs a sibling group rather than a nested layout |
+| 12 | Auth pattern: `src/proxy.ts` optimistic check + `requireSession()` DAL memoised with React `cache()` | M | 07 | **done** — `proxy.ts`, `server/auth/session.ts`. Preview-session branch to delete in Sprint 11 |
+| 13 | Error strategy: `AppError` taxonomy with a required `nextStep`, `Result` helpers, `global-error`, shell `error.tsx`, `not-found` | M | 07 | **done** — `lib/errors.ts` + boundaries |
+| 14 | AI service abstraction (interface, quotas, usage accounting, citations) | M | 07 | **done** — `lib/ai/types.ts`; providers in Sprint 31 |
+| 15 | Background job strategy for long AI work | M | 07 | **done, decided** — Postgres queue with sliced work. `after()` was ruled out: it shares the route duration cap. `server/jobs/types.ts`, `architecture.md` §5 |
+| 16 | Update `conventions.md` for Next.js 16 | M | 07 | **done** |
 | 17 | CI: typecheck, lint, format, build on push | M | 08 | NFR-O1 |
 | 18 | Dev / staging / production environments | M | 08 | |
 
@@ -225,7 +226,7 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 
 | Risk | Impact | Mitigation | Owner sprint |
 |---|---|---|---|
-| Long AI jobs exceed serverless request limits | Processing silently fails in production | Decide the background-job mechanism during architecture, not during Sprint 31 | 07 |
+| ~~Long AI jobs exceed serverless request limits~~ | — | **Resolved in Sprint 07.** Postgres queue, sliced work, lease plus sweeper. `after()` was ruled out — it shares the route duration cap. See `architecture.md` §5 | 07 |
 | AI cost scales with uploads, uncapped | Unbounded bill from a handful of heavy users | Quotas, page caps, embedding reuse, per-user cost logging | 31 |
 | Extraction quality on real teacher files (scanned PDFs, dense decks) | Every downstream feature degrades | Test the pipeline on real files early; detect image-only PDFs and say so | 32 |
 | Generated content is generic rather than material-specific | Core value proposition fails | Require citations; treat uncited output as a generation failure | 43 |

@@ -31,6 +31,12 @@ Established in Sprint 01. These are the defaults; deviate only with a reason wor
   client) must never be imported from a client component.
 - Data mutations go through Server Actions or route handlers — never call the Supabase service-role
   key from the browser.
+- Auth has three layers and each assumes the others fail: `src/proxy.ts` does an optimistic
+  cookie-only check (the file is `proxy.ts`, **not** `middleware.ts` — that name is deprecated in
+  Next.js 16), `requireSession()` in `src/server/auth/session.ts` is the real gate, and RLS is the
+  last line. Never let the proxy be the only check.
+- Every server action starts with `requireSessionOrFail()` and validates its input with Zod before it
+  touches data.
 
 ## File organization
 
@@ -54,7 +60,11 @@ Established in Sprint 01. These are the defaults; deviate only with a reason wor
 
 - Validate every external input (form bodies, route params, AI output) with Zod at the boundary.
 - Prefer the `Result<T, E>` type in `src/types` for expected failures; throw only for programmer
-  errors and truly exceptional cases.
+  errors and truly exceptional cases. Quota limits, invalid files, not-found and malformed AI output
+  are expected — return them as an `AppError` from `src/lib/errors.ts` and render them in place.
+- Every `AppError` carries a required `nextStep`. An error without a next step is a dead end.
+- Error boundaries nest: `catchError` for a panel, `error.tsx` for a segment, `(app)/error.tsx` for
+  the shell, `global-error.tsx` for the root layout.
 - User-facing errors say what happened and what to do next. Never surface a raw stack trace.
 
 ## Git

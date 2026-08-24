@@ -190,7 +190,14 @@ src/
 - **Deferred routes are in the tree from day one** so URLs never have to change when the planner and
   plan ship.
 
-### Migration note (Sprint 07)
+### Correction applied in Sprint 07
+
+The tree above nests the quiz attempt under `(app)` with its own layout. That does not work: nested
+layouts **compose** rather than replace, so a layout inside `(app)` still renders inside the app
+shell and cannot remove the sidebar that focus mode has to be rid of. Focus routes therefore live in
+their own `(focus)` route group — see [`architecture.md` §2](architecture.md).
+
+### Migration note (Sprint 07) — done
 
 Today `src/app/page.tsx` is the default Next.js page at the root. Introducing `(marketing)/page.tsx`
 means moving it — two files cannot both own `/`. This is an architecture task for Sprint 07, not a

@@ -23,6 +23,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/wireframes.md`](docs/wireframes.md) | Low-fidelity screen layouts, mobile constraints, responsive plan |
 | [`docs/branding.md`](docs/branding.md) | Brand spec — palette, type ramp, logo, mascot, icon rules |
 | [`docs/design-system.md`](docs/design-system.md) | Primitive set, token vocabulary, component standards |
+| [`docs/architecture.md`](docs/architecture.md) | Routing, auth layers, data access, background jobs, errors |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
@@ -72,7 +73,11 @@ The app runs at http://localhost:3000.
 
 ```text
 src/
-  app/                  App Router routes, layouts, and route handlers
+  proxy.ts              Optimistic auth redirects (Next 16: not middleware.ts)
+  app/
+    (marketing)/        Landing page
+    (auth)/             Centred-card shell: sign in, register
+    (app)/              Sidebar shell: dashboard, subjects, ask, progress, settings
   components/
     ui/                 Primitive set — see docs/design-system.md
     layout/             Shells: sidebar, top bar, focus shell (Sprint 07)
@@ -84,7 +89,9 @@ src/
     ai/                 LLM + embedding provider abstraction
     validation/         Zod schemas shared by forms and server code
     utils.ts            Small generic helpers
-  server/               Server-only logic: server actions, data access
+  server/
+    auth/session.ts     requireSession() — the real auth gate
+    jobs/               Background job contract
   config/               Static config (site.ts) and env access (env.ts)
   types/                Shared and generated types
   styles/               Global style partials beyond app/globals.css
@@ -117,6 +124,6 @@ into a client component.
 | Phase | Sprints | Status |
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
-| 2 — Design system & architecture | 05–08 | Sprints 05–06 ✅ · Sprint 07 next |
+| 2 — Design system & architecture | 05–08 | Sprints 05–07 ✅ · Sprint 08 next |
 | 3 — Authentication | 09–12 | Not started |
 | 4+ | 13–84 | Not started |
