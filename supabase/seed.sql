@@ -9,10 +9,13 @@
 --   * No real personal data, ever — not a real email, not a real file.
 --   * Idempotent where it can be, so a partial reset does not wedge.
 --
--- Empty until Sprint 13 creates the schema. Seeding rows into tables that do
--- not exist yet would just make `db:reset` fail, so this is deliberately a
--- no-op rather than a guess at the shape of `profiles`.
-
--- Sprint 13+: insert an auth user, a profile, two subjects and a handful of
--- topics, mirroring src/features/dashboard/sample-data.ts so the dashboard has
--- something real to render and that placeholder file can be deleted.
+-- The schema exists as of Sprint 13, so this file can now be written — but it
+-- is deliberately still a no-op, because seeding requires `db:reset`, which
+-- requires Docker, which is not installed on the machine this was built on. A
+-- seed nobody can run is worse than an empty one: it rots silently and fails
+-- the first time someone with Docker tries a reset.
+--
+-- What it should insert, once there is a way to prove it works: an auth user, a
+-- profile, two subjects and a handful of topics mirroring
+-- src/features/dashboard/sample-data.ts, so the dashboard renders something
+-- real and that placeholder file can be deleted (Sprint 70).

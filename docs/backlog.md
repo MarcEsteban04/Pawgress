@@ -25,15 +25,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 10 | Registration — sign-up, password strength, duplicate handling, 6-digit email code | done | applied to the hosted project via `npm run auth:configure` |
 | 11 | Login & logout — sign in, sign out, session persistence, protected routes | done | preview-session branch deleted |
 | 12 | Account recovery — forgot password, 6-digit reset code, session expiry | done | recovery template pushed to the hosted project |
+| 13 | Database schema — 17 tables, foreign keys, indexes, constraints, RLS enabled | done | applied to the hosted project; policies are Sprint 14 |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 13 | Database schema + RLS on every table | 12 |
-| 14 | Storage buckets and upload policies | 13 |
-| 15 | Profile, account deletion, AI usage in settings | 13 |
+| 14 | RLS policies + ownership tests | 13 |
+| 15 | Profile, account deletion, AI usage in settings | 14 |
+| 16 | Storage buckets and upload policies | 14 |
 
 ---
 

@@ -73,6 +73,8 @@ The app runs at http://localhost:3000.
 | `npm run db:start` / `db:stop` | Boot / stop the local Supabase stack |
 | `npm run db:reset` | Re-run every migration, then seed |
 | `npm run db:types` | Regenerate `src/types/database.ts` |
+| `npm run db:push:remote` | Apply pending migrations to the hosted project (no Docker needed) |
+| `npm run db:types:remote` | Regenerate types from the hosted schema; `-- --check` fails if stale |
 
 ## Project structure
 
@@ -102,7 +104,8 @@ src/
   styles/               Global style partials beyond app/globals.css
 supabase/
   config.toml           local stack config (ports, auth rules)
-  migrations/           SQL migrations (Sprint 13+)
+  migrations/           SQL migrations — the schema's source of truth
+  templates/            auth email templates (6-digit codes)
   seed.sql              local seed data, applied by `db:reset`
 docs/                   Product spec, roadmap, requirements, flows, wireframes
 design/
@@ -134,4 +137,4 @@ into a client component.
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
 | 3 — Authentication | 09–12 | Complete ✅ |
-| 4 — Database & storage | 13–18 | Sprint 13 next |
+| 4 — Database & storage | 13–18 | Sprint 13 ✅ · Sprint 14 next |

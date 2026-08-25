@@ -10,3 +10,7 @@ public
 
 # Design-canvas artboards — authored for an external editor, not app code
 design
+
+# Generated from the live schema by scripts/db-types.mjs. Formatting it here
+# would make that script report the file as stale on every run.
+src/types/database.ts

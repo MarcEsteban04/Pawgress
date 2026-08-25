@@ -21,8 +21,28 @@ Architecture reasoning lives in [`architecture.md`](architecture.md) §3–§4; 
 | Local stack config | [`supabase/config.toml`](../supabase/config.toml) |
 | Generated row types | [`src/types/database.ts`](../src/types/database.ts) |
 
-There is **no schema yet** — that is Sprint 13. Registration and sign-in are Sprints 10–11. What
-Sprint 09 delivers is the connection and the plumbing around it.
+### Two schemas, and why auth works before Sprint 13
+
+A reasonable question on seeing "database schema — Sprint 13" while sign-in already works: *what is
+it storing accounts in?*
+
+There are two schemas in the database, owned by different people:
+
+| Schema | Owner | Contains |
+|---|---|---|
+| `auth` | **Supabase** — created with the project | `auth.users`: email, hashed password, `email_confirmed_at`, sessions, refresh tokens |
+| `storage` | **Supabase** — created with the project | Bucket and object metadata |
+| `public` | **Us** — created in Sprint 13 | `profiles`, `subjects`, `topics`, `materials`, … |
+
+Registration, confirmation, sign-in and password reset live entirely in `auth`. Not one of them
+touches a table we wrote, which is why the whole of Phase 3 works with `public` still empty.
+
+Phase 3 shipped before `public` held a single table, which is why sign-in worked with nothing of
+ours in the database. Sprint 13 filled it in — see §9 — including the trigger and backfill that give
+every account a `profiles` row, since three sprints of students had already registered by then.
+
+The dashboard still renders labelled sample data. The tables exist now, but nothing writes to them
+until subjects and uploads arrive in Sprint 19+.
 
 ---
 
@@ -122,7 +142,9 @@ Each layer assumes the other two might be bypassed.
 - **`requireSession()` uses `getUser()`, not `getSession()`.** `getSession()` decodes the cookie
   without verifying it, and a cookie is attacker-controllable. `getUser()` costs a round trip and is
   memoised with React `cache()`, so it is paid once per request no matter how many components ask.
-- **RLS is written in Sprint 13** with the schema. Until it exists, no table is safe to expose.
+- **RLS is enabled on every table (Sprint 13); the policies are Sprint 14.** Enabled with no
+  policies denies everything, which is where the schema sits right now — verified against the live
+  project, where every table returns zero rows to the anon key.
 
 ---
 
@@ -285,9 +307,51 @@ Every schema change ships as a migration in `supabase/migrations/` (NFR-O3). Not
 hand in the hosted dashboard — a change made there and not captured is a change that will be missing
 on the next reset, and nobody finds out until it matters.
 
+**With Docker** (the full loop):
+
 ```bash
-# after editing schema in local Studio
-npm run db:diff -- add_subjects_table
-npm run db:reset          # prove the migration replays from empty
-npm run db:types          # regenerate row types
+npm run db:diff -- add_subjects_table   # capture what you changed in local Studio
+npm run db:reset                        # prove it replays from empty
+npm run db:types                        # regenerate row types
+npm run db:push                         # send it to the linked project
 ```
+
+**Without Docker** (what Sprint 13 was applied with):
+
+```bash
+npm run db:push:remote -- --check   # list pending migrations
+npm run db:push:remote              # apply them to the hosted project
+npm run db:types:remote             # regenerate row types from the live schema
+npm run db:types:remote -- --check  # fail if the committed types are stale
+```
+
+Both routes record what was applied in `supabase_migrations.schema_migrations`, the table the CLI
+itself reads, so they are interchangeable.
+
+**The Docker route is still the one that proves anything.** Applying a migration forward is not
+evidence that it replays from an empty database — only `db:reset` shows that, and a migration that
+cannot rebuild the schema from scratch is a migration you cannot recover from. Install Docker before
+Sprint 14's RLS policies, where "it worked when I applied it" and "it is correct" diverge sharply.
+
+## 9. The schema
+
+Sixteen tables from the Sprint 13 list, plus `study_plan_items` — a plan with no items cannot
+satisfy FR-L2's "concrete and actionable" or FR-L3's per-item completion, and the alternative was a
+jsonb blob that ticking one item would rewrite wholesale.
+
+Three rules run through
+[`20260826090000_initial_schema.sql`](../supabase/migrations/20260826090000_initial_schema.sql):
+
+- **Every table carries `user_id`**, even where ownership could be derived by joining upward. Sprint
+  14's policies then read `auth.uid() = user_id` with no joins. A policy that walks three tables to
+  decide ownership is slow on every row, easy to get subtly wrong, and is the last line of defence.
+- **RLS is enabled on all seventeen, with no policies yet.** That combination denies everything,
+  which is the only safe state: Supabase exposes public tables through PostgREST, so a table with
+  RLS *off* is readable by anyone holding the anon key — and the anon key ships in the browser.
+  Verified against the live project: every table returns zero rows to the anon key.
+- **Deletes cascade from `auth.users` down**, so removing an account removes uploads, extracted
+  text, embeddings and generated content with it (NFR-P3), without relying on application code.
+
+`profiles` is created for new sign-ups by a trigger on `auth.users`, and the migration backfills
+everyone who registered during Sprints 10–12 — three sprints of accounts that would otherwise have
+had no profile row.
