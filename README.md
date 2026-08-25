@@ -25,6 +25,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/design-system.md`](docs/design-system.md) | Primitive set, token vocabulary, component standards |
 | [`docs/architecture.md`](docs/architecture.md) | Routing, auth layers, data access, background jobs, errors |
 | [`docs/supabase.md`](docs/supabase.md) | Supabase runbook — local stack, hosted project, the three auth layers |
+| [`docs/validation.md`](docs/validation.md) | Validation layers, upload checks, sanitising, error shape |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
@@ -138,4 +139,4 @@ into a client component.
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
 | 3 — Authentication | 09–12 | Complete ✅ |
-| 4 — Database & storage | 13–18 | Sprints 13–16 ✅ · Sprint 17 next |
+| 4 — Database & storage | 13–18 | Sprints 13–17 ✅ · Sprint 18 next |

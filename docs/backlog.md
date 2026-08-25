@@ -29,15 +29,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 14 | Row Level Security — 67 policies, composite-key ownership, 17 security tests | done | `npm run db:test:rls` passes against the live project |
 | 15 | User profiles — name, year level, school, study block, timezone, account deletion | done | **profile picture deferred to Sprint 16**, which is when storage exists |
 | 16 | Storage — private buckets, path-based ownership, avatar upload, 10 new security tests | done | account deletion removes files via the Storage API, not a DB trigger |
+| 17 | Data validation — shared form parser, byte-sniffing upload checks, sanitisers, error shape | done | `docs/validation.md` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 17 | Data validation — schema, API, file, sanitisation, error standards | 16 |
 | 18 | Database testing — CRUD, RLS, foreign keys, concurrency | 17 |
 | 19 | Subject creation | 18 |
+| 20 | Subject list, search and sort | 19 |
 
 ---
 

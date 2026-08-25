@@ -11,6 +11,9 @@ import {
   objectPath,
   removeAllUserObjects,
 } from "@/lib/supabase/storage";
+import { errorFormState } from "@/lib/errors";
+import { validateUpload } from "@/lib/validation/files";
+import { parseForm } from "@/lib/validation/form";
 import { DELETE_CONFIRMATION, profileSchema } from "@/lib/validation/profile";
 import { requireSession } from "@/server/auth/session";
 import { getProfile } from "@/server/profile/queries";
@@ -29,25 +32,20 @@ export async function updateProfileAction(
 ): Promise<SettingsFormState> {
   await requireSession();
 
-  const parsed = profileSchema.safeParse({
-    displayName: formData.get("displayName"),
-    yearLevel: formData.get("yearLevel"),
-    school: formData.get("school"),
-    preferredSessionMinutes: formData.get("preferredSessionMinutes"),
-    timezone: formData.get("timezone"),
-  });
+  const parsed = parseForm(profileSchema, formData, [
+    "displayName",
+    "yearLevel",
+    "school",
+    "preferredSessionMinutes",
+    "timezone",
+  ]);
 
-  if (!parsed.success) {
-    const flat = parsed.error.flatten().fieldErrors;
+  if (!parsed.ok) {
     return {
       status: "error",
-      message: "Check the details above.",
-      nextStep: "Fix the highlighted field and save again.",
-      fieldErrors: {
-        displayName: flat.displayName?.[0],
-        yearLevel: flat.yearLevel?.[0],
-        school: flat.school?.[0],
-      },
+      message: parsed.message,
+      nextStep: parsed.nextStep,
+      fieldErrors: parsed.fieldErrors,
     };
   }
 
@@ -163,33 +161,20 @@ export async function uploadAvatarAction(
   const session = await requireSession();
   const file = formData.get("avatar");
 
-  if (!(file instanceof File) || file.size === 0) {
-    return {
-      status: "error",
-      message: "No image was chosen.",
-      nextStep: "Pick a JPG, PNG or WebP and try again.",
-    };
-  }
-
-  if (file.size > BUCKET_LIMITS.avatars) {
-    const limitMb = Math.round(BUCKET_LIMITS.avatars / (1024 * 1024));
-    return {
-      status: "error",
-      message: `That image is larger than ${limitMb} MB.`,
-      nextStep: "Crop it or pick a smaller one — an avatar is only shown at thumbnail size.",
-    };
-  }
-
-  if (!(AVATAR_MIME_TYPES as readonly string[]).includes(file.type)) {
-    return {
-      status: "error",
-      message: "That file type is not supported.",
-      nextStep: "Use a JPG, PNG or WebP.",
-    };
-  }
+  /* One validator, and it reads the file's leading bytes rather than trusting
+     the MIME type the browser sent — renaming payload.html to avatar.png sets
+     that to image/png, and every check that trusts it passes. */
+  const checked = await validateUpload(file, {
+    accept: AVATAR_MIME_TYPES,
+    maxBytes: BUCKET_LIMITS.avatars,
+    label: "JPG, PNG or WebP image",
+  });
+  if (!checked.ok) return errorFormState(checked.error);
+  const image = checked.file;
 
   const supabase = await createSupabaseServerClient();
-  const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const extension =
+    image.type === "image/png" ? "png" : image.type === "image/webp" ? "webp" : "jpg";
 
   /* A new name every time, rather than overwriting a fixed one. An avatar is
      served through a signed URL that a browser may still hold; reusing the path
@@ -198,7 +183,7 @@ export async function uploadAvatarAction(
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKETS.avatars)
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, image, { contentType: image.type, upsert: false });
 
   if (uploadError) {
     return {

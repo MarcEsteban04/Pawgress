@@ -165,3 +165,97 @@ export const errors = {
       nextStep: "Try again in a minute. Your question is still here.",
     }),
 } as const;
+
+/* -------------------------------------------------------------------------- */
+/*  Error response standards (Sprint 17)                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The shape every route handler returns on failure.
+ *
+ * One shape, so a caller never has to guess whether the message is in `error`,
+ * `message` or `detail`. `code` is for the caller to branch on; `message` and
+ * `nextStep` are for a person to read, and neither ever carries a provider
+ * string or a stack trace (NFR-R3, docs/states.md §5).
+ */
+export type ErrorBody = {
+  error: {
+    code: AppErrorCode;
+    message: string;
+    nextStep: string;
+    /** Echoed back so a client can correlate a report with a server log. */
+    requestId?: string;
+  };
+};
+
+/** HTTP status per failure kind. Kept here so two handlers cannot disagree. */
+const STATUS_BY_CODE: Record<AppErrorCode, number> = {
+  validation: 400,
+  unauthenticated: 401,
+  forbidden: 403,
+  not_found: 404,
+  quota_exceeded: 429,
+  rate_limited: 429,
+  unreadable_file: 415,
+  not_ready: 409,
+  invalid_ai_output: 502,
+  provider_unavailable: 503,
+  unexpected: 500,
+};
+
+export function statusForError(error: AppError): number {
+  return STATUS_BY_CODE[error.code];
+}
+
+/**
+ * Turns anything thrown into the standard JSON response.
+ *
+ * Unexpected failures are logged with their cause and returned WITHOUT it —
+ * the student gets the generic message from `toAppError`, and the detail stays
+ * server-side where it belongs.
+ */
+export function errorResponse(thrown: unknown, requestId?: string): Response {
+  const error = toAppError(thrown);
+
+  if (error.code === "unexpected") {
+    console.error("[pawgress] unexpected error", {
+      requestId,
+      cause: error.cause,
+      context: error.context,
+    });
+  }
+
+  const body: ErrorBody = {
+    error: {
+      code: error.code,
+      message: error.message,
+      nextStep: error.nextStep,
+      ...(requestId ? { requestId } : {}),
+    },
+  };
+
+  return Response.json(body, {
+    status: statusForError(error),
+    // A failure is never cacheable, and a 429 cached by a CDN would keep
+    // rejecting a student long after their quota reset.
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
+/**
+ * The same failure, as the state a Server Action form renders.
+ *
+ * Actions return rather than throw for expected failures — throwing would swap
+ * a usable screen for an error boundary (docs/architecture.md §6).
+ */
+export function errorFormState(thrown: unknown): {
+  status: "error";
+  message: string;
+  nextStep: string;
+} {
+  const error = toAppError(thrown);
+  if (error.code === "unexpected") {
+    console.error("[pawgress] unexpected error in action", { cause: error.cause });
+  }
+  return { status: "error", message: error.message, nextStep: error.nextStep };
+}
