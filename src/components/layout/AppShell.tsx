@@ -48,7 +48,15 @@ export type AppShellProps = {
    * is worse than an empty space.
    */
   toolbar?: ReactNode;
-  user: { name: string; email: string };
+  user: {
+    name: string;
+    email: string;
+    /**
+     * Short-lived signed URL for the profile picture, re-signed on every
+     * request by `getProfile()`. Null falls back to initials.
+     */
+    avatarUrl?: string | null;
+  };
   quota?: { used: number; limit: number; resetsAt: string };
   /**
    * Read from a cookie on the server, so the first paint is already the right
@@ -140,7 +148,7 @@ export function AppShell({ children, toolbar, user, quota, initialSidebar }: App
                   aria-label="Account"
                   className="rounded-[var(--radius-pill)] pl-0.5 transition-colors hover:bg-surface-sunken sm:pr-2.5"
                 >
-                  <UserPill name={user.name} meta={user.email} />
+                  <UserPill name={user.name} meta={user.email} src={user.avatarUrl ?? undefined} />
                 </MenuTrigger>
                 <MenuContent>
                   <div className="px-2.5 py-2">

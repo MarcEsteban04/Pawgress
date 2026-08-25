@@ -29,6 +29,7 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
       user={{
         name: profile?.displayName ?? session.email.split("@")[0] ?? "You",
         email: session.email,
+        avatarUrl: profile?.avatarUrl ?? null,
       }}
       toolbar={toolbar}
       initialSidebar={sidebar}
