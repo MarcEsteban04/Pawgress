@@ -94,7 +94,15 @@ export function titleFromFileName(fileName: string): string {
 export type UploadTicket = {
   /** Object path inside the materials bucket, chosen by the server. */
   path: string;
-  /** Single-use token the browser PUTs against. */
+  /**
+   * The full endpoint to PUT against, token included.
+   *
+   * Returned alongside the token because the browser uploads with XHR rather
+   * than the Supabase helper — `fetch` cannot report request progress, so the
+   * helper that wraps it cannot either (FR-U3). See `transfer.ts`.
+   */
+  signedUrl: string;
+  /** Single-use token. Kept for callers that use the Supabase helper. */
   token: string;
 };
 

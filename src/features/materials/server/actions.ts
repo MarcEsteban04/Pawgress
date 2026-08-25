@@ -163,7 +163,10 @@ export async function createUploadTicketAction(input: {
     };
   }
 
-  return { status: "ok", ticket: { path: data.path, token: data.token } };
+  return {
+    status: "ok",
+    ticket: { path: data.path, signedUrl: data.signedUrl, token: data.token },
+  };
 }
 
 /**

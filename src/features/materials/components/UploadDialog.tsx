@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleCheck, FileText, Upload, X } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Button,
   Dialog,
@@ -21,6 +21,7 @@ import {
   recordMaterialAction,
   verifyUploadAction,
 } from "@/features/materials/server/actions";
+import { putWithProgress, runWithConcurrency } from "@/features/materials/transfer";
 import { type DuplicateMaterial } from "@/features/materials/types";
 import {
   formatBytes,
@@ -30,20 +31,19 @@ import {
   titleFromFileName,
 } from "@/features/materials/upload";
 import { BUCKET_LIMITS } from "@/features/settings/limits";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validateUpload } from "@/lib/validation/files";
 import { type Topic } from "@/server/topics/queries";
 import { cn } from "@/lib/utils";
 
 /**
- * Upload files into a subject (FR-U1, FR-U2, FR-U8, US-C1, US-C2).
+ * Upload files into a subject (FR-U1, FR-U2, FR-U3, FR-U8, US-C1, US-C2).
  *
  * **The bytes go browser → Supabase Storage, never through Next.** A Server
  * Action body is capped at 1 MB by default and around 4.5 MB on a serverless
  * host, both well under the 25 MB the bucket accepts, so proxying the file
- * would fail on exactly the files students most want to upload. Instead a
- * Server Action mints a signed upload URL, the browser PUTs to it, a second
- * action verifies what landed, and a third records the row. See `../upload.ts`.
+ * would fail on exactly the files students most want to upload. A Server Action
+ * mints a signed upload URL, the browser PUTs to it, a second action verifies
+ * what landed, and a third records the row. See `../upload.ts`.
  *
  * **Four checks, and only one of them is a gate.** In order:
  *
@@ -57,19 +57,22 @@ import { cn } from "@/lib/utils";
  *  4. `verifyUploadAction()`, which reads what is actually in the bucket. This
  *     is the gate — everything above it can be skipped by anyone who wants to.
  *
- * **One file failing does not fail the others** (US-C1). Each is tracked
- * independently and reported by name, because "3 of 5 uploaded" with no names
- * leaves a student re-picking all five.
+ * **Every file is its own transfer, with its own bar, its own cancel and its
+ * own retry** (FR-U3). One failing does not fail the others, and each is named
+ * — "3 of 5 uploaded" with no names leaves a student re-picking all five.
  *
- * Per-file progress bars and cancel are Sprint 27. The plumbing here is chosen
- * so they can be added without rewriting it: a browser upload can report
- * progress and be aborted, which a Server Action cannot.
+ * What is deliberately NOT here is resumability. A cancelled or dropped upload
+ * starts over rather than continuing from where it stopped; that needs a
+ * resumable protocol (Supabase speaks TUS) and is worth its own sprint at a
+ * file size where it matters. At 25 MB, retrying is cheaper than the machinery.
  */
 
 type FileState = {
   id: string;
   file: File;
-  status: "pending" | "uploading" | "duplicate" | "done" | "error";
+  status: "pending" | "hashing" | "uploading" | "checking" | "duplicate" | "done" | "error";
+  /** 0–1 while uploading. */
+  progress: number;
   message?: string;
   nextStep?: string;
   /** Set when the same bytes are already in the library (FR-U8). */
@@ -77,6 +80,9 @@ type FileState = {
   /** True once the student has chosen to upload despite the duplicate. */
   allowDuplicate?: boolean;
 };
+
+const BUSY_STATUSES: FileState["status"][] = ["hashing", "uploading", "checking"];
+const isBusy = (entry: FileState) => BUSY_STATUSES.includes(entry.status);
 
 let counter = 0;
 const nextId = () => `file-${(counter += 1)}`;
@@ -93,7 +99,7 @@ export function UploadDialog({
    * Opened from a topic row, so the destination is already decided.
    *
    * The select is not merely pre-filled — it is removed. A student who clicked
-   * "add files" ON a topic has already answered that question, and leaving the
+   * "upload" ON a topic has already answered that question, and leaving the
    * control there invites them to answer it twice and disagree with themselves.
    */
   fixedTopic?: { id: string; name: string };
@@ -106,16 +112,42 @@ export function UploadDialog({
   const fileInput = useRef<HTMLInputElement>(null);
   const topicSelectId = useId();
 
+  /* One controller per file, outside state: aborting is an imperative act on a
+     live request, and holding a controller in state would let a stale render
+     abort a request that had already finished. */
+  const controllers = useRef(new Map<string, AbortController>());
+
   const limitMb = Math.round(BUCKET_LIMITS.materials / (1024 * 1024));
   const queued = files.filter((entry) => entry.status === "pending" || entry.status === "error");
   const duplicates = files.filter((entry) => entry.status === "duplicate").length;
   const uploaded = files.filter((entry) => entry.status === "done").length;
+  const inFlight = files.some(isBusy);
+
+  /**
+   * Closing the tab mid-upload loses the transfer, so say so.
+   *
+   * Registered only while something is actually in flight. A permanent
+   * `beforeunload` handler is the reason browsers started ignoring them.
+   */
+  useEffect(() => {
+    if (!inFlight) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [inFlight]);
+
+  function update(id: string, patch: Partial<FileState>) {
+    setFiles((current) =>
+      current.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+    );
+  }
 
   function addFiles(picked: FileList | File[]) {
     const incoming = Array.from(picked).map((file) => ({
       id: nextId(),
       file,
       status: "pending" as const,
+      progress: 0,
     }));
     /* Appended rather than replacing: dropping a second batch should add to the
        first, which is what "multiple files in one action" means in practice. */
@@ -123,11 +155,25 @@ export function UploadDialog({
   }
 
   function removeFile(id: string) {
-    setFiles((current) => current.filter((item) => item.id !== id));
+    controllers.current.get(id)?.abort();
+    controllers.current.delete(id);
+    setFiles((current) => current.filter((entry) => entry.id !== id));
+  }
+
+  function cancelFile(id: string) {
+    controllers.current.get(id)?.abort();
   }
 
   /** Uploads one file end to end. Never throws — the caller runs a batch. */
-  async function uploadOne(entry: FileState): Promise<FileState> {
+  async function uploadOne(entry: FileState): Promise<void> {
+    const controller = new AbortController();
+    controllers.current.set(entry.id, controller);
+
+    const finish = (patch: Partial<FileState>) => {
+      controllers.current.delete(entry.id);
+      update(entry.id, patch);
+    };
+
     const checked = await validateUpload(entry.file, {
       accept: MATERIAL_MIME_TYPES,
       maxBytes: BUCKET_LIMITS.materials,
@@ -135,18 +181,23 @@ export function UploadDialog({
     });
 
     if (!checked.ok) {
-      return {
-        ...entry,
+      finish({
         status: "error",
         message: checked.error.message,
         nextStep: checked.error.nextStep,
-      };
+      });
+      return;
     }
 
-    /* Hashed before a ticket is asked for, so a file already in the library
-       never costs the upload. Null when SubtleCrypto is unavailable, which
-       disables duplicate detection rather than blocking anything. */
+    /* Hashing a 20 MB file is not instantaneous, so it gets its own status
+       rather than sitting under "uploading" — a bar at 0% that has not started
+       moving reads as a stall. */
+    update(entry.id, { status: "hashing", progress: 0 });
     const contentHash = await hashFile(entry.file);
+    if (controller.signal.aborted) {
+      finish({ status: "pending", progress: 0 });
+      return;
+    }
 
     const ticket = await createUploadTicketAction({
       subjectId,
@@ -158,36 +209,47 @@ export function UploadDialog({
     });
 
     if (ticket.status === "duplicate") {
-      return { ...entry, status: "duplicate", duplicate: ticket.existing };
+      finish({ status: "duplicate", duplicate: ticket.existing });
+      return;
     }
 
     if (ticket.status === "error") {
-      return { ...entry, status: "error", message: ticket.message, nextStep: ticket.nextStep };
+      finish({ status: "error", message: ticket.message, nextStep: ticket.nextStep });
+      return;
     }
 
-    const { path, token } = ticket.ticket;
-    const supabase = getSupabaseBrowserClient();
+    const { path, signedUrl } = ticket.ticket;
 
-    const { error: uploadError } = await supabase.storage
-      .from("materials")
-      .uploadToSignedUrl(path, token, entry.file, { contentType: entry.file.type });
+    update(entry.id, { status: "uploading", progress: 0 });
+    const transfer = await putWithProgress({
+      url: signedUrl,
+      file: entry.file,
+      signal: controller.signal,
+      onProgress: ({ ratio }) => update(entry.id, { progress: ratio }),
+    });
 
-    if (uploadError) {
-      return {
-        ...entry,
-        status: "error",
-        message: "That file did not finish uploading.",
-        nextStep: "Check your connection and try again.",
-      };
+    if (transfer.status === "cancelled") {
+      /* A cancelled PUT may still have written a partial object. Removing it
+         costs one call and avoids paying for bytes nothing points at. */
+      await discardUploadAction(path);
+      finish({ status: "pending", progress: 0 });
+      return;
+    }
+
+    if (transfer.status === "error") {
+      finish({ status: "error", message: transfer.message, nextStep: transfer.nextStep });
+      return;
     }
 
     /* The real gate. Everything before this ran in a browser and could have
        been skipped; this reads what actually landed in the bucket. A file that
        fails is removed by the action, so there is nothing to clean up here. */
+    update(entry.id, { status: "checking" });
     const verified = await verifyUploadAction({ path, mimeType: entry.file.type });
 
     if (verified.status === "error") {
-      return { ...entry, status: "error", message: verified.message, nextStep: verified.nextStep };
+      finish({ status: "error", message: verified.message, nextStep: verified.nextStep });
+      return;
     }
 
     const recorded = await recordMaterialAction({
@@ -204,67 +266,48 @@ export function UploadDialog({
     if (recorded.status === "error") {
       // The bytes landed but nothing points at them. Do not leave them behind.
       await discardUploadAction(path);
-      return {
-        ...entry,
-        status: "error",
-        message: recorded.message,
-        nextStep: recorded.nextStep,
-      };
+      finish({ status: "error", message: recorded.message, nextStep: recorded.nextStep });
+      return;
     }
 
-    return {
-      ...entry,
+    finish({
       status: "done",
+      progress: 1,
       message: undefined,
       nextStep: undefined,
       duplicate: undefined,
-    };
+    });
+  }
+
+  async function runBatch(entries: FileState[]) {
+    if (entries.length === 0) return;
+    setBusy(true);
+    await runWithConcurrency(entries.map((entry) => () => uploadOne(entry)));
+    setBusy(false);
+  }
+
+  /** Retry one file without re-picking it (US-C1). */
+  function retryOne(id: string) {
+    const entry = files.find((item) => item.id === id);
+    if (entry) void runBatch([{ ...entry, status: "pending", message: undefined }]);
   }
 
   /** "Upload it anyway" on a duplicate — retried with the check waived. */
-  async function uploadAnyway(id: string) {
+  function uploadAnyway(id: string) {
     const entry = files.find((item) => item.id === id);
-    if (!entry) return;
-
-    setBusy(true);
-    setFiles((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, status: "uploading" as const, duplicate: undefined } : item,
-      ),
-    );
-
-    const result = await uploadOne({ ...entry, allowDuplicate: true });
-    setFiles((current) => current.map((item) => (item.id === id ? result : item)));
-    setBusy(false);
+    if (entry) void runBatch([{ ...entry, allowDuplicate: true, duplicate: undefined }]);
   }
 
-  async function uploadAll() {
-    setBusy(true);
-
+  function uploadAll() {
     /* A file already flagged as a duplicate is skipped. The student has been
        asked and has not answered, and uploading it regardless would be
        answering for them. */
-    const skip = (entry: FileState) => entry.status === "done" || entry.status === "duplicate";
-    const targets = files.filter((entry) => !skip(entry));
-
-    setFiles((current) =>
-      current.map((entry) => (skip(entry) ? entry : { ...entry, status: "uploading" as const })),
-    );
-
-    /* Sequential, not concurrent. Ten parallel 20 MB uploads compete for one
-       connection and every one of them gets slower; worse, a student watching
-       ten stalled rows cannot tell whether anything is happening. One at a time
-       finishes files in a visible order. Concurrency is a Sprint 27 decision,
-       once there are real progress bars to justify it. */
-    for (const entry of targets) {
-      const result = await uploadOne(entry);
-      setFiles((current) => current.map((item) => (item.id === entry.id ? result : item)));
-    }
-
-    setBusy(false);
+    void runBatch(files.filter((entry) => entry.status === "pending" || entry.status === "error"));
   }
 
   function reset() {
+    for (const controller of controllers.current.values()) controller.abort();
+    controllers.current.clear();
     setFiles([]);
     setTopicId(fixedTopic?.id ?? "");
     if (fileInput.current) fileInput.current.value = "";
@@ -344,7 +387,7 @@ export function UploadDialog({
           )}
 
           {files.length > 0 && (
-            <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+            <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
               {files.map((entry) => (
                 <li
                   key={entry.id}
@@ -358,12 +401,34 @@ export function UploadDialog({
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{entry.file.name}</p>
-                    <p className="mt-0.5 text-xs text-ink-subtle">
+                    <p className="tabular mt-0.5 text-xs text-ink-subtle">
                       {formatBytes(entry.file.size)}
                       {materialKindFor(entry.file.type) === null && " · unsupported type"}
-                      {entry.status === "uploading" && " · uploading…"}
+                      {entry.status === "hashing" && " · checking for a duplicate…"}
+                      {entry.status === "uploading" &&
+                        ` · ${Math.round(entry.progress * 100)}% uploaded`}
+                      {entry.status === "checking" && " · verifying…"}
                       {entry.status === "done" && " · added"}
                     </p>
+
+                    {/* A real bar, driven by real bytes. `checking` keeps it
+                        full rather than hiding it, because the transfer IS
+                        finished — what follows is the server reading it. */}
+                    {(entry.status === "uploading" || entry.status === "checking") && (
+                      <div
+                        className="mt-2 h-1.5 overflow-hidden rounded-[var(--radius-pill)] bg-rule"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(entry.progress * 100)}
+                        aria-label={`Uploading ${entry.file.name}`}
+                      >
+                        <div
+                          className="h-full rounded-[var(--radius-pill)] bg-accent transition-[width] duration-200 ease-out"
+                          style={{ width: `${Math.max(2, entry.progress * 100)}%` }}
+                        />
+                      </div>
+                    )}
 
                     {/* A duplicate is not an error and is not styled as one.
                         Re-using the same handout in a second subject is a
@@ -393,17 +458,34 @@ export function UploadDialog({
                       </div>
                     )}
 
-                    {/* The reason AND the next step, per file, by name. A batch
-                        that reports "2 failed" makes a student re-pick all of
-                        them (US-C2). */}
+                    {/* The reason, the next step, and a retry that does not ask
+                        for the file again (US-C1). */}
                     {entry.status === "error" && (
-                      <p className="mt-1 text-xs text-bad">
-                        {entry.message} {entry.nextStep}
-                      </p>
+                      <div className="mt-1.5 flex flex-col items-start gap-1.5">
+                        <p className="text-xs text-bad">
+                          {entry.message} {entry.nextStep}
+                        </p>
+                        <Button
+                          variant="subtle"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => retryOne(entry.id)}
+                        >
+                          Try this one again
+                        </Button>
+                      </div>
                     )}
                   </div>
 
-                  {entry.status !== "uploading" && (
+                  {isBusy(entry) ? (
+                    <button
+                      type="button"
+                      onClick={() => cancelFile(entry.id)}
+                      className="shrink-0 rounded-[var(--radius-pill)] px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:text-bad"
+                    >
+                      Cancel
+                    </button>
+                  ) : (
                     <button
                       type="button"
                       aria-label={`Remove ${entry.file.name}`}

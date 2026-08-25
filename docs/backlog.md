@@ -39,15 +39,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 24 | Organization polish — topic reordering, `last_activity_at`, topic-aware search, per-panel error boundaries | done | `npm run db:test:reorder`; subject reordering deliberately NOT built — see note |
 | 25 | Upload UI — drag/drop, multi-file, topic tagging, direct-to-storage | done | bytes bypass Next entirely; typed **notes deferred to Sprint 30** (FR-U5), progress/cancel to 27 |
 | 26 | File validation — stored-byte check, PDF encryption/truncation, duplicate detection | done | image-only PDF detection needs the extractor, deferred to 32/33 |
+| 27 | Upload progress — per-file bars, cancel, retry, concurrency of 2 | done | XHR not fetch (fetch cannot report request progress); **resumability deliberately deferred** |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 27 | Upload progress, cancel and retry | 25 |
 | 28 | Material library — list, search, filter, rename, delete | 25 |
 | 29 | Material preview — PDF and image viewer | 28 |
+| 30 | Typed notes as first-class material | 28 |
 
 ---
 
