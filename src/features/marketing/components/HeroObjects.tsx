@@ -1,6 +1,5 @@
 import { Check, FileText, Presentation, ScanText } from "lucide-react";
 import { MasteryBar, SourceChip, StatusBadge } from "@/components/ui";
-import { PawMark } from "@/components/shared/Logo";
 import { CITATION, NEXT_EXAM_LANDING, PLAN_TODAY, STICKY_NOTE } from "@/config/showcase";
 import { Stopwatch } from "./Stopwatch";
 import { cn } from "@/lib/utils";
@@ -49,21 +48,6 @@ export function CheckTile({ className }: { className?: string }) {
       <span className="flex size-10 items-center justify-center rounded-[0.75rem] bg-accent text-on-accent shadow-[var(--shadow-pill)]">
         <Check className="size-6" strokeWidth={3} aria-hidden />
       </span>
-    </div>
-  );
-}
-
-/** The app mark on a tile — the anchor object directly above the headline. */
-export function MarkTile({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        OBJECT,
-        "flex size-[4.5rem] items-center justify-center rounded-[1.375rem]",
-        className,
-      )}
-    >
-      <PawMark className="size-11" />
     </div>
   );
 }

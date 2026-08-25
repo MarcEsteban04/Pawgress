@@ -147,9 +147,31 @@ top of the icon rail — the only place the brand appears inside the authenticat
 favicon size the paw drops from four toes to three rather than shrinking all four; four toes at 16 px
 turn to mud.
 
-**Mascot** — an ink line-art cat, one stroke weight, no fill. It sits *beside* the work rather than
-performing at you. Appears on: progress milestones, streaks (V1), and empty states. **Never** on an
-error, a failed upload, or a failed generation.
+**Mascot** — the supplied illustration at
+[`src/assets/brand/pawgress-logo.png`](../src/assets/brand/pawgress-logo.png): a dog in a graduation
+cap studying at a laptop, with the Pawgress wordmark. Rendered through
+[`BrandMascot`](../src/components/shared/BrandMascot.tsx).
+
+Where it goes: **large brand moments only** — the landing hero and the sign-up aside. Chrome keeps
+the drawn `Logo`, because a detailed illustration at 28px is an unreadable smudge, a wasted
+download, and cannot follow the theme the way an SVG does.
+
+Two constraints the asset imposes, both worked around rather than ignored:
+
+- **1.4 MB, 1536×1024.** It is always served through `next/image`, which resizes it to the widths
+  actually requested and re-encodes to AVIF/WebP. It lives in `src/assets/` rather than `public/`,
+  because everything in `public/` is served verbatim at a guessable URL — the unoptimised original
+  would otherwise stay downloadable by anyone who asked, bypassing all of that.
+- **The wordmark's "Paw" is white with a dark outline**, so on a white card it reads by its stroke
+  alone. Every placement sits on the dot-grid panel or a tinted surface. Do not drop it onto
+  `bg-surface`.
+
+The artwork also carries roughly 13% empty padding on each side, which `BrandMascot` pulls back with
+a negative block margin so it optically centres in whatever box it is given. A trimmed source would
+be better than the workaround.
+
+It sits *beside* the work rather than performing at you, and it **never** appears on an error, a
+failed upload, or a failed generation.
 
 **Icons** — Lucide, at **1.6 px stroke, round caps, 24 px grid**. Set once globally via the `.lucide`
 rule in `globals.css`, because CSS overrides Lucide's `stroke-width` attribute — so no icon needs a

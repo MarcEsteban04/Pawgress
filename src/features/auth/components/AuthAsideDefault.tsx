@@ -1,3 +1,4 @@
+import { BrandMascot } from "@/components/shared/BrandMascot";
 import { AuthProof } from "./AuthProof";
 
 /**
@@ -11,6 +12,10 @@ import { AuthProof } from "./AuthProof";
 export function AuthAsideDefault() {
   return (
     <>
+      {/* Sign-up is where someone meets the product, so it gets the mascot.
+          Sign-in does not — a returning student has met it already. */}
+      <BrandMascot className="max-w-[15rem]" sizes="260px" />
+
       <div>
         <p className="text-sm text-ink-muted">For high school and college students</p>
         <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[1.06] font-semibold tracking-[-0.03em]">

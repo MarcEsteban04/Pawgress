@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import { buttonStyles, Card, CardBody, Donut, MasteryBar, SourceChip } from "@/components/ui";
 import { HeroDecor, HeroStack } from "@/features/marketing/components/HeroDecor";
-import { MarkTile } from "@/features/marketing/components/HeroObjects";
+import { BrandMascot } from "@/components/shared/BrandMascot";
 import { EVIDENCE_TOPICS } from "@/config/showcase";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -115,7 +115,7 @@ export default function LandingPage() {
           <HeroDecor />
 
           <div className="relative mx-auto flex min-h-[34rem] w-full max-w-[70rem] flex-col items-center justify-center gap-7 px-5 py-16 text-center sm:px-8 sm:py-20 xl:min-h-[42rem]">
-            <MarkTile className="drift" />
+            <BrandMascot className="drift" priority sizes="(max-width: 640px) 280px, 380px" />
 
             {/* The two-tone headline: the promise in ink, the payoff in grey. */}
             <h1
