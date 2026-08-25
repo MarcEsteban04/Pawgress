@@ -1,4 +1,5 @@
 import { type LucideIcon } from "lucide-react";
+import { type ReactNode } from "react";
 import Link from "next/link";
 import { buttonStyles } from "@/components/ui";
 
@@ -8,6 +9,9 @@ import { buttonStyles } from "@/components/ui";
  * Two different kinds of empty, and saying which is the whole point:
  *
  *   `action`  — the student can fix this now. Give them the one link that does.
+ *   `control` — same, but the fix is a dialog rather than a destination. The
+ *               empty state is where a student is already looking, so the
+ *               control belongs here as well as in the panel header.
  *   `awaiting`— the feature that fills this panel does not exist yet. Say so
  *               plainly, because "take a quiz to see your mastery" is a lie
  *               when quizzes cannot be taken, and a student who tries and finds
@@ -18,12 +22,14 @@ export function PanelEmpty({
   title,
   description,
   action,
+  control,
   awaiting,
 }: {
   Icon: LucideIcon;
   title: string;
   description: string;
   action?: { href: string; label: string };
+  control?: ReactNode;
   awaiting?: string;
 }) {
   return (
@@ -42,6 +48,7 @@ export function PanelEmpty({
           {action.label}
         </Link>
       )}
+      {control}
       {awaiting && <p className="text-xs text-ink-subtle">{awaiting}</p>}
     </div>
   );

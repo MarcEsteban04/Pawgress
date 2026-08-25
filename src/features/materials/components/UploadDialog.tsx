@@ -84,14 +84,23 @@ const nextId = () => `file-${(counter += 1)}`;
 export function UploadDialog({
   subjectId,
   topics,
+  fixedTopic,
   trigger,
 }: {
   subjectId: string;
   topics: Topic[];
+  /**
+   * Opened from a topic row, so the destination is already decided.
+   *
+   * The select is not merely pre-filled — it is removed. A student who clicked
+   * "add files" ON a topic has already answered that question, and leaving the
+   * control there invites them to answer it twice and disagree with themselves.
+   */
+  fixedTopic?: { id: string; name: string };
   trigger?: React.ReactNode;
 }) {
   const [files, setFiles] = useState<FileState[]>([]);
-  const [topicId, setTopicId] = useState("");
+  const [topicId, setTopicId] = useState(fixedTopic?.id ?? "");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -257,7 +266,7 @@ export function UploadDialog({
 
   function reset() {
     setFiles([]);
-    setTopicId("");
+    setTopicId(fixedTopic?.id ?? "");
     if (fileInput.current) fileInput.current.value = "";
   }
 
@@ -273,7 +282,9 @@ export function UploadDialog({
       </DialogTrigger>
 
       <DialogContent>
-        <DialogTitle>Upload to this subject</DialogTitle>
+        <DialogTitle>
+          {fixedTopic ? "Upload to " + fixedTopic.name : "Upload to this subject"}
+        </DialogTitle>
         <DialogDescription>
           PDF, Word, PowerPoint or photos, up to {limitMb} MB each. Everything Pawgress generates is
           built from these.
@@ -315,7 +326,7 @@ export function UploadDialog({
             <span className="text-sm text-ink-subtle">You can pick more than one.</span>
           </label>
 
-          {topics.length > 0 && (
+          {topics.length > 0 && !fixedTopic && (
             <Field label="File under a topic" htmlFor={topicSelectId} optional>
               <Select
                 id={topicSelectId}

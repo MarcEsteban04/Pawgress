@@ -183,9 +183,14 @@ export function MaterialsPanel({
              offers the action instead of apologising for its absence. What is
              still awaited is PROCESSING, and the queued badge on each row says
              so without this panel having to. */
+          /* The action appears here as well as in the header. This is where a
+             student who just found an empty panel is already looking, and
+             sending them back up to a button they have scrolled past is the
+             kind of small friction that makes a feature feel unfinished. */
           <PanelEmpty
             Icon={Upload}
             title="No files yet"
+            control={action}
             description="Lecture slides, notes and past papers go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
           />
         ) : (

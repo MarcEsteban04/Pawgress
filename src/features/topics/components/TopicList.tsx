@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronDown, ChevronUp, GripVertical, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Pencil, Upload } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button, Card, CardBody, MasteryBar, Tag } from "@/components/ui";
 import { DeleteTopicDialog } from "./DeleteTopicDialog";
 import { TopicDialog } from "./TopicDialog";
+import { UploadDialog } from "@/features/materials/components/UploadDialog";
 import { moveTopicAction } from "@/features/topics/server/actions";
 import { type Topic } from "@/server/topics/queries";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,12 @@ import { cn } from "@/lib/utils";
  * Mastery is genuinely unknown until a quiz has been taken, so `MasteryBar`
  * renders its striped low-evidence state and says so rather than drawing a
  * confident 0% (US-H1). The real numbers arrive with Sprint 49 onward.
+ *
+ * **Each row uploads into its own topic.** Filing a file was previously a
+ * dropdown inside one upload dialog at the far end of the page — so adding
+ * slides to "Chapter 3" meant scrolling past the topic that was already on
+ * screen, opening a dialog, and picking it back out of a list. The action
+ * belongs where the thing it acts on already is.
  */
 
 type Props = { subjectId: string; topics: Topic[] };
@@ -136,6 +143,22 @@ export function TopicList({ subjectId, topics }: Props) {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
+                  <UploadDialog
+                    subjectId={subjectId}
+                    topics={ordered}
+                    fixedTopic={{ id: topic.id, name: topic.name }}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Upload files to ${topic.name}`}
+                        title={`Upload files to ${topic.name}`}
+                      >
+                        <Upload aria-hidden />
+                      </Button>
+                    }
+                  />
+
                   {/* Disabled at the ends rather than hidden: a control that
                       disappears makes the row jump and the next click land on
                       something else. */}

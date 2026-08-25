@@ -168,6 +168,12 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
      from their own `new Date()` can straddle midnight and disagree by a day. */
   const today = new Date().toISOString().slice(0, 10);
 
+  /* The header's upload dialog needs the topics to offer. Awaited here rather
+     than suspended because the header is not a panel — it renders once, whole.
+     `listTopics` is `cache()`d, so the topic list below reuses this result
+     instead of asking again. */
+  const headerTopics = await listTopics(subject.id);
+
   return (
     <div className="flex flex-col gap-5">
       <Link
@@ -219,13 +225,51 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
           }
           title={subject.name}
           description={`${subject.materialCount} ${subject.materialCount === 1 ? "file" : "files"} · ${subject.topicCount} ${subject.topicCount === 1 ? "topic" : "topics"}`}
-          action={<TopicDialog subjectId={subject.id} />}
+          action={
+            <div className="flex w-full gap-2">
+              <UploadDialog subjectId={subject.id} topics={headerTopics} />
+              <TopicDialog subjectId={subject.id} />
+            </div>
+          }
         />
       </div>
 
-      {/* Readiness and what to do about it sit together, because one is the
-          answer to the other. */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/**
+       * Order follows what a student can act on TODAY, not what will matter
+       * eventually.
+       *
+       * Readiness and weak topics were the first thing on this page, and they
+       * are two large cards that say "nothing measured yet" and will keep
+       * saying it until quizzes exist (Sprint 49+). They pushed the topics and
+       * the files — the only parts that currently do anything — below the fold,
+       * so uploading a file meant scrolling past two apologies.
+       *
+       * Work first, then measurement. When mastery is real, it earns its place
+       * back by being useful rather than by being at the top.
+       */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-start">
+        <section className="flex flex-col gap-3">
+          <SectionLabel>Topics</SectionLabel>
+          <PanelBoundary title="Topics">
+            <Suspense fallback={<TopicsSkeleton />}>
+              <Topics subjectId={subject.id} />
+            </Suspense>
+          </PanelBoundary>
+        </section>
+
+        {/* Beside the topics rather than under them: a file belongs to a topic,
+            and putting the two on one screen is what makes that visible. */}
+        <section className="flex flex-col gap-3">
+          <SectionLabel>Files</SectionLabel>
+          <PanelBoundary title="Materials">
+            <Suspense fallback={<PanelSkeleton title="Materials" />}>
+              <Materials subjectId={subject.id} totalCount={subject.materialCount} />
+            </Suspense>
+          </PanelBoundary>
+        </section>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <PanelBoundary title="Readiness">
           <Suspense fallback={<PanelSkeleton title="Readiness" />}>
             <Progress subjectId={subject.id} />
@@ -234,23 +278,6 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
         <PanelBoundary title="Needs attention">
           <Suspense fallback={<PanelSkeleton title="Needs attention" />}>
             <WeakTopics subjectId={subject.id} />
-          </Suspense>
-        </PanelBoundary>
-      </div>
-
-      <section className="flex flex-col gap-3">
-        <SectionLabel>Topics</SectionLabel>
-        <PanelBoundary title="Topics">
-          <Suspense fallback={<TopicsSkeleton />}>
-            <Topics subjectId={subject.id} />
-          </Suspense>
-        </PanelBoundary>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <PanelBoundary title="Materials">
-          <Suspense fallback={<PanelSkeleton title="Materials" />}>
-            <Materials subjectId={subject.id} totalCount={subject.materialCount} />
           </Suspense>
         </PanelBoundary>
         <PanelBoundary title="Upcoming">
