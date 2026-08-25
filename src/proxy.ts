@@ -80,6 +80,22 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
+  /**
+   * Authenticated pages are never stored (US-A2: "the back button does not
+   * restore authenticated content").
+   *
+   * Without this, signing out and pressing Back can repaint a fully rendered
+   * dashboard from the browser's cache — the session is gone and nothing new
+   * loads, but a shared or library machine still shows the previous student's
+   * subjects and scores. `no-store` is what stops the page being kept at all;
+   * the rest are for older proxies that ignore it.
+   */
+  if (isProtected(pathname)) {
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+  }
+
   return response;
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { safeNextPath } from "@/lib/redirects";
 
 /**
  * Where Supabase sends a student after they click the confirmation link
@@ -16,18 +17,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * paths are honoured.
  */
 
-function safeNext(raw: string | null): string {
-  if (!raw) return "/dashboard";
-  // Must be a plain absolute path. `//evil.com` is protocol-relative and is a
-  // full URL to a browser, so a leading double slash is rejected too.
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
-  return raw;
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
-  const next = safeNext(searchParams.get("next"));
+  const next = safeNextPath(searchParams.get("next"));
 
   // Supabase reports a rejected link in the query string rather than by status.
   const errorCode = searchParams.get("error_code") ?? searchParams.get("error");

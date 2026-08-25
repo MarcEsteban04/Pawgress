@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { type AuthFormState } from "@/features/auth/constants";
 import { clearPendingEmail, getPendingEmail, getResendCooldown, setPendingEmail } from "./pending";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { safeNextPath } from "@/lib/redirects";
 import { otpSchema, registerSchema } from "@/lib/validation/auth";
 
 /**
@@ -215,4 +216,76 @@ export async function verifyOtpAction(
 
   await clearPendingEmail();
   redirect("/dashboard");
+}
+
+/**
+ * Sign in (US-A2, FR-A3).
+ *
+ * One generic failure for every credential problem. Saying "no account with
+ * that email" turns the form into an account-existence oracle, and saying
+ * "wrong password" confirms the address is real — either one hands an attacker
+ * half the work. A student who genuinely mistyped is no worse off: the fix is
+ * the same in both cases.
+ *
+ * The exception is an unconfirmed address, which is not a credential problem at
+ * all. Telling that student to check their password would be actively wrong, so
+ * they go to the code screen instead.
+ */
+export async function signInAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const next = safeNextPath(String(formData.get("next") ?? ""));
+
+  if (!email || !password) {
+    return fail({
+      email,
+      message: "Enter your email and password.",
+      nextStep: "Both fields are needed to sign in.",
+    });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    if (error.code === "email_not_confirmed") {
+      // They have an account but never confirmed it. Put the address back in the
+      // pending cookie so /verify-email knows who to resend to.
+      await setPendingEmail(email);
+      redirect("/verify-email");
+    }
+
+    if (error.code === "over_request_rate_limit" || error.status === 429) {
+      return fail({
+        email,
+        message: "Too many sign-in attempts.",
+        nextStep: "Wait a minute and try again — your account is fine.",
+      });
+    }
+
+    return fail({
+      email,
+      message: "That email and password do not match.",
+      nextStep: "Check both and try again. If you have forgotten your password, create a new code.",
+    });
+  }
+
+  redirect(next);
+}
+
+/**
+ * Sign out (US-A2, FR-A3).
+ *
+ * `scope: "local"` clears this browser only. Signing a student out of their
+ * phone because they closed a tab in the library would be its own bug — global
+ * sign-out belongs behind an explicit "sign out everywhere" control, which is a
+ * Sprint 15 settings concern.
+ */
+export async function signOutAction(): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut({ scope: "local" });
+  redirect("/");
 }

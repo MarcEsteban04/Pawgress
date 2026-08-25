@@ -105,12 +105,24 @@ Three clients, three jobs — see [`supabase.md`](supabase.md):
 `client.ts` (browser, auth calls only), `server.ts` (per request, RLS applies), and `admin.ts`
 (service role, **bypasses RLS**, background jobs only).
 
-### The preview gap, and why it cannot ship
+### The preview gap is closed
 
-Until a Supabase project exists, `getSession()` returns a preview session so the shell is
-navigable. It keys off **whether Supabase is configured**, not an env flag — production cannot be
-missing `NEXT_PUBLIC_SUPABASE_URL`, so there is no switch anyone can forget. It also fails closed:
-no Supabase in production yields no session, not a free pass. The branch is deleted in Sprint 11.
+Sprint 11 deleted the preview session that used to stand in before sign-in existed. There is no
+longer any path that hands out a session without Supabase saying so, in any environment: no
+configuration means no session, and `requireSession()` redirects.
+
+Sign-out uses `scope: "local"`, which clears this browser only. Signing a student out of their phone
+because they closed a tab in the library would be its own bug; a "sign out everywhere" control
+belongs in settings (Sprint 15).
+
+Protected responses carry `Cache-Control: no-store`. Without it, signing out and pressing Back can
+repaint a fully rendered dashboard from the browser's cache — nothing new loads and the session is
+gone, but a shared machine still shows the previous student's subjects and scores (US-A2).
+
+Post-auth redirect targets go through `safeNextPath()` in [`src/lib/redirects.ts`](../src/lib/redirects.ts),
+shared by sign-in and the email callback so the rule cannot be right in one place and forgotten in
+the other. It rejects absolute URLs, scheme-relative `//evil.example`, and the auth routes
+themselves.
 
 ---
 

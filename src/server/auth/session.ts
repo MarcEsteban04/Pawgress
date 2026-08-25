@@ -24,23 +24,6 @@ export type Session = {
 };
 
 /**
- * Preview scaffolding for local work before a Supabase project exists.
- *
- * It keys off configuration rather than an env flag on purpose: a flag is
- * something a person can forget to turn off. Production either has
- * `NEXT_PUBLIC_SUPABASE_URL` or it does not, and the branch below fails closed
- * when it does not — no Supabase in production means no session at all, never a
- * free pass.
- *
- * REMOVE THIS in Sprint 11, once sign-in works end to end.
- */
-const PREVIEW_SESSION: Session = {
-  userId: "preview-user",
-  email: "preview@pawgress.local",
-  emailVerified: true,
-};
-
-/**
  * Returns the current session, or `null`. Never throws.
  * Use this when a page renders differently for signed-out visitors.
  *
@@ -51,9 +34,10 @@ const PREVIEW_SESSION: Session = {
  * per request rather than once per component.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
-  if (!supabaseConfigured()) {
-    return process.env.NODE_ENV === "production" ? null : PREVIEW_SESSION;
-  }
+  // Sprint 11 deleted the preview session that used to stand in here. There is
+  // no longer any path that hands out a session without Supabase saying so —
+  // no configuration means no session, in every environment.
+  if (!supabaseConfigured()) return null;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();

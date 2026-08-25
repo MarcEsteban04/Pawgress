@@ -15,6 +15,7 @@ import {
   MenuTrigger,
   UserPill,
 } from "@/components/ui";
+import { SignOutItem } from "@/features/auth/components/SignOutItem";
 import { cn } from "@/lib/utils";
 
 /**
@@ -128,7 +129,7 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
                     <Link href="/settings">Settings</Link>
                   </MenuItem>
                   <MenuSeparator />
-                  <MenuItem destructive>Sign out</MenuItem>
+                  <SignOutItem />
                 </MenuContent>
               </Menu>
             </div>

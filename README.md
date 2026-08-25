@@ -133,5 +133,5 @@ into a client component.
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
-| 3 — Authentication | 09–12 | Sprints 09–10 ✅ · Sprint 11 next |
+| 3 — Authentication | 09–12 | Sprints 09–11 ✅ · Sprint 12 next |
 | 4+ | 13–84 | Not started |
