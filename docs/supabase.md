@@ -176,9 +176,41 @@ So the real dependency chain is:
 custom SMTP  →  template editing unlocks  →  6-digit codes on the hosted project
 ```
 
-Any SMTP provider works; the free tiers that cover early usage are Resend, Brevo and Mailgun. Once
-SMTP is on, either paste the template by hand or run `npm run auth:sync-templates`, which pushes it
-over the Management API and keeps it from drifting from this repo.
+### Choosing a sender
+
+| Option | Good for | The catch |
+|---|---|---|
+| **Gmail + App Password** | Getting unblocked today | ~500 messages/day, `From` is forced to your own address, no SPF/DKIM on your domain, and Google's terms do not contemplate app mail. Development only |
+| **Brevo** | Testing against real addresses | 300/day free, no verified domain required |
+| **Resend** | Production | Needs a verified domain before it will send to arbitrary addresses |
+| **Mailgun / SES** | Scale | More setup than either of the above |
+
+**Gmail is the right first move and the wrong last one.** It gets the flow working in ten minutes
+without a new account, and it will quietly become a deliverability problem the moment real students
+sign up: transactional mail from a personal Gmail lands in spam far more often, and there is no
+domain alignment to fix that. Treat it as scaffolding, and move to a transactional provider before
+launch — swapping is five environment variables and one command.
+
+To use Gmail:
+
+1. **2-Step Verification must be on** for the account — Google will not issue an App Password
+   without it.
+2. Create one at <https://myaccount.google.com/apppasswords>, named something like
+   `Pawgress Supabase`. Copy the 16 characters and **remove the spaces**.
+3. Put the values in `.env.local` (see `.env.example`), where `SMTP_USER` and `SMTP_SENDER_EMAIL`
+   are both the Gmail address — Gmail rewrites the `From` header to the authenticated account, so a
+   different sender address is silently ignored.
+
+### Applying it
+
+```bash
+npm run auth:configure -- --check   # show what would change
+npm run auth:configure              # set SMTP, then push the templates
+```
+
+One command instead of a dashboard visit, and the template stays in the repo where it can be
+reviewed rather than in a textarea where it silently drifts. It reads `SUPABASE_ACCESS_TOKEN` and
+the `SMTP_*` values from `.env.local`, and never prints a secret.
 
 **Until SMTP exists, develop against the local stack** (§2). Templates work there with no
 restriction, Mailpit catches every message, and there are no send limits — Sprints 10 to 12 can be
