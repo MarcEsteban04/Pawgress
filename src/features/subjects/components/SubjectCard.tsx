@@ -43,7 +43,18 @@ export function SubjectCard({ subject }: { subject: Subject }) {
   return (
     <Card
       className={cn(
-        "group relative flex h-full flex-col transition-colors",
+        "group relative flex h-full flex-col overflow-hidden transition-colors",
+        /* The subject's hue, on the subject's card. A pale ground carries it
+           across the whole tile so a grid is scannable at a glance, and a 4px
+           spine states it at full strength — the soft tokens alone are close
+           enough that peripheral vision cannot tell them apart.
+
+           The spine is a pseudo-element, not a left border: `border-l-cat-N`
+           and the hover's `border-rule-strong` write the same CSS property,
+           and the spine would turn grey under the cursor. */
+        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
+        tone.card,
+        tone.spine,
         "hover:border-rule-strong",
         /* Focus moves to the card, because the card is what the link now
            covers — outlining four words of title would point at the wrong
@@ -55,13 +66,10 @@ export function SubjectCard({ subject }: { subject: Subject }) {
     >
       <CardBody className="flex flex-1 flex-col gap-4 pt-5">
         <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)]",
-              tone.tint,
-              tone.ink,
-            )}
-          >
+          {/* Neutral on purpose. The card already says which subject this is
+              in colour; repeating it in the tile makes the tile disappear into
+              the ground it sits on and says nothing new. */}
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-surface text-ink-muted">
             <SubjectGlyph icon={subject.icon} className="size-5" />
           </span>
 
@@ -81,11 +89,14 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           </div>
         </div>
 
+        {/* `Tag`'s default grey ground is meant for a white card; on a tinted
+            one it reads as a smudge. Solid surface keeps them legible without
+            introducing another colour. */}
         <div className="flex flex-wrap gap-2">
-          <Tag>
+          <Tag className="bg-surface">
             {subject.materialCount} {subject.materialCount === 1 ? "file" : "files"}
           </Tag>
-          <Tag>
+          <Tag className="bg-surface">
             {subject.topicCount} {subject.topicCount === 1 ? "topic" : "topics"}
           </Tag>
         </div>
