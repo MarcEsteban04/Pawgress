@@ -4,6 +4,7 @@ import { Logo } from "@/components/shared/Logo";
 import { buttonStyles, Card, CardBody, Donut, MasteryBar, SourceChip } from "@/components/ui";
 import { HeroDecor, HeroStack } from "@/features/marketing/components/HeroDecor";
 import { MarkTile } from "@/features/marketing/components/HeroObjects";
+import { EVIDENCE_TOPICS } from "@/config/showcase";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -212,8 +213,15 @@ export default function LandingPage() {
                   centerLabel="ready"
                 />
                 <div className="flex flex-col gap-4 border-t border-rule pt-5">
-                  <MasteryBar label="Recursion" value={0.31} questionCount={16} />
-                  <MasteryBar label="Photosynthesis" value={1} questionCount={4} />
+                  {EVIDENCE_TOPICS.map((topic) => (
+                    <MasteryBar
+                      key={topic.topic}
+                      label={topic.topic}
+                      tone={topic.tone}
+                      value={topic.value}
+                      questionCount={topic.questionCount}
+                    />
+                  ))}
                 </div>
               </CardBody>
             </Card>

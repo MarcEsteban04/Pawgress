@@ -1,6 +1,7 @@
 import { Check, FileText, Presentation, ScanText } from "lucide-react";
 import { MasteryBar, SourceChip, StatusBadge } from "@/components/ui";
 import { PawMark } from "@/components/shared/Logo";
+import { CITATION, NEXT_EXAM_LANDING, PLAN_TODAY, STICKY_NOTE } from "@/config/showcase";
 import { Stopwatch } from "./Stopwatch";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ export function StickyNote({ className }: { className?: string }) {
         style={{ backgroundColor: "#fbf0a4" }}
       >
         <p className="font-hand text-[1.0625rem] leading-[1.45]" style={{ color: "#4a4526" }}>
-          Bio ch. 4 &amp; the recursion slides — quiz me on both before Friday
+          {STICKY_NOTE}
         </p>
       </div>
     </div>
@@ -69,21 +70,19 @@ export function MarkTile({ className }: { className?: string }) {
 
 /** Today's plan — the output side: three blocks, with evidence attached. */
 export function PlanCard({ className }: { className?: string }) {
-  const rows = [
-    { subject: "Programming", topic: "Recursion", tone: 1 as const, value: 0.31, count: 16 },
-    { subject: "Biology", topic: "Genetics", tone: 4 as const, value: 0.62, count: 28 },
-    { subject: "Mathematics", topic: "Integration", tone: 3 as const, value: 0.88, count: 41 },
-  ];
+  // A block per topic, so the headline figure cannot drift from the rows below
+  // it the way a hardcoded "95m" did.
+  const totalMinutes = PLAN_TODAY.length * 30;
 
   return (
     <div className={cn(OBJECT, "w-[21rem] p-5", className)}>
       <div className="flex items-baseline gap-2">
         <h3 className="font-display text-[1.0625rem] font-semibold">Today&rsquo;s plan</h3>
-        <span className="tabular ml-auto text-sm text-ink-subtle">95m</span>
+        <span className="tabular ml-auto text-sm text-ink-subtle">{totalMinutes}m</span>
       </div>
 
       <ul className="mt-4 flex flex-col gap-3.5">
-        {rows.map((row) => (
+        {PLAN_TODAY.map((row) => (
           <li key={row.topic} className="flex flex-col gap-1">
             <span className="text-xs text-ink-subtle">{row.subject}</span>
             <MasteryBar
@@ -92,7 +91,7 @@ export function PlanCard({ className }: { className?: string }) {
               label={row.topic}
               tone={row.tone}
               value={row.value}
-              questionCount={row.count}
+              questionCount={row.questionCount}
             />
           </li>
         ))}
@@ -101,21 +100,33 @@ export function PlanCard({ className }: { className?: string }) {
   );
 }
 
+/** Subject tints, keyed by the categorical slot a subject owns for life. */
+const TINT = {
+  1: "bg-cat-1-soft",
+  2: "bg-cat-2-soft",
+  3: "bg-cat-3-soft",
+  4: "bg-cat-4-soft",
+  5: "bg-cat-5-soft",
+} as const;
+
 /** The exam countdown, with a readiness figure that carries its evidence. */
 export function ReminderCard({ className }: { className?: string }) {
+  const exam = NEXT_EXAM_LANDING;
+
   return (
     <div className={cn(OBJECT, "w-[16rem] p-5", className)}>
       <h3 className="font-display text-[1.0625rem] font-semibold">Next exam</h3>
 
-      <div className="mt-3 rounded-[1rem] bg-cat-1-soft p-3.5">
-        <p className="text-xs font-medium text-ink-muted">Programming</p>
-        <p className="mt-0.5 leading-snug font-medium">Recursion &amp; complexity</p>
-        <p className="tabular mt-2 text-sm font-medium">In 4 days</p>
+      <div className={cn("mt-3 rounded-[1rem] p-3.5", TINT[exam.tone])}>
+        <p className="text-xs font-medium text-ink-muted">{exam.subject}</p>
+        <p className="mt-0.5 leading-snug font-medium">{exam.title}</p>
+        <p className="tabular mt-2 text-sm font-medium">In {exam.inDays} days</p>
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="text-xs text-ink-muted">
-          <span className="tabular font-medium text-ink">44%</span> ready
+          <span className="tabular font-medium text-ink">{Math.round(exam.readiness * 100)}%</span>{" "}
+          ready
         </span>
         <StatusBadge status="ready" />
       </div>
@@ -154,7 +165,7 @@ export function FormatsCard({ className }: { className?: string }) {
       </div>
 
       <div className="mt-4">
-        <SourceChip material="Lecture 9.pdf" page={4} />
+        <SourceChip material={CITATION.material} page={CITATION.page} />
       </div>
     </div>
   );
