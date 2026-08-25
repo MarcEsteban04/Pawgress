@@ -200,3 +200,38 @@ export async function findSubjectsNamed(name: string, excludeId?: string): Promi
   const { count } = await query;
   return count ?? 0;
 }
+
+/**
+ * One subject by id, for the detail page.
+ *
+ * Returns null rather than throwing when nothing matches, because RLS makes
+ * "not yours" and "does not exist" the same result — both should render the
+ * same 404 rather than leak which one it was.
+ */
+export const getSubject = cache(async (id: string): Promise<Subject | null> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("subjects")
+    .select(
+      "id, name, color_slot, icon, semester, archived_at, created_at, updated_at, materials(count), topics(count)",
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    colorSlot: data.color_slot as 1 | 2 | 3 | 4 | 5,
+    icon: (data.icon as SubjectIcon | null) ?? null,
+    semester: data.semester,
+    archivedAt: data.archived_at,
+    createdAt: data.created_at,
+    materialCount: data.materials?.[0]?.count ?? 0,
+    topicCount: data.topics?.[0]?.count ?? 0,
+    lastActivityAt: data.updated_at,
+  };
+});
