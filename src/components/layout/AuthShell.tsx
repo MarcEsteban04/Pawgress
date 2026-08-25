@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { type ReactNode } from "react";
 import { Logo } from "@/components/shared/Logo";
-import { AuthProof } from "@/features/auth/components/AuthProof";
+import { AuthAsideDefault } from "@/features/auth/components/AuthAsideDefault";
 
 /**
  * The account screens — sign in, register, confirm.
@@ -24,8 +24,14 @@ import { AuthProof } from "@/features/auth/components/AuthProof";
  * It lives here rather than inside `(auth)/layout.tsx` because two route trees
  * need it: the `(auth)` group for `/login`, `/register` and `/verify-email`,
  * and the real `/auth/*` segment that Supabase redirects into.
+ *
+ * `aside` is filled by the `@aside` parallel route, so each screen can argue its
+ * own case — someone signing in has already been sold and wants to know what is
+ * waiting, which is a different message from someone deciding whether to start.
+ * A slot rather than a prop, because the layout must not have to know which page
+ * is underneath it.
  */
-export function AuthShell({ children }: { children: ReactNode }) {
+export function AuthShell({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-frame lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* Aside — the reason to bother, from `lg` up. */}
@@ -48,21 +54,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         */}
         <div className="flex flex-1 items-center justify-center py-10">
           <div className="flex w-full max-w-[26rem] flex-col gap-8">
-            <div>
-              <p className="text-sm text-ink-muted">For high school and college students</p>
-              <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[1.06] font-semibold tracking-[-0.03em]">
-                Study what matters,
-                <br />
-                <span className="text-ink-subtle">not just more</span>
-              </h2>
-            </div>
-
-            <AuthProof />
-
-            <p className="text-sm leading-relaxed text-ink-muted">
-              Every reviewer, flashcard and quiz question comes from material you uploaded — and
-              cites the page it came from.
-            </p>
+            {aside ?? <AuthAsideDefault />}
           </div>
         </div>
       </aside>

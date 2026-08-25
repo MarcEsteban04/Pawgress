@@ -287,5 +287,8 @@ export async function signInAction(
 export async function signOutAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut({ scope: "local" });
-  redirect("/");
+  // Sign-in, not the landing page. Someone who just signed out of a study app is
+  // far more likely to be switching accounts or handing over a shared machine
+  // than to want the marketing pitch again.
+  redirect("/login");
 }
