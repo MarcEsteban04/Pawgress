@@ -1,6 +1,6 @@
-import { Pencil } from "lucide-react";
+import { ArrowRight, Pencil } from "lucide-react";
 import Link from "next/link";
-import { Button, Card, CardBody, Tag } from "@/components/ui";
+import { Button, Card, CardBody } from "@/components/ui";
 import { DeleteSubjectDialog } from "./DeleteSubjectDialog";
 import { SubjectDialog } from "./SubjectDialog";
 import { SUBJECT_TONE, SubjectGlyph } from "./SubjectIcon";
@@ -21,21 +21,26 @@ function relative(iso: string): string {
 /**
  * One subject in the list (FR-S2, US-B2).
  *
- * **The whole card opens the subject.** It is done with a stretched link — one
- * real `<a>` around the title, with an `::after` overlaying the card — rather
- * than an `onClick` on a `<div>`. That distinction is the point:
+ * Three decisions carry this design, and two of them are deletions:
  *
- *  - It stays a link. Ctrl-click, middle-click and "open in new tab" work, the
- *    browser shows the destination in the status bar, and it is announced as a
- *    link rather than as a div that happens to respond to clicks.
- *  - There is exactly ONE tab stop for "open this subject", on the title —
- *    not one for the card and another for the text inside it.
- *  - Edit and delete sit above the overlay in their own stacking context, so
- *    they stay separately clickable instead of being swallowed by it.
+ *  1. **The hue blooms from one corner rather than flooding the card.** A flat
+ *     tint makes every card equally loud and pushes the text onto a coloured
+ *     ground; a radial wash concentrated behind the glyph says the same thing
+ *     and leaves the lower half clean paper for the numbers to sit on.
+ *  2. **The small icon chip is gone.** The oversized glyph behind the corner
+ *     already names the subject, and a card carrying the same icon twice is
+ *     decoration pretending to be information. Removing it also gives the
+ *     title the full width, which is what a student actually reads.
+ *  3. **The count pills are gone**, replaced by the figures themselves at
+ *     display size. "12 files" as a grey pill is a label; a large tabular 12
+ *     over a small FILES is a number — and numbers are what this card is for.
  *
- * The known cost is that text inside the card can no longer be selected with
- * the mouse. For a card whose text is a name and two counts, clicking the
- * obvious target matters more than selecting four words.
+ * The whole card is a stretched link: one real `<a>` on the title with an
+ * `::after` covering the card. Ctrl-click and "open in new tab" keep working,
+ * the destination shows in the status bar, and there is still exactly one tab
+ * stop. Edit and delete get their own stacking context so they stay separately
+ * clickable, and they fade in on hover on pointer devices while staying
+ * permanently visible under `md`, where there is no hover to reveal them.
  */
 export function SubjectCard({ subject }: { subject: Subject }) {
   const tone = SUBJECT_TONE[subject.colorSlot];
@@ -43,77 +48,108 @@ export function SubjectCard({ subject }: { subject: Subject }) {
   return (
     <Card
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden transition-colors",
-        /* The subject's hue, on the subject's card. A pale ground carries it
-           across the whole tile so a grid is scannable at a glance, and a 4px
-           spine states it at full strength — the soft tokens alone are close
-           enough that peripheral vision cannot tell them apart.
-
-           The spine is a pseudo-element, not a left border: `border-l-cat-N`
-           and the hover's `border-rule-strong` write the same CSS property,
-           and the spine would turn grey under the cursor. */
-        "before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-['']",
-        tone.card,
-        tone.spine,
-        "hover:border-rule-strong",
-        /* Focus moves to the card, because the card is what the link now
-           covers — outlining four words of title would point at the wrong
-           target. Same outline token and offset as the global `:focus-visible`
-           rule in globals.css, so this is the one focus treatment relocated,
-           not a second one invented. */
+        "group relative flex h-full flex-col overflow-hidden",
+        "transition-[transform,box-shadow,border-color] duration-200 ease-out",
+        "hover:-translate-y-0.5 hover:border-rule-strong hover:shadow-pop",
+        /* Focus lands on the card, because the card is what the link covers.
+           Same outline token and offset as the global `:focus-visible` rule in
+           globals.css — the one focus treatment relocated, not a second one. */
         "has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-(--focus)",
       )}
     >
-      <CardBody className="flex flex-1 flex-col gap-4 pt-5">
-        <div className="flex items-start gap-3">
-          {/* Neutral on purpose. The card already says which subject this is
-              in colour; repeating it in the tile makes the tile disappear into
-              the ground it sits on and says nothing new. */}
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-surface text-ink-muted">
-            <SubjectGlyph icon={subject.icon} className="size-5" />
+      {/* Decorative layers. `pointer-events-none` so they never intercept a
+          click meant for the link overlay, and no z-index: they sit after the
+          card's background and before its content simply by document order. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(120% 88% at 100% 0%, ${tone.soft} 0%, transparent 68%)`,
+        }}
+      />
+
+      {/* The subject's icon at display size, bleeding off the corner. At 8%
+          it is texture rather than an icon — enough to give each card its own
+          character without competing with a single word of the title. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-4 -right-4 opacity-[0.08] transition-transform duration-300 ease-out group-hover:scale-110"
+        style={{ color: tone.hue }}
+      >
+        <SubjectGlyph icon={subject.icon} className="size-32" />
+      </span>
+
+      {/* The hue at full strength. The wash alone cannot be trusted to identify
+          a subject — the soft tokens are close enough that peripheral vision
+          cannot separate them — so one saturated edge does the identifying. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-1"
+        style={{ backgroundColor: tone.hue }}
+      />
+
+      <CardBody className="relative flex flex-1 flex-col gap-5 pt-5">
+        <div className="min-w-0">
+          <Link
+            href={`/subjects/${subject.id}`}
+            className="line-clamp-2 font-display text-xl leading-tight font-semibold tracking-[-0.01em] outline-none after:absolute after:inset-0 after:content-['']"
+          >
+            {subject.name}
+          </Link>
+          <p className="mt-1.5 text-sm text-ink-subtle">
+            {subject.semester ? `${subject.semester} · ` : ""}
+            {subject.materialCount > 0
+              ? `active ${relative(subject.lastActivityAt)}`
+              : `created ${relative(subject.createdAt)}`}
+          </p>
+        </div>
+
+        <dl className="flex gap-8">
+          <div>
+            <dd className="tabular font-display text-[1.75rem] leading-none font-semibold">
+              {subject.materialCount}
+            </dd>
+            <dt className="mt-1.5 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
+              {subject.materialCount === 1 ? "File" : "Files"}
+            </dt>
+          </div>
+          <div>
+            <dd className="tabular font-display text-[1.75rem] leading-none font-semibold">
+              {subject.topicCount}
+            </dd>
+            <dt className="mt-1.5 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
+              {subject.topicCount === 1 ? "Topic" : "Topics"}
+            </dt>
+          </div>
+        </dl>
+
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-rule pt-3">
+          {/* Deliberately a span, not a link. It is the affordance that says
+              the card opens — making it a second <a> to the same place would
+              add a tab stop that goes nowhere new. */}
+          <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors group-hover:text-ink">
+            Open
+            <ArrowRight
+              className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+              aria-hidden
+            />
           </span>
 
-          <div className="min-w-0 flex-1">
-            <Link
-              href={`/subjects/${subject.id}`}
-              className="font-display text-lg leading-tight font-semibold outline-none group-hover:underline after:absolute after:inset-0 after:content-['']"
-            >
-              {subject.name}
-            </Link>
-            <p className="mt-1 text-sm text-ink-subtle">
-              {subject.semester ? `${subject.semester} · ` : ""}
-              {subject.materialCount > 0
-                ? `active ${relative(subject.lastActivityAt)}`
-                : `created ${relative(subject.createdAt)}`}
-            </p>
+          {/* `relative` lifts these above the stretched link's overlay —
+              without it every click here opens the subject instead. Hidden
+              until hover only where hover exists; on touch they are always on,
+              and focus reveals them for keyboard users. */}
+          <div className="relative flex items-center gap-1 transition-opacity duration-200 md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+            <SubjectDialog
+              subject={subject}
+              trigger={
+                <Button variant="ghost" size="sm" aria-label={`Edit ${subject.name}`}>
+                  <Pencil aria-hidden />
+                </Button>
+              }
+            />
+            <DeleteSubjectDialog subjectId={subject.id} subjectName={subject.name} />
           </div>
-        </div>
-
-        {/* `Tag`'s default grey ground is meant for a white card; on a tinted
-            one it reads as a smudge. Solid surface keeps them legible without
-            introducing another colour. */}
-        <div className="flex flex-wrap gap-2">
-          <Tag className="bg-surface">
-            {subject.materialCount} {subject.materialCount === 1 ? "file" : "files"}
-          </Tag>
-          <Tag className="bg-surface">
-            {subject.topicCount} {subject.topicCount === 1 ? "topic" : "topics"}
-          </Tag>
-        </div>
-
-        {/* `relative` lifts this row above the stretched link's overlay.
-            Without it the buttons sit under a transparent sheet and every
-            click on them opens the subject instead. */}
-        <div className="relative mt-auto flex items-center gap-1 border-t border-rule pt-3">
-          <SubjectDialog
-            subject={subject}
-            trigger={
-              <Button variant="ghost" size="sm" aria-label={`Edit ${subject.name}`}>
-                <Pencil aria-hidden />
-              </Button>
-            }
-          />
-          <DeleteSubjectDialog subjectId={subject.id} subjectName={subject.name} />
         </div>
       </CardBody>
     </Card>

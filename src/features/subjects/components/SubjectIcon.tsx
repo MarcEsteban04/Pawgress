@@ -58,50 +58,51 @@ export function SubjectGlyph({ icon, className }: { icon: string | null; classNa
 /**
  * A subject colour, in the places it is allowed to appear.
  *
- * A subject owns ONE hue and it is stated ONCE per element. `card` and `spine`
- * put it on the card, which is what a student picked a colour for — a page of
- * cards should be scannable by colour from across the room. `tint` and `ink`
- * are for the small standalone marks (the picker swatches) where there is no
- * card to carry it, and `dot` is the solid swatch itself.
+ * A subject owns ONE hue, and a card states it once — as a bloom in one corner
+ * rather than as a wash over everything. `hue` and `soft` are the raw values,
+ * for gradients and washes that a utility class cannot express. `tint`, `ink`
+ * and `dot` are the flat class forms, for the small standalone marks — picker
+ * swatches, the detail-page tile — where there is no card to carry it.
  *
- * Where the card carries the hue, the icon inside it does NOT: two statements
- * of the same fact in one card is noise, and it makes the tile compete with
- * the thing it sits on.
+ * Raw `var(--cat-N)` rather than generated class names on purpose: Tailwind
+ * scans source text for classes it can see, so a name assembled at runtime
+ * (`bg-cat-${slot}`) is simply absent from the stylesheet. A CSS variable in a
+ * `style` prop has no such problem, and still follows the theme into dark mode.
  */
 export const SUBJECT_TONE = {
   1: {
     tint: "bg-cat-1-soft",
     ink: "text-cat-1",
     dot: "bg-cat-1",
-    card: "bg-cat-1-soft",
-    spine: "before:bg-cat-1",
+    hue: "var(--cat-1)",
+    soft: "var(--cat-1-soft)",
   },
   2: {
     tint: "bg-cat-2-soft",
     ink: "text-cat-2",
     dot: "bg-cat-2",
-    card: "bg-cat-2-soft",
-    spine: "before:bg-cat-2",
+    hue: "var(--cat-2)",
+    soft: "var(--cat-2-soft)",
   },
   3: {
     tint: "bg-cat-3-soft",
     ink: "text-cat-3",
     dot: "bg-cat-3",
-    card: "bg-cat-3-soft",
-    spine: "before:bg-cat-3",
+    hue: "var(--cat-3)",
+    soft: "var(--cat-3-soft)",
   },
   4: {
     tint: "bg-cat-4-soft",
     ink: "text-cat-4",
     dot: "bg-cat-4",
-    card: "bg-cat-4-soft",
-    spine: "before:bg-cat-4",
+    hue: "var(--cat-4)",
+    soft: "var(--cat-4-soft)",
   },
   5: {
     tint: "bg-cat-5-soft",
     ink: "text-cat-5",
     dot: "bg-cat-5",
-    card: "bg-cat-5-soft",
-    spine: "before:bg-cat-5",
+    hue: "var(--cat-5)",
+    soft: "var(--cat-5-soft)",
   },
 } as const;
