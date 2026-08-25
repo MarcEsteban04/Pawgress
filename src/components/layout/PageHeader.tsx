@@ -22,7 +22,15 @@ export function PageHeader({
   eyebrow?: string;
   title: string;
   description?: string;
-  /** Search, filters, or the page's primary button. */
+  /**
+   * Search, filters, or the page's primary button.
+   *
+   * The slot is a fixed 26rem so a search field has a stable width across
+   * pages, and its contents are right-aligned inside it: a button is only as
+   * wide as its label, and left-aligning it in a 26rem box leaves a gap at the
+   * page edge that reads as a layout bug. Controls that should fill the slot
+   * say so themselves — `SearchField` is `w-full`.
+   */
   action?: ReactNode;
   /**
    * The same control the shell shows centred in the top bar. Rendered here
@@ -53,7 +61,7 @@ export function PageHeader({
         </div>
 
         {action && (
-          <div className="flex shrink-0 items-center gap-2 max-md:w-full md:w-[22rem] lg:w-[26rem]">
+          <div className="flex shrink-0 items-center justify-end gap-2 max-md:w-full md:w-[22rem] lg:w-[26rem]">
             {action}
           </div>
         )}

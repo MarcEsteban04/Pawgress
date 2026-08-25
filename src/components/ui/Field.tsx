@@ -47,7 +47,7 @@ export function SearchField({
   return (
     <label
       className={cn(
-        "group flex h-11 items-center gap-2.5 rounded-[var(--radius-pill)]",
+        "group flex h-11 w-full items-center gap-2.5 rounded-[var(--radius-pill)]",
         "border border-rule bg-surface px-4",
         "transition-colors focus-within:border-rule-strong hover:border-rule-strong",
         className,
