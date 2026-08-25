@@ -146,8 +146,6 @@ getter in `config/env.ts` so importing the module never loads a key the request 
 
 Sign-up confirms with a **code the student types**, not a link they click.
 
-### The one dashboard step you must do
-
 Supabase decides link-vs-code purely by **which variable the email template renders**. There is no
 separate setting:
 
@@ -158,11 +156,33 @@ separate setting:
 
 The local stack is already wired: [`supabase/config.toml`](../supabase/config.toml) points
 `[auth.email.template.confirmation]` at
-[`supabase/templates/confirm-signup.html`](../supabase/templates/confirm-signup.html).
+[`supabase/templates/confirm-signup.html`](../supabase/templates/confirm-signup.html). Nothing else
+is needed to develop the flow.
 
-**The hosted project needs the same change by hand:** Authentication → Email Templates → *Confirm
-signup* → paste the contents of that file. Until you do, the hosted project keeps sending links,
-`/verify-email` shows a code box nobody has a code for, and the flow dead-ends.
+### The hosted project needs custom SMTP first
+
+**Supabase will not let you edit email templates until custom SMTP is configured.** The Subject and
+Body fields on Authentication → Emails are read-only, behind a "Set up custom SMTP to edit
+templates" notice, and the project keeps sending the stock link email.
+
+This is not a nuisance to route around — Supabase's built-in sender is explicitly not for
+production and is rate limited to a handful of emails per hour across the whole project. Check
+Authentication → Rate Limits for the current number. A study app cannot onboard students on that
+regardless of what the template says.
+
+So the real dependency chain is:
+
+```text
+custom SMTP  →  template editing unlocks  →  6-digit codes on the hosted project
+```
+
+Any SMTP provider works; the free tiers that cover early usage are Resend, Brevo and Mailgun. Once
+SMTP is on, either paste the template by hand or run `npm run auth:sync-templates`, which pushes it
+over the Management API and keeps it from drifting from this repo.
+
+**Until SMTP exists, develop against the local stack** (§2). Templates work there with no
+restriction, Mailpit catches every message, and there are no send limits — Sprints 10 to 12 can be
+built and reviewed end to end without touching the hosted project.
 
 Code length and lifetime come from `otp_length = 6` and `otp_expiry = 3600` in `config.toml`;
 match them in the dashboard under Authentication → Providers → Email if you change them.
