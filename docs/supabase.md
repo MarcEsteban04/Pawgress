@@ -338,6 +338,7 @@ itself reads, so they are interchangeable.
 | `20260826170000_drop_storage_delete_trigger.sql` | 16 | Removes the trigger that broke account deletion — Supabase forbids `delete from storage.objects` |
 | `20260826180000_subjects_allow_duplicate_names.sql` | 19 | Drops `unique (user_id, name)`, which contradicted US-B1 |
 | `20260827090000_subjects_academic_year.sql` | 22 | Adds `academic_year`, plus partial indexes for grouping and for the archive |
+| `20260827120000_avatar_size_limit.sql` | — | Raises the avatar bucket to 25 MB at the product owner’s direction |
 
 **Why `academic_year` is a `smallint` and not text.** It stores the STARTING year — 2025 means
 2025–2026 — and the UI renders the range. A free-text box produces "2025-2026", "2025–2026" (en

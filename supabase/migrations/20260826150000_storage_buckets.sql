@@ -55,8 +55,10 @@ values (
   'avatars',
   'avatars',
   false,
-  -- 2 MB. An avatar is displayed at 36px; anything larger is wasted bytes on
-  -- every page load and a bill nobody chose to pay.
+  -- 2 MB at the time this shipped. RAISED TO 25 MB by
+  -- 20260827120000_avatar_size_limit.sql — a replay of this file from empty
+  -- lands on 2 MB and the later migration corrects it, which is the point of
+  -- not editing history.
   2097152,
   array['image/jpeg', 'image/png', 'image/webp']
 )

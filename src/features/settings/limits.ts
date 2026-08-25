@@ -10,7 +10,7 @@
  */
 export const BUCKET_LIMITS = {
   materials: 25 * 1024 * 1024,
-  avatars: 2 * 1024 * 1024,
+  avatars: 25 * 1024 * 1024,
 } as const;
 
 export const AVATAR_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;

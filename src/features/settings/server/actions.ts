@@ -30,7 +30,7 @@ export async function updateProfileAction(
   _prevState: SettingsFormState,
   formData: FormData,
 ): Promise<SettingsFormState> {
-  await requireSession();
+  const session = await requireSession();
 
   const parsed = parseForm(profileSchema, formData, [
     "displayName",
@@ -51,17 +51,31 @@ export async function updateProfileAction(
 
   const supabase = await createSupabaseServerClient();
 
-  /* No `.eq("id", ...)`. RLS scopes the update to the caller's own row, and the
-     policy's WITH CHECK stops it becoming someone else's. A filter here would
-     look like the thing enforcing that, which is exactly the misreading that
-     leads to it being removed later (docs/architecture.md §3). */
-  const { error } = await supabase.from("profiles").update({
-    display_name: parsed.data.displayName,
-    year_level: parsed.data.yearLevel,
-    school: parsed.data.school,
-    preferred_session_minutes: parsed.data.preferredSessionMinutes,
-    timezone: parsed.data.timezone,
-  });
+  /**
+   * The `.eq("id", …)` is REQUIRED, and not for the reason it looks like.
+   *
+   * Supabase runs PostgREST with unfiltered writes disabled, so a PATCH with no
+   * filter is rejected outright — `21000: UPDATE requires a WHERE clause` —
+   * before RLS is ever consulted. This action shipped without one in Sprint 15
+   * and every profile save failed with "We could not save your profile."
+   *
+   * The original comment here argued that adding a filter would misrepresent
+   * what enforces ownership. That was the wrong conclusion from a correct
+   * premise: RLS is still the thing that makes this safe, and the filter is
+   * still not a security check. It is a row SELECTOR, and Postgres requires one
+   * for the same reason it requires one interactively — an UPDATE with no WHERE
+   * is almost always a mistake. Both facts are true at once.
+   */
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      display_name: parsed.data.displayName,
+      year_level: parsed.data.yearLevel,
+      school: parsed.data.school,
+      preferred_session_minutes: parsed.data.preferredSessionMinutes,
+      timezone: parsed.data.timezone,
+    })
+    .eq("id", session.userId);
 
   if (error) {
     return {
@@ -195,7 +209,10 @@ export async function uploadAvatarAction(
 
   const previous = (await getProfile())?.avatarPath ?? null;
 
-  const { error: saveError } = await supabase.from("profiles").update({ avatar_url: path });
+  const { error: saveError } = await supabase
+    .from("profiles")
+    .update({ avatar_url: path })
+    .eq("id", session.userId);
 
   if (saveError) {
     // Do not strand the object: nothing points at it now.
@@ -218,11 +235,14 @@ export async function uploadAvatarAction(
 
 /** Remove the profile picture and fall back to initials. */
 export async function removeAvatarAction(): Promise<SettingsFormState> {
-  await requireSession();
+  const session = await requireSession();
   const current = (await getProfile())?.avatarPath ?? null;
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("profiles").update({ avatar_url: null });
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_url: null })
+    .eq("id", session.userId);
 
   if (error) {
     return {

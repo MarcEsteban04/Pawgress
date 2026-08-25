@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardBody, CardHeader, CardTitle, QuotaMeter } from "@/components/ui";
+import { Card, CardBody, CardHeader, CardTitle, QuotaMeter, SectionLabel } from "@/components/ui";
 import { AvatarField } from "@/features/settings/components/AvatarField";
 import { DeleteAccountDialog } from "@/features/settings/components/DeleteAccountDialog";
 import { ProfileForm } from "@/features/settings/components/ProfileForm";
@@ -84,23 +84,33 @@ export default async function Page() {
               </p>
             </CardBody>
           </Card>
-
-          <Card className="border-bad/30">
-            <CardHeader>
-              <CardTitle>Delete account</CardTitle>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-3">
-              <p className="text-sm leading-relaxed text-ink-muted">
-                Removes your uploads, everything generated from them, and every result. There is no
-                copy and no undo.
-              </p>
-              <div>
-                <DeleteAccountDialog />
-              </div>
-            </CardBody>
-          </Card>
         </div>
       </div>
+
+      {/* The danger zone, and its own section on purpose.
+          Sitting third in a sidebar column, "Delete account" was a peer of
+          "AI usage today" — one more card to skim past. A destructive action
+          should be somewhere a student arrives at deliberately: below
+          everything they came here to do, separated by a rule, and stated in
+          the vocabulary that says stop. */}
+      <section className="mt-2 flex flex-col gap-3 border-t border-rule pt-6">
+        <SectionLabel className="text-bad">Danger zone</SectionLabel>
+
+        <Card className="border-bad/30 bg-bad-soft/40">
+          <CardBody className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-[60ch]">
+              <p className="font-medium">Delete this account</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                Removes your subjects, topics, uploads, everything generated from them, and every
+                quiz result. There is no copy and no undo.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <DeleteAccountDialog />
+            </div>
+          </CardBody>
+        </Card>
+      </section>
     </div>
   );
 }
