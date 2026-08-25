@@ -141,3 +141,40 @@ export async function removeAllUserObjects(userId: string): Promise<boolean> {
 
   return true;
 }
+
+/**
+ * Reads a byte range out of a stored object, without downloading the rest.
+ *
+ * `download()` returns the whole Blob, which for a 25 MB lecture deck is 25 MB
+ * of transfer and memory to look at four bytes. A signed URL plus a `Range`
+ * header asks the storage layer for exactly the window wanted.
+ *
+ * Returns null rather than throwing on any failure — a caller checking a file
+ * signature wants "could not read it", not an exception to unwrap. A server
+ * that cannot read the object it just accepted should reject the upload, and
+ * null is enough to decide that.
+ *
+ * A negative `start` means "from the end", the same as HTTP: `-4096` asks for
+ * the last four kilobytes, which is where a PDF keeps its trailer.
+ */
+export async function readObjectRange(
+  bucket: BucketName,
+  path: string,
+  start: number,
+  length?: number,
+): Promise<Uint8Array | null> {
+  const signedUrl = await createSignedUrl(bucket, path);
+  if (!signedUrl) return null;
+
+  const range = start < 0 ? `bytes=${start}` : `bytes=${start}-${length ? start + length - 1 : ""}`;
+
+  try {
+    const response = await fetch(signedUrl, { headers: { Range: range } });
+    /* 206 is a served range; 200 means the server ignored the header and sent
+       the whole object, which is still usable — just not what was asked for. */
+    if (!response.ok) return null;
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}

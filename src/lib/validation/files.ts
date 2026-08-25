@@ -161,3 +161,129 @@ export async function validateUpload(file: unknown, rule: FileRule): Promise<Upl
 
   return { ok: true, file };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Sprint 26 — verifying the bytes that actually landed                       */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * Checks a STORED object against the type it was uploaded as (FR-U2, US-C2).
+ *
+ * `validateUpload()` runs in the browser from Sprint 25 onward, because the
+ * bytes go straight to Supabase Storage and the server never sees the request
+ * body. That check buys a student instant feedback; it cannot be the gate,
+ * since anything running in a browser can be skipped. This is the gate, and it
+ * runs against what is in the bucket.
+ *
+ * It reads two small windows rather than the file: the first 16 bytes for the
+ * signature, and — for PDFs — the last few kilobytes for the trailer.
+ *
+ * The failures are separated because "we could not read your file" is useless
+ * advice. A student whose PDF has a password can remove it; a student who
+ * picked the wrong file can pick again; a student whose export truncated needs
+ * to export again. One message for all three teaches them to ignore it.
+ */
+export type StoredCheck = { ok: true } | { ok: false; error: AppError };
+
+/** Bytes are compared as Latin-1 so a marker search never re-encodes them. */
+function includesAscii(bytes: Uint8Array, needle: string): boolean {
+  const text = new TextDecoder("latin1").decode(bytes);
+  return text.includes(needle);
+}
+
+export function verifyStoredHead(head: Uint8Array | null, declaredMime: string): StoredCheck {
+  if (!head || head.length === 0) {
+    return {
+      ok: false,
+      error: new AppError({
+        code: "unreadable_file",
+        message: "We could not read that file after uploading it.",
+        nextStep: "Try uploading it again.",
+      }),
+    };
+  }
+
+  const declared = MIME_TO_KIND[declaredMime];
+  const sniffed = sniffKind(head);
+
+  if (!sniffed) {
+    return {
+      ok: false,
+      error: new AppError({
+        code: "unreadable_file",
+        message: "That file is not readable as the type it was sent as.",
+        nextStep: "Re-export or re-save it, then upload again.",
+        context: { declared: declaredMime },
+      }),
+    };
+  }
+
+  const consistent =
+    sniffed === declared ||
+    (sniffed === "zip-office" && (declared === "docx" || declared === "pptx"));
+
+  if (!consistent) {
+    return {
+      ok: false,
+      error: new AppError({
+        code: "unreadable_file",
+        message: `That file is not a ${declared ? KIND_LABELS[declared] : "supported file"}.`,
+        nextStep: "Check you picked the right file — its contents do not match its type.",
+        context: { declared: declaredMime, sniffed },
+      }),
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * PDF-specific checks that need the end of the file (US-C2).
+ *
+ * **Password-protected.** An encrypted PDF has an `/Encrypt` entry in its
+ * trailer dictionary. Every page of it will come back as noise from the
+ * extractor in Sprint 32, so catching it now turns "processing failed" into a
+ * sentence naming the actual problem.
+ *
+ * **Truncated.** A complete PDF ends with `%%EOF`. A download that stopped
+ * halfway, or an export that ran out of disk, will not — and that is worth
+ * saying now rather than after the student waits for extraction.
+ *
+ * Both are heuristics on the last few kilobytes rather than a parse. A PDF
+ * using cross-reference streams can put the encryption entry outside this
+ * window, so a false NEGATIVE is possible: the file is accepted and fails later
+ * with a clear message from the extractor. That is the right way round —
+ * refusing a valid file is worse than accepting one we cannot fully check.
+ *
+ * **Image-only PDFs are NOT detected here.** Deciding that a PDF has no text
+ * layer means extracting it, which is Sprint 32; OCR for that case is Sprint 33.
+ * US-C2 asks for the distinction, and this is the half that can honestly be
+ * made before the pipeline exists.
+ */
+export function verifyStoredPdfTail(tail: Uint8Array | null): StoredCheck {
+  if (!tail || tail.length === 0) return { ok: true };
+
+  if (includesAscii(tail, "/Encrypt")) {
+    return {
+      ok: false,
+      error: new AppError({
+        code: "unreadable_file",
+        message: "That PDF is password-protected.",
+        nextStep: "Open it, save a copy without the password, and upload that.",
+      }),
+    };
+  }
+
+  if (!includesAscii(tail, "%%EOF")) {
+    return {
+      ok: false,
+      error: new AppError({
+        code: "unreadable_file",
+        message: "That PDF looks incomplete.",
+        nextStep: "It may not have finished downloading. Get a fresh copy and try again.",
+      }),
+    };
+  }
+
+  return { ok: true };
+}

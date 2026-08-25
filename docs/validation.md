@@ -85,12 +85,52 @@ material upload is:
 | The object path | Chosen by the server, never accepted from the client | Writing outside the caller's own folder |
 | `file_size_limit`, `allowed_mime_types` | The bucket | Anything the client lied about in the request |
 | Storage policies on the first path segment | Postgres | Reading or writing another student's objects |
+| **`verifyUploadAction()`** | **Server, reading the stored object** | **A file whose contents are not what it was uploaded as** |
 
-**What is NOT yet checked is the bytes that actually landed.** A file declared
-as a PDF and containing HTML passes today, because nothing on the server has
-seen it. That is Sprint 26's job, and it will read the stored object rather than
-a request body. Recording it here so the gap is a known one rather than an
-assumption someone makes later.
+**The last row is the gate; every row above it is convenience.** Sprint 25
+shipped without it and said so here. Sprint 26 closed it: after the bytes land,
+the server reads a 16-byte window for the signature and, for PDFs, the last
+4 KB for the trailer. A file that fails is deleted, not left as a failed row —
+the student never chose to store it and nothing can read it.
+
+Two windows, not the file. Downloading a 25 MB deck to look at four bytes would
+double the cost of every upload. `readObjectRange()` signs a URL and sends a
+`Range` header; Supabase answers with 206 and exactly the window asked for,
+including suffix ranges like `bytes=-4096`.
+
+### PDFs get two extra questions
+
+```text
+/Encrypt in the trailer  →  "That PDF is password-protected."
+no %%EOF at the end      →  "That PDF looks incomplete."
+```
+
+Both are heuristics on the last few kilobytes rather than a parse, and both can
+produce a false NEGATIVE — a PDF using cross-reference streams can keep its
+encryption entry outside that window. That is the right way round: the file is
+accepted and fails later with a clear message from the extractor, rather than a
+valid file being refused.
+
+**Image-only PDFs are not detected**, and US-C2 asks for them. Deciding a PDF
+has no text layer means extracting it (Sprint 32); OCR for that case is
+Sprint 33. This is the half of the requirement that can be met honestly before
+the pipeline exists.
+
+### Duplicates are reported, not blocked
+
+A SHA-256 of the contents is computed in the browser before a ticket is asked
+for, so a file already in the library never costs the upload (FR-U8). The hash
+identifies the BYTES: the same handout arrives as `lecture3.pdf`,
+`lecture3 (1).pdf` and `Lecture 3 FINAL.pdf`, and a filename cannot answer
+"have I got this already?".
+
+It is a CLAIM from the browser, and it is treated as one. The lookup runs under
+RLS, so the worst a forged hash achieves is being shown one of your own
+materials. It grants nothing.
+
+Re-uploading the same handout into a second subject is legitimate, so the
+student is told what was found and given both answers — "upload anyway" and
+"skip it" — rather than being refused.
 
 ### Shrinking before upload is not validation
 
