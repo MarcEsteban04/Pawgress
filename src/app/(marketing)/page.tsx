@@ -10,15 +10,18 @@ import { cn } from "@/lib/utils";
 /**
  * Landing page — screen 1 in docs/navigation.md.
  *
- * The whole site sits in one white frame floating on a neutral ground, and the
- * hero is a dot-textured panel inside that frame with the product's own
- * surfaces scattered around a centred headline.
+ * Full-bleed: the page runs edge to edge, and the hero is a dot-textured band
+ * with the product's own surfaces scattered around a centred headline.
+ *
+ * Width is held back on the CONTENT, never on the background. Bands span the
+ * viewport; the text inside them is capped at 70rem, because a measure that
+ * grows with the monitor stops being readable somewhere around 90 characters.
  *
  * Two things make the composition work rather than just look busy:
  *
- *  1. The objects are cropped by the panel edge. A card cut off by the frame
- *     reads as part of a larger surface continuing past the window; a card that
- *     fits neatly inside reads as a sticker.
+ *  1. The objects are cropped by the band's edge. A card cut off by the edge
+ *     reads as part of a larger surface continuing past it; a card that fits
+ *     neatly inside reads as a sticker.
  *  2. Everything in them is real. The bars are `MasteryBar` with its real
  *     low-evidence rule, the citation is `SourceChip`. A hero built from mock
  *     screenshots drifts away from the product within one sprint.
@@ -68,11 +71,14 @@ const TONE_TILE = {
 
 export default function LandingPage() {
   return (
-    <div className="flex-1 px-3 py-3 sm:px-5 sm:py-5">
-      {/* The frame. Everything on the page lives inside this one white window. */}
-      <div className="mx-auto w-full max-w-[92rem] overflow-hidden rounded-[var(--radius-frame)] bg-frame shadow-[var(--shadow-canvas)]">
+    <div className="w-full flex-1 bg-frame">
+      {/* Full-bleed: the page IS the frame, so there is no radius or shadow to
+          draw — both would fall off the viewport edge. Width is held back on
+          the CONTENT instead, because a 2000px measure is unreadable however
+          nice the background looks. */}
+      <div className="w-full">
         {/* ---- Nav ---------------------------------------------------- */}
-        <header className="flex h-16 items-center gap-4 px-4 sm:h-[4.5rem] sm:px-7">
+        <header className="mx-auto flex h-16 w-full max-w-[110rem] items-center gap-4 px-4 sm:h-[4.5rem] sm:px-8 lg:px-12">
           <Link href="/" aria-label="Pawgress home" className="shrink-0">
             <Logo />
           </Link>
@@ -104,10 +110,10 @@ export default function LandingPage() {
         </header>
 
         {/* ---- Hero ---------------------------------------------------- */}
-        <section className="dot-grid relative mx-2 mb-2 overflow-hidden rounded-[0.625rem] sm:mx-2.5 sm:mb-2.5">
+        <section className="dot-grid relative overflow-hidden border-y border-rule">
           <HeroDecor />
 
-          <div className="relative flex min-h-[34rem] flex-col items-center justify-center gap-7 px-5 py-16 text-center sm:px-8 sm:py-20 xl:min-h-[42rem]">
+          <div className="relative mx-auto flex min-h-[34rem] w-full max-w-[70rem] flex-col items-center justify-center gap-7 px-5 py-16 text-center sm:px-8 sm:py-20 xl:min-h-[42rem]">
             <MarkTile className="drift" />
 
             {/* The two-tone headline: the promise in ink, the payoff in grey. */}
@@ -139,7 +145,7 @@ export default function LandingPage() {
         </section>
 
         {/* ---- The loop ------------------------------------------------ */}
-        <section id="how" className="scroll-mt-6 px-5 py-16 sm:px-10 sm:py-20">
+        <section id="how" className="scroll-mt-6 px-5 py-16 sm:px-8 sm:py-24 lg:px-12">
           <div className="mx-auto max-w-[70rem]">
             <p className="text-sm text-ink-muted">How it works</p>
             <h2 className="mt-2 font-display text-[clamp(1.875rem,3.4vw,2.75rem)] leading-tight font-semibold tracking-[-0.025em]">
@@ -179,7 +185,7 @@ export default function LandingPage() {
         </section>
 
         {/* ---- What it actually tells you ------------------------------ */}
-        <section className="px-5 pb-16 sm:px-10 sm:pb-20">
+        <section className="px-5 pb-16 sm:px-8 sm:pb-24 lg:px-12">
           <div className="mx-auto grid max-w-[70rem] items-center gap-8 lg:grid-cols-2 lg:gap-14">
             <div>
               <p className="text-sm text-ink-muted">What you get back</p>
@@ -215,7 +221,7 @@ export default function LandingPage() {
         </section>
 
         {/* ---- Trust --------------------------------------------------- */}
-        <section id="trust" className="scroll-mt-6 px-5 pb-16 sm:px-10 sm:pb-20">
+        <section id="trust" className="scroll-mt-6 px-5 pb-16 sm:px-8 sm:pb-24 lg:px-12">
           <div className="mx-auto grid max-w-[70rem] gap-8 lg:grid-cols-2 lg:gap-14">
             <div>
               <p className="text-sm text-ink-muted">Why you can trust it</p>
@@ -246,8 +252,8 @@ export default function LandingPage() {
         </section>
 
         {/* ---- Close --------------------------------------------------- */}
-        <section className="px-2 pb-2 sm:px-2.5 sm:pb-2.5">
-          <div className="dot-grid flex flex-col items-center gap-6 rounded-[0.625rem] px-5 py-16 text-center sm:py-24">
+        <section className="dot-grid border-t border-rule">
+          <div className="mx-auto flex w-full max-w-[70rem] flex-col items-center gap-6 px-5 py-16 text-center sm:py-24">
             <h2 className="font-display text-[clamp(1.875rem,4vw,3rem)] leading-tight font-semibold tracking-[-0.03em] text-balance">
               Find out what to study next
             </h2>
@@ -263,7 +269,7 @@ export default function LandingPage() {
         </section>
 
         {/* ---- Footer -------------------------------------------------- */}
-        <footer className="flex flex-col gap-2 px-5 py-7 text-sm text-ink-muted sm:flex-row sm:items-center sm:px-10">
+        <footer className="mx-auto flex w-full max-w-[110rem] flex-col gap-2 px-5 py-8 text-sm text-ink-muted sm:flex-row sm:items-center sm:px-8 lg:px-12">
           <span>
             {siteConfig.name} — {siteConfig.tagline}
           </span>

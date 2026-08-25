@@ -12,10 +12,16 @@ import { cn } from "@/lib/utils";
 /**
  * Placement for the hero objects.
  *
- * They are positioned in percentages against the hero panel and allowed to run
- * off its edges — a card cropped by the frame reads as part of a larger surface
- * continuing past the window, which is what gives the composition depth. The
- * panel's `overflow-hidden` does the cropping.
+ * They are positioned in percentages and allowed to run off the edges — a card
+ * cropped by the edge reads as part of a larger surface continuing past it,
+ * which is what gives the composition depth. The hero band's `overflow-hidden`
+ * does the cropping.
+ *
+ * The cluster is capped at 120rem even though the band itself is full-bleed.
+ * Percentages of an uncapped viewport keep working right up until they stop:
+ * past about 1920px the objects march off toward the corners and leave the
+ * headline stranded in an empty middle. The cap means everything up to a 1080p
+ * monitor still crops at the true edge, and anything wider holds its shape.
  *
  * Only rendered from 1280px. Below that the composition genuinely cannot work:
  * scattered objects around a centred headline need horizontal room that a
@@ -50,7 +56,10 @@ function Slot({
 
 export function HeroDecor() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 hidden xl:block">
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[120rem] xl:block"
+    >
       {/* Top left — the input: a note, and the tick that says it was handled. */}
       <Slot className="top-[7%] left-[3%]" rotate="-5deg" delay="0s">
         <StickyNote />
