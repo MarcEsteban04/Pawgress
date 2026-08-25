@@ -52,4 +52,6 @@ export {
 export { MasteryBar, type MasteryBarProps } from "./MasteryBar";
 export { StatusBadge, statusLabel, type StatusBadgeProps } from "./StatusBadge";
 export { Donut, type DonutSegment } from "./Donut";
-export { TrendChart, type TrendPoint } from "./TrendChart";
+export { StatTile } from "./StatTile";
+export { ScoreChart, type ScorePoint } from "./ScoreChart";
+export { StudyBars } from "./StudyBars";

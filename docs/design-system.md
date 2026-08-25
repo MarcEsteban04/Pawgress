@@ -111,7 +111,9 @@ node <dataviz-skill>/scripts/validate_palette.js "#175E5A,#22857E,#3FB3AA,#7FD6C
 | `TintRow` | A list row carrying a subject's identity tint. `tone` is the subject's fixed slot |
 | `MasteryBar` | **The one to read first.** Enforces evidence counts and withholds low-evidence numbers. `tone` switches the fill from the mastery ramp to a subject's hue |
 | `Donut` | Part-to-whole across ordered bands, values in the legend, headline figure in the centre. Six segments maximum |
-| `TrendChart` | Two same-unit series, one axis, crosshair + tooltip, clamped smoothing that cannot overshoot the data |
+| `ScoreChart` | One measure over time, crosshair + tooltip, clamped smoothing that cannot overshoot the data. No legend — one series needs none. Draws its own axes when empty, so a bare card never reads as broken |
+| `StudyBars` | Minutes per day. A separate chart from `ScoreChart` because minutes and percentages are different units; every day is drawn, zeros included, so a patchy week cannot look consistent |
+| `StatTile` | One headline figure with its evidence. When the story is a single number, a chart is that number with extra steps |
 | `StatusBadge` | The single job-status vocabulary. Icon + label, never colour alone |
 | `QuotaMeter` | Used / limit / reset time, shown before a limit blocks anyone |
 | `EmptyState` | Illustration slot, explanation, and exactly one action |
