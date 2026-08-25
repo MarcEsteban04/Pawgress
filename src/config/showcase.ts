@@ -15,15 +15,15 @@
  *     `globals.css`; Biology is the same green here, on the dashboard, and in
  *     every list it ever appears in (docs/design-system.md §3).
  *
- * This is illustrative content, not sample *data* — it never stands in for a
- * student's real figures, so it needs no `SampleDataNotice`. The dashboard's
- * placeholder numbers are a different thing entirely, in
- * `features/dashboard/sample-data.ts`.
+ * This is illustrative content, not sample *data*. It is marketing copy on
+ * public pages, seen only by people who have no data of their own yet — it
+ * never stands in for a student's real figures. The dashboard reads the real
+ * database and shows empty states, and never borrows from here.
  */
 
 export type ShowcaseTone = 1 | 2 | 3 | 4 | 5;
 
-/** The fixed colour slot per subject, matching features/dashboard/sample-data.ts. */
+/** The fixed colour slot per subject, matching the categorical tokens in globals.css. */
 export const SUBJECT_TONES = {
   programming: 1,
   history: 2,

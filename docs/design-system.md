@@ -16,7 +16,7 @@ src/lib/utils.ts                 cn() — class merge, so callers can always ove
 src/types/index.ts               JobStatus vocabulary + mastery thresholds
 src/components/ui/               the primitives, exported from index.ts
 src/components/layout/           AppShell, SideNav, PageHeader, FocusShell, ThemeToggle
-src/components/shared/           Logo, PawMark, AppMark, NotBuiltYet, SampleDataNotice
+src/components/shared/           Logo, PawMark, AppMark, NotBuiltYet
 src/features/<feature>/          feature components — promoted to ui/ only when a second feature needs them
 ```
 
@@ -176,7 +176,7 @@ through the layout. The layout must never have to know which page is underneath 
 **States are the component's job, not the caller's.** If a surface can be empty, loading, or failed,
 the primitive covers it — see [`states.md`](states.md).
 
-**Placeholder data says so on screen.** `SampleDataNotice` and `NotBuiltYet` are how an unfinished
+**Placeholder data says so on screen.** `NotBuiltYet` and `PanelEmpty` are how an unfinished
 screen admits what it is. A designed dashboard full of invented figures that does not label them is
 the fastest way for this product to lose the trust its whole pitch depends on.
 
@@ -192,7 +192,7 @@ Named so nobody assumes they exist.
 | Missing | Why, and when |
 |---|---|
 | **Toasts** | Nothing to announce yet — there are no mutations until Sprint 10. A toast system built before that would be guesswork. Lands with the first server action |
-| **Real dashboard data** | Every panel renders `src/features/dashboard/sample-data.ts` and says so on screen. The tables land in Sprint 13, the writes in Sprint 19+, the real dashboard in Sprint 70 — deleting that file is part of its definition of done |
+| **Data behind most dashboard panels** | The dashboard now reads the real database. Subjects appear; materials, quiz results, progress, planner events and plans stay empty until the features that write them land (Sprints 25, 52, 56, 60, 65). `PanelEmpty` says which of the two kinds of empty each panel is in |
 | **Domain composites** (`EntityCard`, `QuizOption`, `Flashcard`, `UploadDropzone`) | Feature components. They belong to their features (Sprints 19+), not to `ui/` — promoting them early would fix decisions the features have not made yet |
 | **Notifications and help** | The top-bar buttons exist as chrome with no destination. They stay inert until there is something to notify about |
 

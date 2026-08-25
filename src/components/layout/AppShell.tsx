@@ -55,11 +55,13 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh p-0 sm:p-3 sm:p-5 md:h-dvh">
+    <div className="min-h-dvh md:h-dvh">
       <div
         className={cn(
+          // Full-bleed. A radius and a shadow at the viewport edge are
+          // invisible, and the gutter was costing real width on the widest
+          // panel the product has.
           "flex min-h-dvh overflow-hidden bg-frame sm:min-h-0",
-          "sm:rounded-[var(--radius-frame)] sm:shadow-[var(--shadow-canvas)]",
           "md:h-full",
         )}
       >
@@ -135,7 +137,7 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
             </div>
           </header>
 
-          <main className="thin-scroll min-w-0 flex-1 px-4 pt-2 pb-8 sm:px-6 md:overflow-y-auto md:pb-10">
+          <main className="thin-scroll min-w-0 flex-1 px-4 pt-2 pb-8 sm:px-6 md:overflow-y-auto md:pb-10 lg:px-8">
             {children}
           </main>
         </div>
