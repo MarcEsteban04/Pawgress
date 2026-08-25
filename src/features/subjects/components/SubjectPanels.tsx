@@ -1,4 +1,14 @@
-import { CalendarDays, FileText, Gauge, History, Target, TrendingUp, Upload } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  FileText,
+  Gauge,
+  History,
+  Target,
+  TrendingUp,
+  Upload,
+} from "lucide-react";
+import Link from "next/link";
 import { type ReactNode } from "react";
 import {
   Card,
@@ -165,9 +175,12 @@ export function MaterialsPanel({
   materials,
   totalCount,
   action,
+  libraryHref,
 }: {
   materials: SubjectMaterial[];
   totalCount: number;
+  /** Where the full library lives, so the preview can point at it. */
+  libraryHref?: string;
   /** The upload control. Passed in because this file is a Server Component. */
   action?: ReactNode;
 }) {
@@ -211,11 +224,26 @@ export function MaterialsPanel({
                 </li>
               ))}
             </ul>
-            {totalCount > materials.length && (
-              <p className="px-5 py-3 text-sm text-ink-muted sm:px-6">
-                Showing {materials.length} of {totalCount}.
+            {/* The panel is a preview, so it always offers the way to the
+                full library rather than only when the preview overflows —
+                renaming and re-filing live there, and a student who cannot
+                see the door assumes there is no room. */}
+            <div className="flex items-center justify-between gap-3 px-5 py-3 sm:px-6">
+              <p className="text-sm text-ink-muted">
+                {totalCount > materials.length
+                  ? `Showing ${materials.length} of ${totalCount}.`
+                  : `${totalCount} ${totalCount === 1 ? "file" : "files"}.`}
               </p>
-            )}
+              {libraryHref && (
+                <Link
+                  href={libraryHref}
+                  className="inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-accent"
+                >
+                  Manage files
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              )}
+            </div>
           </>
         )}
       </CardBody>

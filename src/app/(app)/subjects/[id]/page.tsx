@@ -126,6 +126,7 @@ async function Materials({ subjectId, totalCount }: { subjectId: string; totalCo
     <MaterialsPanel
       materials={materials}
       totalCount={totalCount}
+      libraryHref={`/subjects/${subjectId}/materials`}
       action={
         <UploadDialog
           subjectId={subjectId}

@@ -11,6 +11,7 @@ import {
   safeFileName,
 } from "@/lib/supabase/storage";
 import { verifyStoredHead, verifyStoredPdfTail } from "@/lib/validation/files";
+import { getMaterial } from "@/server/materials/queries";
 import { requireSession } from "@/server/auth/session";
 import { MATERIAL_MIME_TYPES, materialKindFor } from "../upload";
 import { type MaterialFormState, type UploadTicketResult, type VerifyResult } from "../types";
@@ -317,4 +318,171 @@ export async function verifyUploadAction(input: {
   }
 
   return { status: "ok" };
+}
+
+/**
+ * Rename a material (FR-U4, US-C4).
+ *
+ * The TITLE changes; the stored object does not. They are different things:
+ * the path was generated at upload time and is referenced by the row, so
+ * renaming the object would mean rewriting the reference for no gain — and
+ * failing halfway would leave a row pointing at a file that no longer exists.
+ * A title is what a student reads; a path is plumbing.
+ */
+export async function renameMaterialAction(
+  _prevState: MaterialFormState,
+  formData: FormData,
+): Promise<MaterialFormState> {
+  await requireSession();
+
+  const id = String(formData.get("id") ?? "");
+  const raw = String(formData.get("title") ?? "");
+  const title = cleanText(raw).trim();
+
+  if (!id) {
+    return {
+      status: "error",
+      message: "We could not tell which file to rename.",
+      nextStep: "Close this and try again.",
+    };
+  }
+
+  if (title.length === 0) {
+    return {
+      status: "error",
+      message: "Give the file a name.",
+      nextStep: "Type something for it to be called.",
+    };
+  }
+
+  if (title.length > 300) {
+    return {
+      status: "error",
+      message: "Names are limited to 300 characters.",
+      nextStep: "Shorten it and try again.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("materials").update({ title }).eq("id", id);
+
+  if (error) {
+    return {
+      status: "error",
+      message: "We could not save that name.",
+      nextStep: "Try again in a moment.",
+    };
+  }
+
+  revalidatePath("/", "layout");
+  return { status: "saved" };
+}
+
+/**
+ * Delete a material and its bytes (FR-U4, US-C4, NFR-P3).
+ *
+ * **The object goes first, and that order is the whole lesson from Sprint 16.**
+ * The row cascades to chunks, and the bytes do not cascade at all — Supabase
+ * refuses `delete from storage.objects` precisely because it would orphan them.
+ * Removing the file first also fails safe: if that step breaks, the material
+ * still exists and the student is told, rather than losing the row and keeping
+ * an unreachable file they are still paying for.
+ *
+ * A typed note has no `storage_path`, so there is nothing to remove — hence the
+ * guard rather than an unconditional call.
+ */
+export async function deleteMaterialAction(
+  _prevState: MaterialFormState,
+  formData: FormData,
+): Promise<MaterialFormState> {
+  await requireSession();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) {
+    return {
+      status: "error",
+      message: "We could not tell which file to delete.",
+      nextStep: "Close this and try again.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  /* Read the path through the DAL rather than trusting one posted from the
+     form. A client that supplied someone else's path would otherwise aim this
+     deletion at a file it does not own — RLS would stop the row delete, but
+     the storage call happens first. */
+  const material = await getMaterial(id);
+  if (!material) {
+    return {
+      status: "error",
+      message: "That file is no longer in your library.",
+      nextStep: "Reload the page.",
+    };
+  }
+
+  if (material.storagePath) {
+    const { error: storageError } = await supabase.storage
+      .from(BUCKETS.materials)
+      .remove([material.storagePath]);
+
+    if (storageError) {
+      return {
+        status: "error",
+        message: "We could not remove that file from storage.",
+        nextStep: "Nothing has been deleted. Try again in a moment.",
+      };
+    }
+  }
+
+  const { error } = await supabase.from("materials").delete().eq("id", id);
+  if (error) {
+    return {
+      status: "error",
+      message: "We could not delete that file.",
+      nextStep: "Its contents are gone but the entry remains — try deleting it again.",
+    };
+  }
+
+  revalidatePath("/", "layout");
+  return { status: "saved" };
+}
+
+/**
+ * Move a material to a different topic, or out of one (FR-U4).
+ *
+ * Filing is the thing a student gets wrong most often at upload time — the
+ * topic did not exist yet, or the file turned out to be about something else.
+ * Making it fixable from the library is what stops "file under a topic" being
+ * a decision they avoid making at all.
+ */
+export async function setMaterialTopicAction(
+  materialId: string,
+  topicId: string | null,
+): Promise<MaterialFormState> {
+  await requireSession();
+  if (!materialId) {
+    return {
+      status: "error",
+      message: "We could not tell which file to move.",
+      nextStep: "Reload the page and try again.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("materials")
+    .update({ topic_id: topicId || null })
+    .eq("id", materialId);
+
+  if (error) {
+    return {
+      status: "error",
+      message: "We could not move that file.",
+      nextStep: "Try again in a moment.",
+    };
+  }
+
+  revalidatePath("/", "layout");
+  return { status: "saved" };
 }

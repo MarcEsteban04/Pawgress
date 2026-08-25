@@ -40,15 +40,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 25 | Upload UI — drag/drop, multi-file, topic tagging, direct-to-storage | done | bytes bypass Next entirely; typed **notes deferred to Sprint 30** (FR-U5), progress/cancel to 27 |
 | 26 | File validation — stored-byte check, PDF encryption/truncation, duplicate detection | done | image-only PDF detection needs the extractor, deferred to 32/33 |
 | 27 | Upload progress — per-file bars, cancel, retry, concurrency of 2 | done | XHR not fetch (fetch cannot report request progress); **resumability deliberately deferred** |
+| 28 | Material library — list, search, filter by type/status/topic, sort, rename, re-file, delete | done | its own route `/subjects/[id]/materials`; nine job statuses collapse to three filters |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 28 | Material library — list, search, filter, rename, delete | 25 |
 | 29 | Material preview — PDF and image viewer | 28 |
 | 30 | Typed notes as first-class material | 28 |
+| 31 | AI provider integration | 07 |
 
 ---
 
