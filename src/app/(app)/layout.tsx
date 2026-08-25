@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { AI_QUOTAS } from "@/lib/ai/types";
 import { requireSession } from "@/server/auth/session";
+import { getProfile } from "@/server/profile/queries";
 
 /**
  * The authenticated shell.
@@ -16,10 +17,15 @@ import { requireSession } from "@/server/auth/session";
  */
 export default async function AppLayout({ children, toolbar }: LayoutProps<"/">) {
   const session = await requireSession();
+  // The name the student chose, not the part of their address before the @.
+  const profile = await getProfile();
 
   return (
     <AppShell
-      user={{ name: session.email.split("@")[0] ?? "You", email: session.email }}
+      user={{
+        name: profile?.displayName ?? session.email.split("@")[0] ?? "You",
+        email: session.email,
+      }}
       toolbar={toolbar}
       // Usage comes from the AI call log once Sprint 31 lands; the shell already
       // has somewhere to show it so the quota is never a surprise.

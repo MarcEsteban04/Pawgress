@@ -96,7 +96,7 @@ Priority: **M** = MVP, **V1** = required for V1, **L** = later / post-V1.
 | FR-A4 | Unauthenticated visitors are redirected away from application routes | M | 11 |
 | FR-A5 | Forgot-password request and reset-by-link flow | V1 | 12 |
 | FR-A6 | Graceful expired/invalid session handling — re-auth without losing the current route | V1 | 12 |
-| FR-A7 | Profile: display name, avatar, year level, school, preferred session length | V1 | 15 |
+| FR-A7 | Profile: display name, avatar, year level, school, preferred session length | V1 | 15 · avatar in 16 |
 | FR-A8 | Delete account and all owned data on request | V1 | 15 |
 | FR-A9 | Google sign-in | L | — |
 

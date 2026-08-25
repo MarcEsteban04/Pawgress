@@ -27,15 +27,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 12 | Account recovery — forgot password, 6-digit reset code, session expiry | done | recovery template pushed to the hosted project |
 | 13 | Database schema — 17 tables, foreign keys, indexes, constraints, RLS enabled | done | applied to the hosted project; policies are Sprint 14 |
 | 14 | Row Level Security — 67 policies, composite-key ownership, 17 security tests | done | `npm run db:test:rls` passes against the live project |
+| 15 | User profiles — name, year level, school, study block, timezone, account deletion | done | **profile picture deferred to Sprint 16**, which is when storage exists |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 15 | Profile, account deletion, AI usage in settings | 14 |
-| 16 | Storage buckets and upload policies | 14 |
+| 16 | Storage buckets and upload policies — **and the avatar upload Sprint 15 could not build** | 15 |
 | 17 | File validation and size limits | 16 |
+| 18 | Database seeding and fixtures | 17 |
 
 ---
 
