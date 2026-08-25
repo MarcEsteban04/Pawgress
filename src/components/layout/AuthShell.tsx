@@ -29,28 +29,42 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-frame lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* Aside — the reason to bother, from `lg` up. */}
-      <aside className="dot-grid relative hidden flex-col justify-between border-r border-rule p-10 lg:flex xl:p-14">
-        <Link href="/" aria-label="Pawgress home" className="w-fit">
+      <aside className="dot-grid relative hidden flex-col border-r border-rule p-10 lg:flex xl:p-14">
+        {/* The mark stays pinned to the corner. It is chrome, not part of the
+            composition — centring it with everything else reads as a splash
+            screen rather than a page. */}
+        <Link href="/" aria-label="Pawgress home" className="w-fit shrink-0">
           <Logo />
         </Link>
 
-        <div className="flex flex-col gap-8 py-10">
-          <div>
-            <p className="text-sm text-ink-muted">For high school and college students</p>
-            <h2 className="mt-3 max-w-[16ch] font-display text-[clamp(2rem,3.2vw,3rem)] leading-[1.06] font-semibold tracking-[-0.03em]">
-              Study what matters,
-              <br />
-              <span className="text-ink-subtle">not just more</span>
-            </h2>
+        {/*
+          One centred block, rather than three pieces pinned to top, middle and
+          bottom. This column is far wider than its content, so spreading them to
+          the edges left a void down the right and a gap under the card.
+
+          Text stays left-aligned inside the block: a centred ragged edge makes a
+          three-line paragraph measurably slower to scan, and centring the card's
+          own rows would be worse still.
+        */}
+        <div className="flex flex-1 items-center justify-center py-10">
+          <div className="flex w-full max-w-[26rem] flex-col gap-8">
+            <div>
+              <p className="text-sm text-ink-muted">For high school and college students</p>
+              <h2 className="mt-3 font-display text-[clamp(2rem,3.2vw,3rem)] leading-[1.06] font-semibold tracking-[-0.03em]">
+                Study what matters,
+                <br />
+                <span className="text-ink-subtle">not just more</span>
+              </h2>
+            </div>
+
+            <AuthProof />
+
+            <p className="text-sm leading-relaxed text-ink-muted">
+              Every reviewer, flashcard and quiz question comes from material you uploaded — and
+              cites the page it came from.
+            </p>
           </div>
-
-          <AuthProof />
         </div>
-
-        <p className="max-w-[42ch] text-sm leading-relaxed text-ink-muted">
-          Every reviewer, flashcard and quiz question comes from material you uploaded — and cites
-          the page it came from.
-        </p>
       </aside>
 
       {/* Form column. */}

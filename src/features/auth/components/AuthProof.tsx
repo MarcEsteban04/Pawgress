@@ -12,7 +12,9 @@ import { MasteryBar, SourceChip } from "@/components/ui";
  */
 export function AuthProof() {
   return (
-    <div className="w-full max-w-[22rem] rounded-[1.25rem] border border-rule bg-surface p-5 shadow-[var(--shadow-float)]">
+    {/* No width of its own: the aside sizes the whole block, so a cap here would
+        leave the card narrower than the headline above it and break the edge. */}
+    <div className="w-full rounded-[1.25rem] border border-rule bg-surface p-5 shadow-[var(--shadow-float)]">
       <p className="text-xs font-medium text-ink-muted">After your first quiz</p>
 
       <div className="mt-4 flex flex-col gap-4">
