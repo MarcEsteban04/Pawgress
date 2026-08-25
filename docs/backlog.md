@@ -30,15 +30,17 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 15 | User profiles — name, year level, school, study block, timezone, account deletion | done | **profile picture deferred to Sprint 16**, which is when storage exists |
 | 16 | Storage — private buckets, path-based ownership, avatar upload, 10 new security tests | done | account deletion removes files via the Storage API, not a DB trigger |
 | 17 | Data validation — shared form parser, byte-sniffing upload checks, sanitisers, error shape | done | `docs/validation.md` |
+| 18 | Database testing | **skipped** | product owner tested manually; concurrency remains uncovered — see roadmap |
+| 19 | Subject creation — create, edit, delete with counted confirmation, colour and icon | done | dropped the unique-name constraint that contradicted US-B1 |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 18 | Database testing — CRUD, RLS, foreign keys, concurrency | 17 |
-| 19 | Subject creation | 18 |
 | 20 | Subject list, search and sort | 19 |
+| 21 | Topic management | 20 |
+| 22 | Semesters and archiving | 21 |
 
 ---
 

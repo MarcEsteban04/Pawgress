@@ -357,14 +357,24 @@ Create secure storage for uploaded study materials.
 
 ---
 
-## Sprint 18 — Database Testing
+## Sprint 18 — Database Testing *(skipped)*
 
-### Test
-- CRUD operations
-- RLS
-- Foreign keys
-- Concurrent requests
-- Unauthorized access
+**Skipped at the product owner's direction — verified manually instead.**
+
+Most of this sprint's list was already automated by then, in `npm run db:test:rls` (27 assertions,
+built across Sprints 14 and 16) and the Sprint 19 subject smoke test:
+
+| Item | Covered by |
+|---|---|
+| RLS | `db:test:rls` — isolation, cross-parent writes, ownership handover |
+| Unauthorized access | `db:test:rls` — anon and cross-user, tables and storage |
+| Foreign keys | `db:test:rls` composite-key checks; cascade checks on delete |
+| CRUD operations | Sprint 19 smoke test — create, rename, delete, cascade |
+| **Concurrent requests** | **Not covered.** Nothing exercises two writers racing for the same row |
+
+The gap worth naming is the last one. It has no consequence yet — every write so far is a single
+row owned by one student — and it starts to matter at Sprint 52, where two tabs can submit the same
+quiz attempt, and Sprint 31, where a worker and a retry can claim the same job.
 
 ---
 
