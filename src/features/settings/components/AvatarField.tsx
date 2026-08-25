@@ -1,0 +1,97 @@
+"use client";
+
+import { Trash2, Upload } from "lucide-react";
+import { useActionState, useRef, useState, useTransition } from "react";
+import { useFormStatus } from "react-dom";
+import { Avatar, Button, ErrorState } from "@/components/ui";
+import { initialSettingsState } from "@/features/settings/types";
+import { removeAvatarAction, uploadAvatarAction } from "@/features/settings/server/actions";
+import { AVATAR_MIME_TYPES, BUCKET_LIMITS } from "@/features/settings/limits";
+
+/**
+ * Profile picture (FR-A7).
+ *
+ * The file input is hidden behind a real button rather than styled directly:
+ * `input[type=file]` cannot be restyled consistently across browsers, and the
+ * usual workarounds break keyboard focus. This keeps one focusable control that
+ * forwards its click.
+ *
+ * Submitting on selection removes a step nobody wants — nobody picks an avatar
+ * and then reconsiders whether to press Save.
+ */
+
+/** Lives inside the form so useFormStatus can see the submission. */
+function ChooseButton({ onPick }: { onPick: () => void }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="button" variant="subtle" size="sm" onClick={onPick} disabled={pending}>
+      <Upload aria-hidden />
+      {pending ? "Uploading…" : "Change picture"}
+    </Button>
+  );
+}
+
+export function AvatarField({
+  name,
+  avatarUrl,
+  hasAvatar,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  hasAvatar: boolean;
+}) {
+  const [state, formAction] = useActionState(uploadAvatarAction, initialSettingsState);
+  const [removeState, setRemoveState] = useState(initialSettingsState);
+  const [isRemoving, startRemoving] = useTransition();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const limitMb = Math.round(BUCKET_LIMITS.avatars / (1024 * 1024));
+  const error =
+    state.status === "error" ? state : removeState.status === "error" ? removeState : null;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {error?.message && <ErrorState title={error.message} nextStep={error.nextStep ?? ""} />}
+
+      <div className="flex items-center gap-4">
+        <Avatar name={name} src={avatarUrl} size="lg" tone={1} className="size-16 text-base" />
+
+        <div className="flex flex-col gap-2">
+          <form ref={formRef} action={formAction} className="contents">
+            <input
+              ref={fileInput}
+              type="file"
+              name="avatar"
+              accept={AVATAR_MIME_TYPES.join(",")}
+              className="sr-only"
+              onChange={() => formRef.current?.requestSubmit()}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <ChooseButton onPick={() => fileInput.current?.click()} />
+
+              {hasAvatar && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isRemoving}
+                  onClick={() =>
+                    startRemoving(async () => setRemoveState(await removeAvatarAction()))
+                  }
+                >
+                  <Trash2 aria-hidden />
+                  {isRemoving ? "Removing…" : "Remove"}
+                </Button>
+              )}
+            </div>
+          </form>
+
+          <p className="text-sm text-ink-subtle">
+            JPG, PNG or WebP, up to {limitMb} MB. Only you can see it.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

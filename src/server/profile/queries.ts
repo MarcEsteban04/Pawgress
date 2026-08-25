@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { BUCKETS, createSignedUrl } from "@/lib/supabase/storage";
 import { requireSession } from "@/server/auth/session";
 
 /**
@@ -20,6 +21,9 @@ import { requireSession } from "@/server/auth/session";
 export type Profile = {
   id: string;
   displayName: string;
+  /** Object path in the private avatars bucket, e.g. `{userId}/avatars/…`. */
+  avatarPath: string | null;
+  /** Short-lived signed URL for that object, or null when there is none (NFR-S2). */
   avatarUrl: string | null;
   yearLevel: string | null;
   school: string | null;
@@ -47,7 +51,11 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
        trigger or have been cleared. Falling back to the local part keeps the
        shell from rendering an empty name. */
     displayName: data.display_name ?? session.email.split("@")[0] ?? "You",
-    avatarUrl: data.avatar_url,
+    avatarPath: data.avatar_url,
+    /* The column stores a PATH, not a URL — the bucket is private, so a stored
+       URL would either be permanent (defeating the point) or already expired.
+       Signing happens per request, here, where the caller is known. */
+    avatarUrl: await createSignedUrl(BUCKETS.avatars, data.avatar_url),
     yearLevel: data.year_level,
     school: data.school,
     preferredSessionMinutes: data.preferred_session_minutes,

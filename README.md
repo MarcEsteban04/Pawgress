@@ -138,4 +138,4 @@ into a client component.
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
 | 3 — Authentication | 09–12 | Complete ✅ |
-| 4 — Database & storage | 13–18 | Sprints 13–15 ✅ · Sprint 16 next |
+| 4 — Database & storage | 13–18 | Sprints 13–16 ✅ · Sprint 17 next |

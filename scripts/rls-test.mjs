@@ -250,9 +250,114 @@ try {
   check("bob cannot hand his own row to alice", handover.status >= 400, `HTTP ${handover.status}`);
 
   /* ---------------------------------------------------------------------- */
+  console.log("\n  Storage — files are private at the storage layer (FR-U9)");
+
+  /**
+   * Storage speaks its own API, not PostgREST.
+   * `keyOverride` is only for the service-role cleanup check at the end.
+   */
+  async function storage(pathname, { token, method = "GET", body, contentType } = {}, keyOverride) {
+    const key = keyOverride ?? ANON;
+    const headers = { apikey: key, Authorization: `Bearer ${token ?? key}` };
+    if (contentType) headers["Content-Type"] = contentType;
+    const response = await fetch(`${URL_BASE}/storage/v1/${pathname}`, { method, headers, body });
+    const text = await response.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = text;
+    }
+    return { status: response.status, body: json };
+  }
+
+  const aliceObject = `${alice.id}/avatars/probe.txt`;
+  const put = await storage(`object/avatars/${aliceObject}`, {
+    token: alice.token,
+    method: "POST",
+    contentType: "text/plain",
+    body: "alice's bytes",
+  });
+  /* The bucket refuses text/plain by `allowed_mime_types`, which is itself the
+     point — but it means this fixture has to use an allowed type to get far
+     enough to test ownership. */
+  const objectPath = `${alice.id}/avatars/probe.png`;
+  const putPng = await storage(`object/avatars/${objectPath}`, {
+    token: alice.token,
+    method: "POST",
+    contentType: "image/png",
+    body: new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  });
+  check(
+    "bucket rejects a disallowed mime type",
+    put.status >= 400,
+    `text/plain returned HTTP ${put.status}`,
+  );
+  check("alice uploads into her own folder", putPng.status < 300, `HTTP ${putPng.status}`);
+
+  const bobDownloads = await storage(`object/avatars/${objectPath}`, { token: bob.token });
+  check(
+    "bob cannot download alice's file",
+    bobDownloads.status >= 400,
+    `HTTP ${bobDownloads.status}`,
+  );
+
+  const anonDownloads = await storage(`object/avatars/${objectPath}`, { token: null });
+  check(
+    "anon cannot download it either",
+    anonDownloads.status >= 400,
+    `HTTP ${anonDownloads.status}`,
+  );
+
+  const bobSigns = await storage(`object/sign/avatars/${objectPath}`, {
+    token: bob.token,
+    method: "POST",
+    contentType: "application/json",
+    body: JSON.stringify({ expiresIn: 60 }),
+  });
+  check(
+    "bob cannot sign a URL for alice's file",
+    bobSigns.status >= 400,
+    `HTTP ${bobSigns.status}`,
+  );
+
+  // Writing INTO someone else's folder — the case the path convention exists for.
+  const bobIntrudes = await storage(`object/avatars/${alice.id}/avatars/planted.png`, {
+    token: bob.token,
+    method: "POST",
+    contentType: "image/png",
+    body: new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+  });
+  check(
+    "bob cannot write into alice's folder",
+    bobIntrudes.status >= 400,
+    `HTTP ${bobIntrudes.status}`,
+  );
+
+  const bobDeletes2 = await storage(`object/avatars/${objectPath}`, {
+    token: bob.token,
+    method: "DELETE",
+  });
+  check("bob cannot delete alice's file", bobDeletes2.status >= 400, `HTTP ${bobDeletes2.status}`);
+
+  /* ---------------------------------------------------------------------- */
   console.log("\n  Cascade — deleting an account takes its data (NFR-P3)");
 
-  await admin(`admin/users/${alice.id}`, { method: "DELETE" });
+  /* The same two steps, in the same order, that `deleteAccountAction` performs.
+     Files cannot ride the auth.users cascade — Supabase blocks deleting
+     `storage.objects` rows in SQL, because the bytes behind them would be
+     orphaned — so removing them is application work, and it happens FIRST so a
+     failure leaves the account intact. */
+  const purge = await storage(`object/avatars`, {
+    token: alice.token,
+    method: "DELETE",
+    contentType: "application/json",
+    body: JSON.stringify({ prefixes: [objectPath] }),
+  });
+  check("files can be removed through the Storage API", purge.status < 300, `HTTP ${purge.status}`);
+
+  const removed = await admin(`admin/users/${alice.id}`, { method: "DELETE" });
+  check("the account itself deletes", removed.status < 300, `HTTP ${removed.status}`);
   created.splice(created.indexOf(alice.id), 1);
 
   const leftovers = await fetch(`${URL_BASE}/rest/v1/subjects?select=id&user_id=eq.${alice.id}`, {
@@ -260,6 +365,25 @@ try {
   });
   const rows = await leftovers.json();
   check("alice's subjects went with her account", Array.isArray(rows) && rows.length === 0);
+
+  /* The public tables cascade from auth.users, but storage.objects is not ours
+     and has no foreign key to cascade along — the trigger added in Sprint 16 is
+     what clears it, and this is the check that the trigger actually fired. */
+  const objectsLeft = await storage(
+    `object/list/avatars`,
+    {
+      token: null,
+      method: "POST",
+      contentType: "application/json",
+      body: JSON.stringify({ prefix: `${alice.id}/`, limit: 10 }),
+    },
+    SECRET,
+  );
+  check(
+    "alice's files went with her account too",
+    Array.isArray(objectsLeft.body) && objectsLeft.body.length === 0,
+    `HTTP ${objectsLeft.status}, ${Array.isArray(objectsLeft.body) ? objectsLeft.body.length + " objects" : "unexpected body"}`,
+  );
 } catch (error) {
   failures.push(`threw: ${error.message}`);
   console.log(`\n  ERROR  ${error.message}`);

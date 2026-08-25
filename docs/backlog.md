@@ -28,15 +28,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 13 | Database schema — 17 tables, foreign keys, indexes, constraints, RLS enabled | done | applied to the hosted project; policies are Sprint 14 |
 | 14 | Row Level Security — 67 policies, composite-key ownership, 17 security tests | done | `npm run db:test:rls` passes against the live project |
 | 15 | User profiles — name, year level, school, study block, timezone, account deletion | done | **profile picture deferred to Sprint 16**, which is when storage exists |
+| 16 | Storage — private buckets, path-based ownership, avatar upload, 10 new security tests | done | account deletion removes files via the Storage API, not a DB trigger |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 16 | Storage buckets and upload policies — **and the avatar upload Sprint 15 could not build** | 15 |
-| 17 | File validation and size limits | 16 |
-| 18 | Database seeding and fixtures | 17 |
+| 17 | Data validation — schema, API, file, sanitisation, error standards | 16 |
+| 18 | Database testing — CRUD, RLS, foreign keys, concurrency | 17 |
+| 19 | Subject creation | 18 |
 
 ---
 

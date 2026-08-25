@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, CardHeader, CardTitle, QuotaMeter } from "@/components/ui";
+import { AvatarField } from "@/features/settings/components/AvatarField";
 import { DeleteAccountDialog } from "@/features/settings/components/DeleteAccountDialog";
 import { ProfileForm } from "@/features/settings/components/ProfileForm";
 import { AI_QUOTAS } from "@/lib/ai/types";
@@ -31,7 +32,12 @@ export default async function Page() {
           <CardHeader>
             <CardTitle>Profile</CardTitle>
           </CardHeader>
-          <CardBody>
+          <CardBody className="flex flex-col gap-6">
+            <AvatarField
+              name={profile.displayName}
+              avatarUrl={profile.avatarUrl}
+              hasAvatar={profile.avatarPath !== null}
+            />
             <ProfileForm profile={profile} />
           </CardBody>
         </Card>
