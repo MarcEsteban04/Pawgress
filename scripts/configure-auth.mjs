@@ -131,7 +131,47 @@ if (smtpProvided) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  2. Templates                                                               */
+/*  2. Settings the app depends on                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Two project settings the UI silently assumes, both wrong by default:
+ *
+ *  - `mailer_otp_length` ships as 8. The verify screen renders six cells and
+ *    `otpSchema` rejects anything else, so an 8-digit code cannot be entered at
+ *    all — the student gets a code that physically does not fit the form.
+ *  - `rate_limit_email_sent` ships as 2 per hour for the WHOLE project, which
+ *    is the cap on Supabase's built-in sender. With custom SMTP the limit is
+ *    the provider's, not Supabase's, and leaving it at 2 blocks the third test
+ *    signup of the day with an error that names no cause.
+ *
+ * Both live here rather than in a runbook step, because a setting nobody can
+ * see from the repo is a setting that drifts back.
+ */
+const EXPECTED_OTP_LENGTH = 6;
+/** Comfortably under Gmail's own limit; the provider is the real ceiling. */
+const EXPECTED_EMAIL_RATE_LIMIT = 30;
+
+if (Number(config.mailer_otp_length) !== EXPECTED_OTP_LENGTH) {
+  console.log(
+    `  → OTP length — ${config.mailer_otp_length} digits, the app expects ${EXPECTED_OTP_LENGTH}`,
+  );
+  payload.mailer_otp_length = EXPECTED_OTP_LENGTH;
+} else {
+  console.log(`  ✓ OTP length — ${EXPECTED_OTP_LENGTH} digits`);
+}
+
+if (Number(config.rate_limit_email_sent) < EXPECTED_EMAIL_RATE_LIMIT) {
+  console.log(
+    `  → Email rate limit — ${config.rate_limit_email_sent}/hour, raising to ${EXPECTED_EMAIL_RATE_LIMIT}`,
+  );
+  payload.rate_limit_email_sent = EXPECTED_EMAIL_RATE_LIMIT;
+} else {
+  console.log(`  ✓ Email rate limit — ${config.rate_limit_email_sent}/hour`);
+}
+
+/* -------------------------------------------------------------------------- */
+/*  3. Templates                                                               */
 /* -------------------------------------------------------------------------- */
 
 /** Sprint 12's password-recovery template gets added here, not pasted by hand. */
@@ -167,29 +207,41 @@ for (const template of TEMPLATES) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  3. Apply                                                                   */
+/*  4. Apply                                                                   */
 /* -------------------------------------------------------------------------- */
 
-if (Object.keys(payload).length === 0) {
+/**
+ * `process.exitCode` rather than `process.exit()` from here down: exiting hard
+ * while a fetch handle is still closing trips a libuv assertion on Windows
+ * ("!(handle->flags & UV_HANDLE_CLOSING)"), which prints an alarming crash
+ * after an otherwise successful run. Letting the event loop drain is quieter
+ * and correct.
+ */
+const nothingToDo = Object.keys(payload).length === 0;
+
+if (nothingToDo) {
   console.log("\n  Nothing to do.\n");
-  process.exit(0);
-}
-
-if (CHECK_ONLY) {
+} else if (CHECK_ONLY) {
   console.log("\n  --check: nothing was changed. Re-run without it to apply.\n");
-  process.exit(1);
-}
+  // Non-zero so this can gate a release later without reading the output.
+  process.exitCode = 1;
+} else {
+  const applied = await fetch(endpoint, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(payload),
+  });
 
-const applied = await fetch(endpoint, { method: "PATCH", headers, body: JSON.stringify(payload) });
-if (!applied.ok) {
-  const body = await applied.text();
-  die(
-    `Update failed (HTTP ${applied.status}).`,
-    applied.status === 400 && body.includes("smtp")
-      ? `${body}\n\n  A rejected SMTP block usually means the sender address is not verified with\n  your provider yet. Verify ${smtp.senderEmail} in their dashboard and re-run.`
-      : body,
-  );
-}
+  if (!applied.ok) {
+    const body = await applied.text();
+    die(
+      `Update failed (HTTP ${applied.status}).`,
+      applied.status === 400 && body.includes("smtp")
+        ? `${body}\n\n  A rejected SMTP block usually means the sender address is not verified with\n  your provider yet. Verify ${smtp.senderEmail} in their dashboard and re-run.`
+        : body,
+    );
+  }
 
-console.log(`\n  Applied to project ${ref}.`);
-console.log("  Register a test account — the email should carry a 6-digit code.\n");
+  console.log(`\n  Applied to project ${ref}.`);
+  console.log("  Register a test account — the email should carry a 6-digit code.\n");
+}

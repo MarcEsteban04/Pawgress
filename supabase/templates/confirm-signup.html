@@ -2,8 +2,13 @@
   Confirm signup — the 6-digit code email.
 
   Supabase decides link-vs-code purely by which variable this template renders:
-  `{{ .ConfirmationURL }}` sends a magic link, `{{ .Token }}` sends the code.
+  a ConfirmationURL action sends a magic link, a Token action sends the code.
   There is no separate setting, so this file IS the switch.
+
+  Those two names are written WITHOUT their braces on purpose. Go's template
+  engine evaluates actions anywhere in the file, comments included, so writing
+  the link variable out in full here would quietly render a real magic link into
+  every email — and make the config read back as "this template sends a link".
 
   Inline styles only, and a table for layout. Every serious email client strips
   <style> blocks and none of them support flex or grid.
