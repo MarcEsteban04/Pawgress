@@ -18,11 +18,41 @@ function relative(iso: string): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
+/**
+ * One subject in the list (FR-S2, US-B2).
+ *
+ * **The whole card opens the subject.** It is done with a stretched link — one
+ * real `<a>` around the title, with an `::after` overlaying the card — rather
+ * than an `onClick` on a `<div>`. That distinction is the point:
+ *
+ *  - It stays a link. Ctrl-click, middle-click and "open in new tab" work, the
+ *    browser shows the destination in the status bar, and it is announced as a
+ *    link rather than as a div that happens to respond to clicks.
+ *  - There is exactly ONE tab stop for "open this subject", on the title —
+ *    not one for the card and another for the text inside it.
+ *  - Edit and delete sit above the overlay in their own stacking context, so
+ *    they stay separately clickable instead of being swallowed by it.
+ *
+ * The known cost is that text inside the card can no longer be selected with
+ * the mouse. For a card whose text is a name and two counts, clicking the
+ * obvious target matters more than selecting four words.
+ */
 export function SubjectCard({ subject }: { subject: Subject }) {
   const tone = SUBJECT_TONE[subject.colorSlot];
 
   return (
-    <Card className="group flex h-full flex-col transition-colors hover:border-rule-strong">
+    <Card
+      className={cn(
+        "group relative flex h-full flex-col transition-colors",
+        "hover:border-rule-strong",
+        /* Focus moves to the card, because the card is what the link now
+           covers — outlining four words of title would point at the wrong
+           target. Same outline token and offset as the global `:focus-visible`
+           rule in globals.css, so this is the one focus treatment relocated,
+           not a second one invented. */
+        "has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-(--focus)",
+      )}
+    >
       <CardBody className="flex flex-1 flex-col gap-4 pt-5">
         <div className="flex items-start gap-3">
           <span
@@ -36,11 +66,9 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           </span>
 
           <div className="min-w-0 flex-1">
-            {/* A real link, so ctrl-click opens the subject in a new tab
-                (docs/navigation.md §1). The hub itself is Sprint 23. */}
             <Link
               href={`/subjects/${subject.id}`}
-              className="font-display text-lg leading-tight font-semibold hover:underline"
+              className="font-display text-lg leading-tight font-semibold outline-none group-hover:underline after:absolute after:inset-0 after:content-['']"
             >
               {subject.name}
             </Link>
@@ -62,7 +90,10 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           </Tag>
         </div>
 
-        <div className="mt-auto flex items-center gap-1 border-t border-rule pt-3">
+        {/* `relative` lifts this row above the stretched link's overlay.
+            Without it the buttons sit under a transparent sheet and every
+            click on them opens the subject instead. */}
+        <div className="relative mt-auto flex items-center gap-1 border-t border-rule pt-3">
           <SubjectDialog
             subject={subject}
             trigger={
