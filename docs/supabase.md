@@ -16,6 +16,7 @@ Architecture reasoning lives in [`architecture.md`](architecture.md) §3–§4; 
 | Service-role client (**bypasses RLS**) | [`src/lib/supabase/admin.ts`](../src/lib/supabase/admin.ts) |
 | Session refresh in the proxy | [`src/lib/supabase/proxy.ts`](../src/lib/supabase/proxy.ts) |
 | Session gate (the DAL) | [`src/server/auth/session.ts`](../src/server/auth/session.ts) |
+| Sign-up, resend, confirmation callback | [`src/features/auth/`](../src/features/auth/), [`src/app/auth/callback/`](../src/app/auth/callback/route.ts) |
 | Env access | [`src/config/env.ts`](../src/config/env.ts) |
 | Local stack config | [`supabase/config.toml`](../supabase/config.toml) |
 | Generated row types | [`src/types/database.ts`](../src/types/database.ts) |
@@ -141,7 +142,45 @@ getter in `config/env.ts` so importing the module never loads a key the request 
 
 ---
 
-## 6. Migrations
+## 6. Email confirmation, and the one place we deviate from the spec
+
+**Set this in the dashboard before testing sign-up:** Authentication → URL Configuration →
+Redirect URLs must include `http://localhost:3000/**` (and your production URL later). The
+confirmation email points at `/auth/callback`, and an address that is not allowlisted is silently
+rewritten to the site root, which looks exactly like a broken link.
+
+### The deviation
+
+US-A1 says *"an unverified account can sign in but is prompted to verify"*, and the wireframe for
+screen 4 says **verification does not block the app**. Supabase does not offer that shape. Its
+"Confirm email" setting is binary:
+
+| Setting | Behaviour |
+|---|---|
+| **On** | A verification email is sent, and sign-in is refused until the link is clicked |
+| **Off** | The account is confirmed instantly and **no email is ever sent** |
+
+There is no built-in "send the email but let them in meanwhile". Getting it would mean running our
+own verification: a token table, our own email provider, our own expiry and resend logic, and a
+second source of truth about whether an address is real. That is a sprint of work and a permanent
+maintenance cost, to save a student roughly thirty seconds.
+
+**We follow Supabase's model rather than build around it.** There is also a product reason: every
+account can spend AI generations, and those cost real money, so an unverified account that can use
+the app is an unmetered way to burn budget.
+
+The code does not assume which way the switch is set. `registerAction` checks whether sign-up
+returned a session:
+
+- **Session returned** (confirmation off) → straight to `/dashboard`.
+- **No session** (confirmation on) → `/verify-email`, where the "Continue to Pawgress" button from
+  the wireframe is hidden, because it would bounce them back to `/login`.
+
+If you want the wireframe's behaviour exactly, the honest options are: turn confirmation **off** and
+drop the verification claim, or schedule the custom flow as its own sprint. Do not leave the
+wireframe saying one thing while the app does another — pick one and update the other.
+
+## 7. Migrations
 
 Every schema change ships as a migration in `supabase/migrations/` (NFR-O3). Nothing is changed by
 hand in the hosted dashboard — a change made there and not captured is a change that will be missing
