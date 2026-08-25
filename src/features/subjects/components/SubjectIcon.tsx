@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import {
   Book,
   Calculator,
@@ -37,6 +38,21 @@ const ICONS: Record<IconKey, LucideIcon> = {
 export function subjectIconFor(key: string | null | undefined): LucideIcon {
   if (key && key in ICONS) return ICONS[key as IconKey];
   return Book;
+}
+
+/**
+ * Renders a subject's glyph from its stored key.
+ *
+ * `createElement` rather than `const Glyph = …` + JSX, because assigning a
+ * component to a capitalised local reads to `react-hooks/static-components` as
+ * defining a component mid-render — the thing that would remount a subtree on
+ * every pass. Here it is a false positive: every value in `ICONS` is a module
+ * constant, so the identity is stable and React reconciles it as the same
+ * component. Choosing between fixed components by data is the one case the rule
+ * cannot distinguish, and this spelling says so without a blanket suppression.
+ */
+export function SubjectGlyph({ icon, className }: { icon: string | null; className?: string }) {
+  return createElement(subjectIconFor(icon), { className, "aria-hidden": true });
 }
 
 /** Subject tints and inks, keyed by the categorical slot the subject owns. */

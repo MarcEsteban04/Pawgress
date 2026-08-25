@@ -1,27 +1,107 @@
-import { Layers, Pencil } from "lucide-react";
-import Link from "next/link";
+import { Layers, SearchX } from "lucide-react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button, Card, CardBody, EmptyState, Tag } from "@/components/ui";
-import { DeleteSubjectDialog } from "@/features/subjects/components/DeleteSubjectDialog";
+import { buttonStyles, EmptyState } from "@/components/ui";
+import Link from "next/link";
+import { SubjectCard } from "@/features/subjects/components/SubjectCard";
 import { SubjectDialog } from "@/features/subjects/components/SubjectDialog";
-import { SUBJECT_TONE, subjectIconFor } from "@/features/subjects/components/SubjectIcon";
-import { getDeletionSummary, listSubjects } from "@/server/subjects/queries";
-import { cn } from "@/lib/utils";
+import { SubjectFilters } from "@/features/subjects/components/SubjectFilters";
+import { SubjectListSkeleton } from "@/features/subjects/components/SubjectListSkeleton";
+import { isSubjectSort } from "@/features/subjects/query";
+import { listSemesters, listSubjects } from "@/server/subjects/queries";
 
 export const metadata = { title: "Subjects" };
 
-export default async function Page() {
-  const subjects = await listSubjects();
+/**
+ * The subject list (FR-S2, US-B2).
+ *
+ * Filters live in the URL, so a filtered list is linkable, survives a reload,
+ * and unwinds with the back button.
+ *
+ * The list is a Suspense boundary keyed on the query: the header and filters
+ * paint immediately and only the grid swaps for skeletons, so typing in the
+ * search box never blanks the screen. The key is what makes the fallback
+ * re-appear on each new query rather than only on first load.
+ */
+async function SubjectList({
+  search,
+  sort,
+  semester,
+}: {
+  search?: string;
+  sort?: string;
+  semester?: string;
+}) {
+  const subjects = await listSubjects({
+    search,
+    sort: isSubjectSort(sort) ? sort : "activity",
+    semester,
+  });
 
-  /* Deletion counts are computed here rather than when the dialog opens: a
-     Server Component cannot be called on demand from a click, and a stale count
-     in a destructive confirmation is worse than a few extra queries on a page
-     that lists at most a dozen subjects. Sprint 20 revisits this if the list
-     grows. */
-  const summaries = await Promise.all(
-    subjects.map(async (subject) => [subject.id, await getDeletionSummary(subject.id)] as const),
+  const filtering = Boolean(search || semester);
+
+  /* Two different empties, and telling them apart is the point. "No subjects
+     yet" is onboarding and offers the one action that fixes it. "Nothing
+     matched" is a dead search and offers a way back — showing the onboarding
+     copy there would suggest a student has no subjects when they have twelve. */
+  if (subjects.length === 0 && filtering) {
+    return (
+      <EmptyState
+        Icon={SearchX}
+        title="No subjects match"
+        description={
+          search
+            ? `Nothing is called “${search}”${semester ? " in that semester" : ""}. Check the spelling, or clear the filters.`
+            : "No subjects in that semester yet."
+        }
+        action={
+          <Link href="/subjects" className={buttonStyles({ variant: "subtle" })}>
+            Clear filters
+          </Link>
+        }
+      />
+    );
+  }
+
+  if (subjects.length === 0) {
+    return (
+      <EmptyState
+        Icon={Layers}
+        title="No subjects yet"
+        description="A subject is one class — Biology, Programming, History. Everything you upload lives inside one, so this is the first thing to make."
+        action={<SubjectDialog />}
+      />
+    );
+  }
+
+  return (
+    <>
+      <p className="text-sm text-ink-muted" role="status">
+        {subjects.length} {subjects.length === 1 ? "subject" : "subjects"}
+        {filtering ? " matching" : ""}
+      </p>
+      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {subjects.map((subject) => (
+          <li key={subject.id}>
+            <SubjectCard subject={subject} />
+          </li>
+        ))}
+      </ul>
+    </>
   );
-  const summaryById = new Map(summaries);
+}
+
+export default async function Page({ searchParams }: PageProps<"/subjects">) {
+  const params = await searchParams;
+  const first = (key: string) => {
+    const value = params[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const search = first("q");
+  const sort = first("sort");
+  const semester = first("semester");
+  const semesters = await listSemesters();
 
   return (
     <div className="flex flex-col gap-5">
@@ -29,87 +109,16 @@ export default async function Page() {
         eyebrow="One place per class"
         title="Subjects"
         description="Your files, topics and quizzes live inside a subject."
-        action={subjects.length > 0 ? <SubjectDialog /> : undefined}
+        action={<SubjectDialog />}
       />
 
-      {subjects.length === 0 ? (
-        <EmptyState
-          Icon={Layers}
-          title="No subjects yet"
-          description="A subject is one class — Biology, Programming, History. Everything you upload lives inside one, so this is the first thing to make."
-          action={<SubjectDialog />}
-        />
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {subjects.map((subject) => {
-            const Glyph = subjectIconFor(subject.icon);
-            const tone = SUBJECT_TONE[subject.colorSlot];
-            const summary = summaryById.get(subject.id);
+      {/* Offered only once there is something to search through. Filters above
+          an empty list are furniture. */}
+      {(semesters.length > 0 || search || semester) && <SubjectFilters semesters={semesters} />}
 
-            return (
-              <li key={subject.id}>
-                <Card className="flex h-full flex-col">
-                  <CardBody className="flex flex-1 flex-col gap-4 pt-5">
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)]",
-                          tone.tint,
-                          tone.ink,
-                        )}
-                      >
-                        <Glyph className="size-5" aria-hidden />
-                      </span>
-
-                      <div className="min-w-0 flex-1">
-                        {/* A real link, so ctrl-click opens the subject in a new
-                            tab (docs/navigation.md §1). The hub itself is
-                            Sprint 23. */}
-                        <Link
-                          href={`/subjects/${subject.id}`}
-                          className="font-display text-lg leading-tight font-semibold hover:underline"
-                        >
-                          {subject.name}
-                        </Link>
-                        {subject.semester && (
-                          <p className="mt-1 text-sm text-ink-subtle">{subject.semester}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Tag>
-                        {subject.materialCount} {subject.materialCount === 1 ? "file" : "files"}
-                      </Tag>
-                      <Tag>
-                        {subject.topicCount} {subject.topicCount === 1 ? "topic" : "topics"}
-                      </Tag>
-                    </div>
-
-                    <div className="mt-auto flex items-center gap-1 border-t border-rule pt-3">
-                      <SubjectDialog
-                        subject={subject}
-                        trigger={
-                          <Button variant="ghost" size="sm" aria-label={`Edit ${subject.name}`}>
-                            <Pencil aria-hidden />
-                          </Button>
-                        }
-                      />
-                      {summary && (
-                        <DeleteSubjectDialog
-                          subjectId={subject.id}
-                          subjectName={subject.name}
-                          summary={summary}
-                        />
-                      )}
-                    </div>
-                  </CardBody>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <Suspense key={`${search}-${sort}-${semester}`} fallback={<SubjectListSkeleton />}>
+        <SubjectList search={search} sort={sort} semester={semester} />
+      </Suspense>
     </div>
   );
 }

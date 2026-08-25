@@ -8,7 +8,11 @@ import { BUCKETS } from "@/lib/supabase/storage";
 import { parseForm } from "@/lib/validation/form";
 import { DELETE_SUBJECT_CONFIRMATION, subjectSchema } from "@/lib/validation/subject";
 import { requireSession } from "@/server/auth/session";
-import { findSubjectsNamed, getDeletionSummary } from "@/server/subjects/queries";
+import {
+  findSubjectsNamed,
+  getDeletionSummary,
+  type DeletionSummary,
+} from "@/server/subjects/queries";
 import { type SubjectFormState } from "../types";
 
 /**
@@ -199,4 +203,24 @@ export async function deleteSubjectAction(
 
   revalidatePath("/", "layout");
   return { status: "saved" };
+}
+
+/**
+ * Counts for the delete confirmation, fetched when the dialog opens.
+ *
+ * A Server Component cannot be invoked from a click, and computing this for
+ * every card up front meant six count queries per subject on every page load —
+ * all discarded unless something was actually deleted. Fetching on open also
+ * means the numbers are current at the moment they are read, which for a
+ * destructive confirmation is the property that matters.
+ */
+export async function loadDeletionSummaryAction(
+  subjectId: string,
+): Promise<DeletionSummary | null> {
+  await requireSession();
+  try {
+    return await getDeletionSummary(subjectId);
+  } catch {
+    return null;
+  }
 }

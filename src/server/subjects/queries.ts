@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { type SubjectIcon } from "@/lib/validation/subject";
+import { type SubjectQuery } from "@/features/subjects/query";
 
 /**
  * Subject reads (FR-S1, FR-S2).
@@ -21,55 +22,100 @@ export type Subject = {
   semester: string | null;
   archivedAt: string | null;
   createdAt: string;
-  /** Cards show these; both are counted in one round trip below. */
   materialCount: number;
   topicCount: number;
+  /** Newest material, or the subject's own last edit if it has none. */
+  lastActivityAt: string;
 };
 
-/**
- * All of a student's subjects, newest first.
- *
- * Counts come back in the same request via PostgREST's embedded aggregates
- * rather than N+1 follow-ups — a student with twelve subjects would otherwise
- * cost twenty-five queries to render one page.
- */
-export const listSubjects = cache(async (): Promise<Subject[]> => {
+export const listSubjects = cache(
+  async ({ search, sort = "activity", semester }: SubjectQuery = {}): Promise<Subject[]> => {
+    await requireSession();
+    const supabase = await createSupabaseServerClient();
+
+    let query = supabase
+      .from("subjects")
+      .select(
+        "id, name, color_slot, icon, semester, archived_at, created_at, updated_at, materials(count), topics(count)",
+      )
+      .is("archived_at", null);
+
+    /* `%` and `_` are wildcards in LIKE, so a student searching for "50%" would
+       otherwise match everything. Escaped before interpolation. */
+    if (search) {
+      const escaped = search.trim().replace(/[\\%_]/g, (ch) => `\\${ch}`);
+      if (escaped) query = query.ilike("name", `%${escaped}%`);
+    }
+    if (semester) query = query.eq("semester", semester);
+
+    const { data, error } = await query;
+    if (error || !data) return [];
+
+    /**
+     * "Last activity" needs the newest material per subject, which PostgREST
+     * cannot aggregate in the same select as the counts. One extra query for
+     * two tiny columns beats N+1, and beats fetching every material row whole.
+     *
+     * If the library ever grows past a few thousand materials per account, this
+     * becomes a `last_activity_at` column maintained by a trigger. It is not
+     * worth the write amplification before then.
+     */
+    const { data: activity } = await supabase
+      .from("materials")
+      .select("subject_id, created_at")
+      .order("created_at", { ascending: false });
+
+    const newestBySubject = new Map<string, string>();
+    for (const row of activity ?? []) {
+      if (!newestBySubject.has(row.subject_id)) {
+        newestBySubject.set(row.subject_id, row.created_at);
+      }
+    }
+
+    const subjects: Subject[] = data.map((row) => ({
+      id: row.id,
+      name: row.name,
+      colorSlot: row.color_slot as 1 | 2 | 3 | 4 | 5,
+      icon: (row.icon as SubjectIcon | null) ?? null,
+      semester: row.semester,
+      archivedAt: row.archived_at,
+      createdAt: row.created_at,
+      materialCount: row.materials?.[0]?.count ?? 0,
+      topicCount: row.topics?.[0]?.count ?? 0,
+      lastActivityAt: newestBySubject.get(row.id) ?? row.updated_at,
+    }));
+
+    /* Sorted here rather than in the query, because `activity` is derived above
+       and splitting the orderings across two places would let them disagree. */
+    return subjects.sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      if (sort === "created") return b.createdAt.localeCompare(a.createdAt);
+      return b.lastActivityAt.localeCompare(a.lastActivityAt);
+    });
+  },
+);
+
+/** Distinct semesters, for the filter. Empty when nobody has set one. */
+export const listSemesters = cache(async (): Promise<string[]> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("subjects")
-    .select(
-      "id, name, color_slot, icon, semester, archived_at, created_at, materials(count), topics(count)",
-    )
-    .order("created_at", { ascending: false });
+    .select("semester")
+    .not("semester", "is", null)
+    .is("archived_at", null);
 
-  if (error || !data) return [];
-
-  return data.map((row) => ({
-    id: row.id,
-    name: row.name,
-    colorSlot: row.color_slot as 1 | 2 | 3 | 4 | 5,
-    icon: (row.icon as SubjectIcon | null) ?? null,
-    semester: row.semester,
-    archivedAt: row.archived_at,
-    createdAt: row.created_at,
-    materialCount: row.materials?.[0]?.count ?? 0,
-    topicCount: row.topics?.[0]?.count ?? 0,
-  }));
+  const unique = new Set((data ?? []).map((row) => row.semester).filter(Boolean) as string[]);
+  return [...unique].sort((a, b) => a.localeCompare(b));
 });
 
 /**
  * Everything that will be destroyed with a subject (US-B3).
  *
- * The confirmation has to name real counts, not "and related content" — a
- * student about to lose a term of work deserves to see the number.
- *
- * Computed when the page renders, not when the dialog opens: a Server Component
- * cannot be invoked on demand from a click. That means a count can go stale if
- * the tab is left open for a long time, which is the trade being made and the
- * reason the delete still asks for a typed confirmation rather than trusting
- * the number alone.
+ * Called on demand when the delete dialog opens, not for every card on the
+ * page. Six count queries per subject was fine for three subjects and would be
+ * ninety for fifteen, all of them thrown away unless something is deleted.
  */
 export type DeletionSummary = {
   topics: number;

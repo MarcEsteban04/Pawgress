@@ -32,15 +32,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 17 | Data validation — shared form parser, byte-sniffing upload checks, sanitisers, error shape | done | `docs/validation.md` |
 | 18 | Database testing | **skipped** | product owner tested manually; concurrency remains uncovered — see roadmap |
 | 19 | Subject creation — create, edit, delete with counted confirmation, colour and icon | done | dropped the unique-name constraint that contradicted US-B1 |
+| 20 | Subject list — URL-driven search, sort and semester filter, cards, two empty states | done | delete counts moved off page load and onto dialog open |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 20 | Subject list, search and sort | 19 |
 | 21 | Topic management | 20 |
 | 22 | Semesters and archiving | 21 |
+| 23 | Subject hub page | 21 |
 
 ---
 
