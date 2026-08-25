@@ -22,7 +22,8 @@
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
     "db:types:remote": "node scripts/db-types.mjs",
     "auth:configure": "node scripts/configure-auth.mjs",
-    "db:push:remote": "node scripts/db-push.mjs"
+    "db:push:remote": "node scripts/db-push.mjs",
+    "db:test:rls": "node scripts/rls-test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

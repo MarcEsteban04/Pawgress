@@ -142,9 +142,9 @@ Each layer assumes the other two might be bypassed.
 - **`requireSession()` uses `getUser()`, not `getSession()`.** `getSession()` decodes the cookie
   without verifying it, and a cookie is attacker-controllable. `getUser()` costs a round trip and is
   memoised with React `cache()`, so it is paid once per request no matter how many components ask.
-- **RLS is enabled on every table (Sprint 13); the policies are Sprint 14.** Enabled with no
-  policies denies everything, which is where the schema sits right now — verified against the live
-  project, where every table returns zero rows to the anon key.
+- **RLS carries 67 policies across all 17 tables (Sprint 14).** One rule — a student sees and
+  writes their own rows — plus composite foreign keys for the case policies cannot see. Proven by
+  `npm run db:test:rls`, which attacks the live database with two real accounts. See §10.
 
 ---
 
@@ -333,7 +333,51 @@ evidence that it replays from an empty database — only `db:reset` shows that, 
 cannot rebuild the schema from scratch is a migration you cannot recover from. Install Docker before
 Sprint 14's RLS policies, where "it worked when I applied it" and "it is correct" diverge sharply.
 
-## 9. The schema
+## 9. Row Level Security
+
+Run the tests before believing any of this:
+
+```bash
+npm run db:test:rls
+```
+
+It creates two throwaway accounts, has each try to reach the other's rows through PostgREST exactly
+as a browser would, and deletes them afterwards. Seventeen checks, and it exits non-zero on failure
+so it can gate a release. The assertions never use the service-role key — that bypasses RLS, so a
+test written with it would pass no matter how broken the policies were.
+
+### The rule
+
+Every table: `(select auth.uid()) = user_id`, granted `to authenticated` only, with separate
+policies per operation. `profiles` keys on `id` instead and has **no delete policy** — a profile is
+half of an account, and deleting it alone leaves a signed-in student with no name and no settings
+while the account still exists. Account deletion (Sprint 15) removes the auth user and the cascade
+takes the profile.
+
+Two details that matter more than they look:
+
+- **`(select auth.uid())`, not `auth.uid()`.** The subquery form is evaluated once per statement as
+  an InitPlan; the bare call is re-evaluated per row. On a thousand-row scan that is one call versus
+  a thousand.
+- **UPDATE needs both `using` and `with check`.** `using` decides which rows may be targeted;
+  `with check` decides what they may become. Without the second, a student could update their own
+  row and set `user_id` to someone else's, handing it away. The test suite covers exactly this.
+
+### The gap policies alone would leave
+
+Every child table carries `user_id`, so a policy is perfectly happy to let Bob insert a topic with
+**his** user_id pointing at **Alice's** subject. The row is his, so the check passes. The plain
+foreign key is happy too, because that subject exists. Nothing catches it.
+
+Sprint 14 closes it structurally rather than with another predicate: parents gained
+`unique (id, user_id)`, and children reference `(subject_id, user_id) -> subjects (id, user_id)`.
+The parent row must now match on owner as well as id. No subquery in the hot path, and — unlike a
+policy — it holds against the service-role key too.
+
+This needs Postgres 15+ for `on delete set null (column)`; plain SET NULL on a composite key would
+try to null `user_id`, which is NOT NULL. The project is on 17.6.
+
+## 10. The schema
 
 Sixteen tables from the Sprint 13 list, plus `study_plan_items` — a plan with no items cannot
 satisfy FR-L2's "concrete and actionable" or FR-L3's per-item completion, and the alternative was a

@@ -26,15 +26,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 11 | Login & logout — sign in, sign out, session persistence, protected routes | done | preview-session branch deleted |
 | 12 | Account recovery — forgot password, 6-digit reset code, session expiry | done | recovery template pushed to the hosted project |
 | 13 | Database schema — 17 tables, foreign keys, indexes, constraints, RLS enabled | done | applied to the hosted project; policies are Sprint 14 |
+| 14 | Row Level Security — 67 policies, composite-key ownership, 17 security tests | done | `npm run db:test:rls` passes against the live project |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 14 | RLS policies + ownership tests | 13 |
 | 15 | Profile, account deletion, AI usage in settings | 14 |
 | 16 | Storage buckets and upload policies | 14 |
+| 17 | File validation and size limits | 16 |
 
 ---
 

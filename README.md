@@ -75,6 +75,7 @@ The app runs at http://localhost:3000.
 | `npm run db:types` | Regenerate `src/types/database.ts` |
 | `npm run db:push:remote` | Apply pending migrations to the hosted project (no Docker needed) |
 | `npm run db:types:remote` | Regenerate types from the hosted schema; `-- --check` fails if stale |
+| `npm run db:test:rls` | Attack the live RLS policies with two throwaway accounts |
 
 ## Project structure
 
@@ -137,4 +138,4 @@ into a client component.
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
 | 3 — Authentication | 09–12 | Complete ✅ |
-| 4 — Database & storage | 13–18 | Sprint 13 ✅ · Sprint 14 next |
+| 4 — Database & storage | 13–18 | Sprints 13–14 ✅ · Sprint 15 next |

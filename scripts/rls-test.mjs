@@ -1,0 +1,275 @@
+/**
+ * Security tests for Row Level Security (Sprint 14 deliverable).
+ *
+ *   npm run db:test:rls
+ *
+ * Creates two throwaway accounts, has each try to reach the other's rows
+ * through PostgREST exactly as a browser would, and deletes them afterwards.
+ * Nothing here uses the service-role key for the assertions themselves —
+ * service-role bypasses RLS, so a test written with it would pass no matter how
+ * broken the policies were. It is used only to create and destroy the fixtures.
+ *
+ * Why a script rather than a unit test: RLS is enforced by Postgres, not by any
+ * code in this repo. The only way to know it works is to ask the real database
+ * the same questions an attacker would.
+ *
+ * Exits non-zero on the first genuine failure, so it can gate a release.
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+
+const ROOT = process.cwd();
+
+function loadEnvLocal() {
+  const file = path.join(ROOT, ".env.local");
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    if (process.env[key]) continue;
+    process.env[key] = rawValue.trim().replace(/^["']|["']$/g, "");
+  }
+}
+
+loadEnvLocal();
+
+const URL_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
+
+if (!URL_BASE || !ANON || !SECRET) {
+  console.error("\n  Needs NEXT_PUBLIC_SUPABASE_URL, the anon key and the service-role key.\n");
+  process.exit(1);
+}
+
+let passed = 0;
+const failures = [];
+
+function check(name, condition, detail = "") {
+  if (condition) {
+    passed += 1;
+    console.log(`  PASS  ${name}`);
+  } else {
+    failures.push(name);
+    console.log(`  FAIL  ${name}${detail ? ` — ${detail}` : ""}`);
+  }
+}
+
+/** A PostgREST request as a given identity. `token` null means anonymous. */
+async function rest(pathname, { token, method = "GET", body, prefer } = {}) {
+  const headers = {
+    apikey: ANON,
+    Authorization: `Bearer ${token ?? ANON}`,
+    "Content-Type": "application/json",
+  };
+  if (prefer) headers.Prefer = prefer;
+
+  const response = await fetch(`${URL_BASE}/rest/v1/${pathname}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await response.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = text;
+  }
+  return { status: response.status, body: json };
+}
+
+async function admin(pathname, { method = "GET", body } = {}) {
+  const response = await fetch(`${URL_BASE}/auth/v1/${pathname}`, {
+    method,
+    headers: {
+      apikey: SECRET,
+      Authorization: `Bearer ${SECRET}`,
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await response.text();
+  return { status: response.status, body: text ? JSON.parse(text) : null };
+}
+
+/** Fixture accounts. Confirmed on creation so they can sign in immediately. */
+async function createUser(label) {
+  const email = `rls-test-${label}-${Date.now()}@pawgress.test`;
+  const password = `rls-test-${Math.random().toString(36).slice(2)}-Aa1!`;
+
+  const created = await admin("admin/users", {
+    method: "POST",
+    body: { email, password, email_confirm: true },
+  });
+  if (created.status >= 300) throw new Error(`could not create ${label}: ${created.status}`);
+
+  const signedIn = await fetch(`${URL_BASE}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: ANON, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const session = await signedIn.json();
+  if (!session.access_token) throw new Error(`could not sign in ${label}`);
+
+  return { id: created.body.id, email, token: session.access_token };
+}
+
+const created = [];
+
+try {
+  console.log(`\n  RLS security tests — ${new URL(URL_BASE).hostname}\n`);
+
+  const alice = await createUser("alice");
+  created.push(alice.id);
+  const bob = await createUser("bob");
+  created.push(bob.id);
+
+  /* ---------------------------------------------------------------------- */
+  console.log("\n  Anonymous (the key that ships in the browser)");
+
+  for (const table of ["profiles", "subjects", "materials", "quiz_answers"]) {
+    const r = await rest(`${table}?select=*`, { token: null });
+    check(
+      `anon reads no ${table}`,
+      r.status === 200 && Array.isArray(r.body) && r.body.length === 0,
+      `HTTP ${r.status}, ${Array.isArray(r.body) ? r.body.length + " rows" : "non-array"}`,
+    );
+  }
+
+  const anonWrite = await rest("subjects", {
+    token: null,
+    method: "POST",
+    body: { user_id: alice.id, name: "anon injected" },
+  });
+  check("anon cannot insert", anonWrite.status >= 400, `HTTP ${anonWrite.status}`);
+
+  /* ---------------------------------------------------------------------- */
+  console.log("\n  Ownership — Alice's own rows");
+
+  const made = await rest("subjects", {
+    token: alice.token,
+    method: "POST",
+    prefer: "return=representation",
+    body: { user_id: alice.id, name: "Alice Biology", color_slot: 4 },
+  });
+  check("alice creates her subject", made.status === 201, `HTTP ${made.status}`);
+  const subjectId = Array.isArray(made.body) ? made.body[0]?.id : made.body?.id;
+
+  const mine = await rest("subjects?select=*", { token: alice.token });
+  check("alice reads her subject", mine.status === 200 && mine.body.length === 1);
+
+  const myProfile = await rest("profiles?select=*", { token: alice.token });
+  check("alice reads her profile", myProfile.status === 200 && myProfile.body.length === 1);
+
+  /* ---------------------------------------------------------------------- */
+  console.log("\n  Isolation — Bob against Alice");
+
+  const bobReads = await rest("subjects?select=*", { token: bob.token });
+  check("bob cannot read alice's subject", bobReads.body.length === 0);
+
+  /* Negative control. "Bob saw nothing" is only evidence if there was something
+     to see — otherwise an empty table passes every isolation test ever written.
+     Service-role bypasses RLS, so this asks the database directly whether the
+     row Bob could not reach actually exists. */
+  const bypass = await fetch(`${URL_BASE}/rest/v1/subjects?select=id&id=eq.${subjectId}`, {
+    headers: { apikey: SECRET, Authorization: `Bearer ${SECRET}` },
+  });
+  const bypassRows = await bypass.json();
+  check(
+    "control: the row Bob could not see does exist",
+    Array.isArray(bypassRows) && bypassRows.length === 1,
+    "if this fails the isolation tests above are vacuous",
+  );
+
+  const bobReadsProfile = await rest(`profiles?select=*&id=eq.${alice.id}`, { token: bob.token });
+  check("bob cannot read alice's profile", bobReadsProfile.body.length === 0);
+
+  const bobUpdates = await rest(`subjects?id=eq.${subjectId}`, {
+    token: bob.token,
+    method: "PATCH",
+    prefer: "return=representation",
+    body: { name: "owned by bob now" },
+  });
+  check(
+    "bob cannot update alice's subject",
+    Array.isArray(bobUpdates.body) && bobUpdates.body.length === 0,
+    `HTTP ${bobUpdates.status}`,
+  );
+
+  const bobDeletes = await rest(`subjects?id=eq.${subjectId}`, {
+    token: bob.token,
+    method: "DELETE",
+    prefer: "return=representation",
+  });
+  check(
+    "bob cannot delete alice's subject",
+    Array.isArray(bobDeletes.body) && bobDeletes.body.length === 0,
+    `HTTP ${bobDeletes.status}`,
+  );
+
+  /* ---------------------------------------------------------------------- */
+  console.log("\n  The gap policies alone would leave");
+
+  // Bob's own user_id, Alice's subject. The policy is satisfied — the row IS
+  // his — so only the composite foreign key can refuse this.
+  const crossParent = await rest("topics", {
+    token: bob.token,
+    method: "POST",
+    body: { user_id: bob.id, subject_id: subjectId, name: "smuggled into alice's subject" },
+  });
+  check(
+    "bob cannot attach a topic to alice's subject",
+    crossParent.status >= 400,
+    `HTTP ${crossParent.status}`,
+  );
+
+  // Writing a row that claims to belong to someone else.
+  const forged = await rest("subjects", {
+    token: bob.token,
+    method: "POST",
+    body: { user_id: alice.id, name: "planted in alice's account" },
+  });
+  check("bob cannot insert a row owned by alice", forged.status >= 400, `HTTP ${forged.status}`);
+
+  // Giving your own row away — blocked by WITH CHECK on UPDATE, not USING.
+  const ownSubject = await rest("subjects", {
+    token: bob.token,
+    method: "POST",
+    prefer: "return=representation",
+    body: { user_id: bob.id, name: "Bob Chemistry", color_slot: 5 },
+  });
+  const bobSubjectId = Array.isArray(ownSubject.body) ? ownSubject.body[0]?.id : null;
+  const handover = await rest(`subjects?id=eq.${bobSubjectId}`, {
+    token: bob.token,
+    method: "PATCH",
+    body: { user_id: alice.id },
+  });
+  check("bob cannot hand his own row to alice", handover.status >= 400, `HTTP ${handover.status}`);
+
+  /* ---------------------------------------------------------------------- */
+  console.log("\n  Cascade — deleting an account takes its data (NFR-P3)");
+
+  await admin(`admin/users/${alice.id}`, { method: "DELETE" });
+  created.splice(created.indexOf(alice.id), 1);
+
+  const leftovers = await fetch(`${URL_BASE}/rest/v1/subjects?select=id&user_id=eq.${alice.id}`, {
+    headers: { apikey: SECRET, Authorization: `Bearer ${SECRET}` },
+  });
+  const rows = await leftovers.json();
+  check("alice's subjects went with her account", Array.isArray(rows) && rows.length === 0);
+} catch (error) {
+  failures.push(`threw: ${error.message}`);
+  console.log(`\n  ERROR  ${error.message}`);
+} finally {
+  for (const id of created) await admin(`admin/users/${id}`, { method: "DELETE" });
+}
+
+console.log(`\n  ${passed} passed, ${failures.length} failed\n`);
+if (failures.length > 0) {
+  for (const name of failures) console.log(`    - ${name}`);
+  console.log("");
+  process.exitCode = 1;
+}

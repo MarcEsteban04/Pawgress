@@ -99,32 +99,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "flashcards_reviewer_id_fkey"
-            columns: ["reviewer_id"]
+            foreignKeyName: "flashcards_reviewer_fkey"
+            columns: ["reviewer_id", "user_id"]
             isOneToOne: false
             referencedRelation: "reviewers"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "flashcards_source_material_id_fkey"
-            columns: ["source_material_id"]
+            foreignKeyName: "flashcards_source_material_fkey"
+            columns: ["source_material_id", "user_id"]
             isOneToOne: false
             referencedRelation: "materials"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "flashcards_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "flashcards_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "flashcards_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "flashcards_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -167,11 +167,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "material_chunks_material_id_fkey"
-            columns: ["material_id"]
+            foreignKeyName: "material_chunks_material_fkey"
+            columns: ["material_id", "user_id"]
             isOneToOne: false
             referencedRelation: "materials"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -235,18 +235,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "materials_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "materials_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "materials_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "materials_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -295,18 +295,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "planner_events_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "planner_events_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "planner_events_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "planner_events_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -385,18 +385,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "progress_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "progress_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "progress_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "progress_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -436,18 +436,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "quiz_answers_attempt_id_fkey"
-            columns: ["attempt_id"]
+            foreignKeyName: "quiz_answers_attempt_fkey"
+            columns: ["attempt_id", "user_id"]
             isOneToOne: false
             referencedRelation: "quiz_attempts"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "quiz_answers_question_id_fkey"
-            columns: ["question_id"]
+            foreignKeyName: "quiz_answers_question_fkey"
+            columns: ["question_id", "user_id"]
             isOneToOne: false
             referencedRelation: "quiz_questions"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -484,11 +484,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "quiz_attempts_quiz_id_fkey"
-            columns: ["quiz_id"]
+            foreignKeyName: "quiz_attempts_quiz_fkey"
+            columns: ["quiz_id", "user_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -540,25 +540,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "quiz_questions_quiz_id_fkey"
-            columns: ["quiz_id"]
+            foreignKeyName: "quiz_questions_quiz_fkey"
+            columns: ["quiz_id", "user_id"]
             isOneToOne: false
             referencedRelation: "quizzes"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "quiz_questions_source_material_id_fkey"
-            columns: ["source_material_id"]
+            foreignKeyName: "quiz_questions_source_material_fkey"
+            columns: ["source_material_id", "user_id"]
             isOneToOne: false
             referencedRelation: "materials"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "quiz_questions_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "quiz_questions_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -610,18 +610,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "quizzes_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "quizzes_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "quizzes_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "quizzes_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -667,18 +667,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "reviewers_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "reviewers_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "reviewers_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "reviewers_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -721,25 +721,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "study_plan_items_plan_id_fkey"
-            columns: ["plan_id"]
+            foreignKeyName: "study_plan_items_plan_fkey"
+            columns: ["plan_id", "user_id"]
             isOneToOne: false
             referencedRelation: "study_plans"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "study_plan_items_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "study_plan_items_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "study_plan_items_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "study_plan_items_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -803,18 +803,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "study_sessions_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "study_sessions_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
-            foreignKeyName: "study_sessions_topic_id_fkey"
-            columns: ["topic_id"]
+            foreignKeyName: "study_sessions_topic_fkey"
+            columns: ["topic_id", "user_id"]
             isOneToOne: false
             referencedRelation: "topics"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
@@ -884,11 +884,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "topics_subject_id_fkey"
-            columns: ["subject_id"]
+            foreignKeyName: "topics_subject_fkey"
+            columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
         ]
       }
