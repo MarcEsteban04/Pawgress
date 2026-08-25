@@ -1,13 +1,16 @@
+import { BrandMark } from "./BrandMark";
 import { cn } from "@/lib/utils";
 
 /**
- * The Pawgress paw mark — brand direction "Daylight" (docs/branding.md).
+ * The drawn paw mark.
  *
- * Four toes on a rounded pad, built from circles and one superellipse-ish path
- * so it stays geometric next to Outfit. Toes take ink, the pad takes the accent.
- * At 16px the toes are dropped rather than shrunk: a four-toe paw at favicon
- * size turns to mud. That reduction lives in `app/icon.svg`, which is what the
- * browser tab actually loads.
+ * No longer used in chrome — `BrandMark` shows the real mascot there. It is
+ * kept because it is the source of truth for `app/icon.svg`, the favicon: the
+ * mascot illustration is far too detailed to survive 16px, so the tab icon
+ * stays this reduced paw, and the two must not drift apart.
+ *
+ * Toes take ink, the pad takes the accent. At favicon size the toes drop from
+ * four to three rather than shrinking; four at 16px turns to mud.
  */
 export function PawMark({ className }: { className?: string }) {
   return (
@@ -31,27 +34,37 @@ export function PawMark({ className }: { className?: string }) {
 }
 
 /**
- * The paw on a solid ink tile — the app mark at the top of the icon rail, and
- * the only place the brand appears inside the authenticated shell.
+ * The mascot on a solid ink tile — the app mark at the top of the nav rail.
+ *
+ * The ink tile is what makes the artwork work at this size in both themes: the
+ * wordmark's white half never appears here, and the dark ground gives the
+ * mascot's own outlines something to sit against.
  */
 export function AppMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex size-10 items-center justify-center rounded-[var(--radius-control)] bg-ink text-on-ink shadow-[var(--shadow-pill)]",
+        "inline-flex size-10 items-center justify-center rounded-[var(--radius-control)] bg-ink shadow-[var(--shadow-pill)]",
         className,
       )}
     >
-      <PawMark className="size-6" />
+      <BrandMark className="size-7 rounded-[0.4rem]" />
     </span>
   );
 }
 
-/** Mark plus wordmark. The wordmark is set in the display face. */
+/**
+ * Mascot plus wordmark — the header lockup, used in the landing nav, the auth
+ * header and the app top bar.
+ *
+ * The wordmark stays TYPE rather than being cropped out of the artwork: type
+ * follows the theme, stays crisp at any size, and can be selected and read by a
+ * screen reader. Only the mascot comes from the image.
+ */
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2 text-ink", className)}>
-      <PawMark className="size-7" />
+      <BrandMark className="size-8" />
       <span className="font-display text-[1.375rem] leading-none font-semibold tracking-[-0.02em]">
         Pawgress
       </span>

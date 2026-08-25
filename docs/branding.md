@@ -152,9 +152,23 @@ turn to mud.
 cap studying at a laptop, with the Pawgress wordmark. Rendered through
 [`BrandMascot`](../src/components/shared/BrandMascot.tsx).
 
-Where it goes: **large brand moments only** — the landing hero and the sign-up aside. Chrome keeps
-the drawn `Logo`, because a detailed illustration at 28px is an unreadable smudge, a wasted
-download, and cannot follow the theme the way an SVG does.
+Where it goes:
+
+| Placement | Component | What is shown |
+|---|---|---|
+| Landing hero, sign-up aside | `BrandMascot` | The whole lockup — mascot and wordmark |
+| Nav rail, top bar, auth header, 404 | `BrandMark`, via `Logo` / `AppMark` | The **mascot alone**, cropped square, beside the wordmark set in type |
+| Browser tab | `app/icon.svg` | The drawn paw — the illustration cannot survive 16px |
+
+Shrinking the whole lockup into chrome was never an option: at 28px it is an unreadable smudge, and
+it would put the wordmark next to itself. So `BrandMark` crops to the mascot, and the wordmark
+beside it stays **type** — type follows the theme, stays crisp at any size, and can be selected and
+read aloud.
+
+The crop is measured from the PNG's alpha channel, not guessed: the mascot sits at roughly
+x 420–980, y 100–660 of the 1536×1024 source, expressed as percentages of its container. **A square,
+mascot-only export would delete that component entirely** — and would survive the artwork being
+redrawn, which those hard-coded numbers will not.
 
 Two constraints the asset imposes, both worked around rather than ignored:
 
