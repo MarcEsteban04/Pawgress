@@ -24,6 +24,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/branding.md`](docs/branding.md) | Brand spec — palette, type ramp, logo, mascot, icon rules |
 | [`docs/design-system.md`](docs/design-system.md) | Primitive set, token vocabulary, component standards |
 | [`docs/architecture.md`](docs/architecture.md) | Routing, auth layers, data access, background jobs, errors |
+| [`docs/supabase.md`](docs/supabase.md) | Supabase runbook — local stack, hosted project, the three auth layers |
 | [`docs/backlog.md`](docs/backlog.md) | Ordered development backlog and risk register |
 | [`docs/conventions.md`](docs/conventions.md) | Coding conventions |
 
@@ -36,7 +37,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript (strict) |
 | UI | React 19, Tailwind CSS v4, Radix primitives, Lucide icons |
-| Backend | Supabase — PostgreSQL, Auth, Storage, RLS *(Sprint 09+)* |
+| Backend | Supabase — PostgreSQL, Auth, Storage, RLS |
 | AI | LLM API + embeddings / vector search *(Sprint 31+)* |
 | Hosting | Vercel + Supabase |
 
@@ -44,6 +45,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 
 - Node.js **20.9+** (repo is developed on Node 24 — see `.nvmrc`)
 - npm 10+
+- Docker Desktop — only to run the local Supabase stack; the app runs without it
 
 ## Getting started
 
@@ -68,6 +70,9 @@ The app runs at http://localhost:3000.
 | `npm run format:check` | Prettier check |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run check` | typecheck + lint + format check — run before committing |
+| `npm run db:start` / `db:stop` | Boot / stop the local Supabase stack |
+| `npm run db:reset` | Re-run every migration, then seed |
+| `npm run db:types` | Regenerate `src/types/database.ts` |
 
 ## Project structure
 
@@ -96,7 +101,9 @@ src/
   types/                Shared and generated types
   styles/               Global style partials beyond app/globals.css
 supabase/
+  config.toml           local stack config (ports, auth rules)
   migrations/           SQL migrations (Sprint 13+)
+  seed.sql              local seed data, applied by `db:reset`
 docs/                   Product spec, roadmap, requirements, flows, wireframes
 design/
   wireframes/           Wireframe artboards, reference only (Sprint 04)
@@ -114,7 +121,8 @@ src/features/subjects/
 
 ## Environment variables
 
-All variables are documented in [`.env.example`](.env.example). Read them through
+All variables are documented in [`.env.example`](.env.example), and the Supabase setup — local
+stack, hosted project, and the two steps that need a human — is in [`docs/supabase.md`](docs/supabase.md). Read them through
 `src/config/env.ts` rather than touching `process.env` directly — a missing value should fail loudly
 at the boundary. Anything without a `NEXT_PUBLIC_` prefix is server-only and must never be imported
 into a client component.
@@ -125,5 +133,5 @@ into a client component.
 |---|---|---|
 | 1 — Product foundation | 01–04 | Complete ✅ |
 | 2 — Design system & architecture | 05–07 | Complete ✅ · redesigned to direction "Daylight" |
-| 3 — Authentication | 09–12 | Sprint 09 next |
+| 3 — Authentication | 09–12 | Sprint 09 ✅ · Sprint 10 next |
 | 4+ | 13–84 | Not started |

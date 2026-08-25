@@ -1,15 +1,17 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { supabaseConfigured } from "@/config/env";
 import { errors } from "@/lib/errors";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
  * The Data Access Layer's session gate.
  *
  * Next.js 16's own guidance: `proxy.ts` runs on every request including
- * prefetches, so it does OPTIMISTIC cookie-only checks and nothing more. The
- * real check belongs as close to the data as possible — here — and Row Level
- * Security is the last line behind that. Three layers, each assuming the others
- * might be bypassed.
+ * prefetches, so it does OPTIMISTIC checks and nothing more. The real check
+ * belongs as close to the data as possible — here — and Row Level Security is
+ * the last line behind that. Three layers, each assuming the others might be
+ * bypassed (docs/architecture.md §3).
  *
  * `cache()` memoises per render pass, so a layout and five server components
  * calling this in one request produce one verification, not six.
@@ -22,20 +24,16 @@ export type Session = {
 };
 
 /**
- * Whether a real auth provider is wired up yet.
+ * Preview scaffolding for local work before a Supabase project exists.
  *
- * Supabase lands in Sprint 09. Until then this returns a preview session so the
- * app shell is navigable — and it keys off configuration rather than an env
- * flag on purpose: production cannot be missing `NEXT_PUBLIC_SUPABASE_URL`, so
- * there is no switch anyone can forget to turn off. It also fails closed: no
- * Supabase in production means no session at all, not a free pass.
+ * It keys off configuration rather than an env flag on purpose: a flag is
+ * something a person can forget to turn off. Production either has
+ * `NEXT_PUBLIC_SUPABASE_URL` or it does not, and the branch below fails closed
+ * when it does not — no Supabase in production means no session at all, never a
+ * free pass.
  *
- * REMOVE THIS BRANCH in Sprint 11, once sign-in works.
+ * REMOVE THIS in Sprint 11, once sign-in works end to end.
  */
-function supabaseConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-}
-
 const PREVIEW_SESSION: Session = {
   userId: "preview-user",
   email: "preview@pawgress.local",
@@ -45,19 +43,31 @@ const PREVIEW_SESSION: Session = {
 /**
  * Returns the current session, or `null`. Never throws.
  * Use this when a page renders differently for signed-out visitors.
+ *
+ * Uses `getUser()`, which asks the Auth server who this token belongs to.
+ * `getSession()` would be faster and is the wrong call here: it decodes the
+ * cookie without verifying it, and a cookie is attacker-controllable. The extra
+ * round trip is the price of the guarantee, and `cache()` means it is paid once
+ * per request rather than once per component.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
   if (!supabaseConfigured()) {
-    // Preview scaffolding — see supabaseConfigured() above.
     return process.env.NODE_ENV === "production" ? null : PREVIEW_SESSION;
   }
 
-  // Sprint 09–11: read the Supabase session from cookies, verify it against
-  // the auth server, and map it onto Session. Deliberately not stubbed with
-  // fake decoding — a half-real auth check is worse than an obvious gap.
-  throw new Error(
-    "Supabase is configured but session verification is not implemented yet (Sprint 09–11).",
-  );
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data.user) return null;
+
+  return {
+    userId: data.user.id,
+    email: data.user.email ?? "",
+    // Supabase sets this once the student follows the verification link.
+    // Registration (Sprint 10) is what makes it meaningful; it is surfaced here
+    // so a feature can gate on a verified address without re-deriving it.
+    emailVerified: Boolean(data.user.email_confirmed_at),
+  };
 });
 
 /**

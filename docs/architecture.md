@@ -89,9 +89,25 @@ app" pattern.
 `unauthorized.tsx` / `forbidden.tsx` are still experimental behind the `authInterrupts` flag, so MVP
 auth redirects to `/login` instead.
 
+### What Sprint 09 wired up
+
+`getSession()` now reads a real Supabase session: `supabase.auth.getUser()`, which asks the Auth
+server who the token belongs to. `getSession()` on the Supabase client would be faster and is the
+wrong call — it decodes the cookie without verifying it, and a cookie is attacker-controllable. React
+`cache()` means the round trip is paid once per request however many components ask.
+
+The proxy verifies the JWT with `getClaims()` and, more importantly, **refreshes the session**.
+Only it can: a Server Component is not allowed to set cookies, so a token rotated during a page
+render would be computed and thrown away. The visible symptom of getting this wrong is students being
+signed out mid-session for no reason.
+
+Three clients, three jobs — see [`supabase.md`](supabase.md):
+`client.ts` (browser, auth calls only), `server.ts` (per request, RLS applies), and `admin.ts`
+(service role, **bypasses RLS**, background jobs only).
+
 ### The preview gap, and why it cannot ship
 
-Supabase arrives in Sprint 09. Until then `getSession()` returns a preview session so the shell is
+Until a Supabase project exists, `getSession()` returns a preview session so the shell is
 navigable. It keys off **whether Supabase is configured**, not an env flag — production cannot be
 missing `NEXT_PUBLIC_SUPABASE_URL`, so there is no switch anyone can forget. It also fails closed:
 no Supabase in production yields no session, not a free pass. The branch is deleted in Sprint 11.

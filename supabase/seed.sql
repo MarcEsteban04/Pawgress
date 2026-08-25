@@ -1,0 +1,18 @@
+-- Pawgress — local seed data.
+--
+-- Runs automatically after migrations on `npm run db:reset`. It exists so a
+-- developer gets a usable local stack in one command rather than clicking
+-- through sign-up and creating subjects by hand every time they reset.
+--
+-- Rules for anything added here:
+--   * Local only. This file is never applied to a hosted project.
+--   * No real personal data, ever — not a real email, not a real file.
+--   * Idempotent where it can be, so a partial reset does not wedge.
+--
+-- Empty until Sprint 13 creates the schema. Seeding rows into tables that do
+-- not exist yet would just make `db:reset` fail, so this is deliberately a
+-- no-op rather than a guess at the shape of `profiles`.
+
+-- Sprint 13+: insert an auth user, a profile, two subjects and a handful of
+-- topics, mirroring src/features/dashboard/sample-data.ts so the dashboard has
+-- something real to render and that placeholder file can be deleted.
