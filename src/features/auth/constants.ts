@@ -31,3 +31,13 @@ export const LAST_SENT_COOKIE = "pawgress-verification-sent-at";
 
 /** Long enough to finish the flow, short enough not to linger. */
 export const PENDING_MAX_AGE_SECONDS = 60 * 30;
+
+/**
+ * Recovery uses its own cookies rather than sharing the sign-up ones.
+ *
+ * The two flows can legitimately overlap — someone half-way through confirming
+ * a new account can still ask to reset a password on an older one — and one
+ * shared "pending email" slot would silently overwrite whichever came first.
+ */
+export const RECOVERY_EMAIL_COOKIE = "pawgress-recovery-email";
+export const RECOVERY_SENT_COOKIE = "pawgress-recovery-sent-at";

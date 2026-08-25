@@ -83,6 +83,15 @@ export function LoginForm({ next }: { next: string }) {
         </div>
       </Field>
 
+      <div className="-mt-1 text-right">
+        <Link
+          href="/forgot-password"
+          className="text-sm text-ink-muted underline underline-offset-4 transition-colors hover:text-ink"
+        >
+          Forgot your password?
+        </Link>
+      </div>
+
       <SubmitButton />
 
       <p className="text-center text-[0.9375rem] text-ink-muted">

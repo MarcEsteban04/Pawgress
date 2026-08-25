@@ -72,10 +72,10 @@ confirmation links land in the Mailpit inbox at <http://127.0.0.1:54324>.
 
 ### Without Docker
 
-The app runs fine with no Supabase at all. `supabaseConfigured()` returns false, the proxy passes
-every request through, and the DAL hands out a preview session **in development only**. In
-production the same branch returns `null`, so a missing configuration locks the app rather than
-opening it.
+The public pages still render with no Supabase at all — `supabaseConfigured()` returns false and the
+proxy passes every request through — but **nothing behind sign-in works**, in any environment.
+Sprint 11 deleted the preview session that used to stand in here, so there is no longer a path that
+hands out a session without Supabase saying so. Landing on `/dashboard` redirects to `/login`.
 
 ---
 
@@ -254,7 +254,32 @@ If you want the wireframe's behaviour exactly, the honest options are: turn conf
 drop the verification claim, or schedule the custom flow as its own sprint. Do not leave the
 wireframe saying one thing while the app does another — pick one and update the other.
 
-## 7. Migrations
+## 7. Password recovery uses a code too
+
+`resetPasswordForEmail` sends the *recovery* template, which is wired the same way as confirmation:
+[`supabase/templates/reset-password.html`](../supabase/templates/reset-password.html) renders the
+token action, so a code is sent rather than a link. `npm run auth:configure` pushes both.
+
+FR-A5 says "reset-by-**link** flow", and this is a code. Two reasons, and the requirement wording
+should follow rather than the other way round:
+
+- **A link assumes one device.** Students read email on a phone and reset on a laptop. A link opens
+  the reset screen on the phone; a code can be typed wherever they already are.
+- **Link scanners spend single-use tokens.** Corporate and school mail filters follow links to check
+  them, which can consume a one-time reset token before the student ever clicks it. The failure looks
+  exactly like "the link is broken".
+
+It also keeps one pattern across the product: every code Pawgress emails is six digits, entered on a
+screen that looks the same.
+
+The flow is `/forgot-password` → `/reset-password` (code + new password on ONE screen) →
+`/dashboard`. One screen rather than two because splitting them spends the code before the password
+is accepted, so a typo would strand the student with a used code and no way forward.
+
+`/auth/callback` is now unused by any shipped flow — both emails carry codes. It is kept for Google
+sign-in (FR-A9), which needs exactly that handler. Delete it if that gets cut.
+
+## 8. Migrations
 
 Every schema change ships as a migration in `supabase/migrations/` (NFR-O3). Nothing is changed by
 hand in the hosted dashboard — a change made there and not captured is a change that will be missing

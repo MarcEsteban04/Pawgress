@@ -253,6 +253,10 @@ otp_expiry = 3600
 subject = "Your Pawgress confirmation code"
 content_path = "./supabase/templates/confirm-signup.html"
 
+[auth.email.template.recovery]
+subject = "Your Pawgress password reset code"
+content_path = "./supabase/templates/reset-password.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

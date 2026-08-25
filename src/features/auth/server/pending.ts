@@ -5,6 +5,8 @@ import {
   LAST_SENT_COOKIE,
   PENDING_EMAIL_COOKIE,
   PENDING_MAX_AGE_SECONDS,
+  RECOVERY_EMAIL_COOKIE,
+  RECOVERY_SENT_COOKIE,
   RESEND_COOLDOWN_SECONDS,
 } from "@/features/auth/constants";
 
@@ -51,6 +53,44 @@ export async function getPendingEmail(): Promise<string | null> {
 export async function getResendCooldown(): Promise<number> {
   const store = await cookies();
   const raw = store.get(LAST_SENT_COOKIE)?.value;
+  if (!raw) return 0;
+  const elapsed = (Date.now() - Number(raw)) / 1000;
+  if (!Number.isFinite(elapsed)) return 0;
+  return Math.max(0, Math.ceil(RESEND_COOLDOWN_SECONDS - elapsed));
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Password recovery                                                          */
+/* -------------------------------------------------------------------------- */
+
+export async function setRecoveryEmail(email: string) {
+  const store = await cookies();
+  const shared = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: PENDING_MAX_AGE_SECONDS,
+  };
+  store.set(RECOVERY_EMAIL_COOKIE, email, shared);
+  store.set(RECOVERY_SENT_COOKIE, String(Date.now()), shared);
+}
+
+export async function getRecoveryEmail(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(RECOVERY_EMAIL_COOKIE)?.value ?? null;
+}
+
+export async function clearRecoveryEmail() {
+  const store = await cookies();
+  store.delete(RECOVERY_EMAIL_COOKIE);
+  store.delete(RECOVERY_SENT_COOKIE);
+}
+
+/** Seconds still to wait before another recovery code may be sent. */
+export async function getRecoveryCooldown(): Promise<number> {
+  const store = await cookies();
+  const raw = store.get(RECOVERY_SENT_COOKIE)?.value;
   if (!raw) return 0;
   const elapsed = (Date.now() - Number(raw)) / 1000;
   if (!Number.isFinite(elapsed)) return 0;

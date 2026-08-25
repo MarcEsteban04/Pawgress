@@ -174,7 +174,6 @@ if (Number(config.rate_limit_email_sent) < EXPECTED_EMAIL_RATE_LIMIT) {
 /*  3. Templates                                                               */
 /* -------------------------------------------------------------------------- */
 
-/** Sprint 12's password-recovery template gets added here, not pasted by hand. */
 const TEMPLATES = [
   {
     label: "Confirm signup",
@@ -182,6 +181,13 @@ const TEMPLATES = [
     subjectField: "mailer_subjects_confirmation",
     contentField: "mailer_templates_confirmation_content",
     subject: "Your Pawgress confirmation code",
+  },
+  {
+    label: "Reset password",
+    file: "supabase/templates/reset-password.html",
+    subjectField: "mailer_subjects_recovery",
+    contentField: "mailer_templates_recovery_content",
+    subject: "Your Pawgress password reset code",
   },
 ];
 

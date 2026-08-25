@@ -24,15 +24,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 09 | Supabase setup — clients, proxy session refresh, env wiring, local stack | done | hosted project connected |
 | 10 | Registration — sign-up, password strength, duplicate handling, 6-digit email code | done | applied to the hosted project via `npm run auth:configure` |
 | 11 | Login & logout — sign in, sign out, session persistence, protected routes | done | preview-session branch deleted |
+| 12 | Account recovery — forgot password, 6-digit reset code, session expiry | done | recovery template pushed to the hosted project |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 12 | Password reset and session-expiry handling | 11 |
 | 13 | Database schema + RLS on every table | 12 |
 | 14 | Storage buckets and upload policies | 13 |
+| 15 | Profile, account deletion, AI usage in settings | 13 |
 
 ---
 
@@ -75,7 +76,7 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 2 | Registration + email verification | M | 10 | **done** — `features/auth/`. Confirmation is a **6-digit code**, not a link. Unverified sign-in is NOT supported; Supabase has no such mode — see `supabase.md` §6 |
 | 3 | Sign in, sign out, session persistence | M | 11 | **done** — `LoginForm`, `SignOutItem`, one generic credential error |
 | 4 | Route protection via proxy.ts + `requireSession()` DAL | M | 11 | **done** — preview session deleted, `?next=` honoured through `safeNextPath()`, `no-store` on protected routes |
-| 5 | Password reset and session-expiry handling | V1 | 12 | US-A4 |
+| 5 | Password reset and session-expiry handling | V1 | 12 | **done** — code-based reset, not link; see `supabase.md` §7. Expiry returns to the route via `?next=`; the unsaved-input warning waits for the first real form (Sprint 19+) |
 | 6 | Google sign-in | L | — | PRD open decision #3 |
 
 ### E02 — Data & storage (Phase 4, Sprints 13–18)

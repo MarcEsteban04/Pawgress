@@ -31,6 +31,25 @@ export const emailSchema = z
   .pipe(z.email("That does not look like an email address."))
   .transform((value) => value.toLowerCase());
 
+/**
+ * Setting a new password during recovery.
+ *
+ * The confirm field is not security — anyone who has the code can set whatever
+ * they like. It is there because a password you cannot see is a password you
+ * can typo, and discovering that at the NEXT sign-in, locked out again, with a
+ * code that has already been spent, is a genuinely bad afternoon.
+ */
+export const resetPasswordSchema = z
+  .object({
+    code: z.string(),
+    password: passwordSchema,
+    confirm: z.string(),
+  })
+  .refine((value) => value.password === value.confirm, {
+    message: "Both passwords need to match.",
+    path: ["confirm"],
+  });
+
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,

@@ -2,10 +2,24 @@
 
 import { redirect } from "next/navigation";
 import { type AuthFormState } from "@/features/auth/constants";
-import { clearPendingEmail, getPendingEmail, getResendCooldown, setPendingEmail } from "./pending";
+import {
+  clearPendingEmail,
+  clearRecoveryEmail,
+  getPendingEmail,
+  getRecoveryCooldown,
+  getRecoveryEmail,
+  getResendCooldown,
+  setPendingEmail,
+  setRecoveryEmail,
+} from "./pending";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/redirects";
-import { otpSchema, registerSchema } from "@/lib/validation/auth";
+import {
+  emailOnlySchema,
+  otpSchema,
+  registerSchema,
+  resetPasswordSchema,
+} from "@/lib/validation/auth";
 
 /**
  * Registration server actions (Sprint 10 — US-A1, FR-A1, FR-A2).
@@ -291,4 +305,157 @@ export async function signOutAction(): Promise<void> {
   // far more likely to be switching accounts or handing over a shared machine
   // than to want the marketing pitch again.
   redirect("/login");
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Account recovery (Sprint 12 — US-A4, FR-A5)                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ask for a reset code.
+ *
+ * **Always reports the same outcome**, whether or not that address has an
+ * account (US-A4). "No account with that email" here would be a free
+ * account-enumeration endpoint that needs no password and no rate limit to
+ * abuse. Supabase already declines to distinguish the two; this keeps our side
+ * of it honest, including when the send itself fails — the student's next step
+ * is identical either way, so a different message would only leak.
+ *
+ * Recovery sends a 6-digit code, not a link, matching confirmation. A link
+ * assumes the student opens their email on the same device they are resetting
+ * on, which for a phone inbox and a laptop browser is exactly backwards. Codes
+ * also survive corporate mail scanners, which follow links and can spend a
+ * single-use token before the student ever sees it.
+ */
+export async function requestPasswordResetAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const parsed = emailOnlySchema.safeParse({ email: formData.get("email") });
+
+  if (!parsed.success) {
+    return fail({
+      email: String(formData.get("email") ?? ""),
+      message: "That does not look like an email address.",
+      nextStep: "Check it for typos and try again.",
+      fieldErrors: { email: "Check this address." },
+    });
+  }
+
+  const { email } = parsed.data;
+  const supabase = await createSupabaseServerClient();
+
+  // The result is deliberately ignored. Whatever happened, the student is told
+  // the same thing and sent to the same screen.
+  await supabase.auth.resetPasswordForEmail(email);
+
+  await setRecoveryEmail(email);
+  redirect("/reset-password");
+}
+
+/**
+ * Spend the code and set the new password.
+ *
+ * Two steps, in this order: `verifyOtp({ type: "recovery" })` proves ownership
+ * and returns a session, and only then does `updateUser` change the password.
+ * Without the first, this would be an endpoint that rewrites any account's
+ * password given only an email address.
+ */
+export async function resetPasswordAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = await getRecoveryEmail();
+  if (!email) {
+    return fail({
+      message: "We do not know which account to reset.",
+      nextStep: "Ask for a new code — the last request has expired.",
+    });
+  }
+
+  const parsed = resetPasswordSchema.safeParse({
+    code: formData.get("code"),
+    password: formData.get("password"),
+    confirm: formData.get("confirm"),
+  });
+
+  if (!parsed.success) {
+    const flat = parsed.error.flatten().fieldErrors;
+    return fail({
+      email,
+      message: flat.confirm?.[0] ?? flat.password?.[0] ?? "Check the details above.",
+      nextStep: "Fix the highlighted field and try again.",
+      fieldErrors: { password: flat.password?.[0] ?? flat.confirm?.[0] },
+    });
+  }
+
+  const code = otpSchema.safeParse(parsed.data.code);
+  if (!code.success) {
+    return fail({
+      email,
+      message: code.error.issues[0]?.message ?? "That code is not right.",
+      nextStep: "Check the email and type the code again.",
+    });
+  }
+
+  const supabase = await createSupabaseServerClient();
+
+  const { error: otpError } = await supabase.auth.verifyOtp({
+    email,
+    token: code.data,
+    type: "recovery",
+  });
+
+  if (otpError) {
+    if (otpError.status === 403 || otpError.code === "otp_expired") {
+      return fail({
+        email,
+        message: "That code did not work.",
+        nextStep: "Codes expire after an hour and can only be used once. Send yourself a new one.",
+      });
+    }
+    return { ...mapAuthError(otpError.status, otpError.code), email };
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password: parsed.data.password });
+
+  if (updateError) {
+    if (updateError.code === "same_password") {
+      return fail({
+        email,
+        message: "That is the password you already had.",
+        nextStep: "Choose a different one.",
+        fieldErrors: { password: "Pick a new password." },
+      });
+    }
+    return { ...mapAuthError(updateError.status, updateError.code), email };
+  }
+
+  // The code is spent and the session is live, so there is nothing left pending.
+  await clearRecoveryEmail();
+  redirect("/dashboard");
+}
+
+/** Resend a recovery code, respecting the same cooldown as confirmation. */
+export async function resendRecoveryAction(): Promise<AuthFormState> {
+  const email = await getRecoveryEmail();
+  if (!email) {
+    return fail({
+      message: "We do not know which address to send to.",
+      nextStep: "Enter your email again to start over.",
+    });
+  }
+
+  const remaining = await getRecoveryCooldown();
+  if (remaining > 0) {
+    return fail({
+      message: `Another code can be sent in ${remaining}s.`,
+      nextStep: "Check your spam folder while you wait — it is usually there.",
+    });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.resetPasswordForEmail(email);
+  await setRecoveryEmail(email);
+  return { status: "idle", email };
 }
