@@ -67,6 +67,24 @@ to parse.
 Three checks sit behind it regardless: the bucket's own `file_size_limit` and `allowed_mime_types`,
 and the storage policies. Those cannot be edited out in a console.
 
+### Shrinking before upload is not validation
+
+`features/settings/downscale.ts` re-encodes a picked avatar to at most 512px before the form
+submits it, and puts the result back into the file input through a `DataTransfer` so the ordinary
+submission carries it.
+
+It is a **courtesy, not a control**. It runs in the browser, so anyone who wants to skip it can.
+Nothing above changes because of it: the byte sniffing, the bucket limits and the storage policies
+still decide what is accepted, and a resize that fails simply submits the original.
+
+What it is for is the gap a limit cannot close. The avatar bucket accepts 25 MB, an avatar renders
+at 64px, and there is no transform-on-read — so without this a 20 MB photo is stored at 20 MB and
+served at 20 MB on every page that shows it. Raising a limit makes that more likely, not less.
+
+EXIF orientation is applied during the redraw (`imageOrientation: "from-image"`), because a canvas
+ignores the rotation tag unless asked and every portrait phone photo would otherwise upload
+sideways.
+
 ---
 
 ## 4. Sanitising
