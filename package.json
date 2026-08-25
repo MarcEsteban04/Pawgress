@@ -20,7 +20,8 @@
     "db:diff": "supabase db diff -f",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
-    "db:types:remote": "supabase gen types typescript --linked > src/types/database.ts"
+    "db:types:remote": "supabase gen types typescript --linked > src/types/database.ts",
+    "auth:sync-templates": "node scripts/sync-auth-templates.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

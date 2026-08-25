@@ -16,8 +16,10 @@
   style="
     background: #dcdde0;
     padding: 32px 0;
-    font-family:
-      -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif;
+    /* No quoted font names: the template is pasted through a dashboard textarea
+       and rendered by Go's html/template, and a quoted family is one more thing
+       that can come back escaped. Unquoted names are safe everywhere. */
+    font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
   "
 >
   <tr>
