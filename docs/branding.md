@@ -223,9 +223,9 @@ a student is choosing on a phone.
 - WCAG 2.1 AA on body text in both themes.
 - One focus treatment everywhere: a 2 px `--focus` outline at 2 px offset, always visible.
 - Never colour alone (NFR-A3).
-- **Every icon-only control has a real accessible name.** The nav rail is icon-only, which is only
-  defensible because each item carries both an `sr-only` label and a visible hover/focus tooltip.
-  A sixth destination would mean labels come back.
+- **Every icon-only control has a real accessible name.** The sidebar shows labels by default;
+  collapsing it to icons is a choice a student makes, not a state they are dropped into. Collapsed,
+  each item still carries an `sr-only` label and a visible hover/focus tooltip naming what it does.
 - `prefers-reduced-motion` collapses all transitions.
 - Every mastery percentage carries its evidence count, and below 10 answered questions the number is
   withheld entirely — see [§8](#8-the-one-component-that-matters-most).

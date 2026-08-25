@@ -133,8 +133,8 @@ node <dataviz-skill>/scripts/validate_palette.js "#175E5A,#22857E,#3FB3AA,#7FD6C
 
 | Component | Notes |
 |---|---|
-| `AppShell` | The white frame: icon rail + top bar + content column. Pinned viewport with an internal scroll from 768 px; full-bleed with page scroll below it |
-| `SideNav` | One nav, two containers — 72 px icon rail with tooltips, labelled drawer below 768 px |
+| `AppShell` | Sidebar + top bar + content column, full-bleed. Pinned viewport with an internal scroll from 768 px; page scroll below it. Owns the sidebar's collapsed state and writes the cookie |
+| `SideNav` | One nav, three widths — 240 px expanded, 72 px collapsed with tooltips, 272 px labelled drawer below 768 px. Collapse is a remembered preference, not a breakpoint |
 | `PageHeader` | Eyebrow, display title, and the page's own controls. Also re-renders the shell's toolbar below `lg` |
 | `FocusShell` | Quizzes and flashcards. No rail, no top bar, one deliberate exit, capped at 720 px at every width |
 | `ThemeToggle` | System / light / dark, read straight off the DOM so there is no flash and no cascading render |

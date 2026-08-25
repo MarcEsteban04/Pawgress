@@ -1,24 +1,34 @@
 "use client";
 
-import { BarChart3, House, Layers, MessageSquare, Settings } from "lucide-react";
+import {
+  BarChart3,
+  House,
+  Layers,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ComponentType } from "react";
 import { AppMark } from "@/components/shared/Logo";
 import { QuotaMeter } from "@/components/ui";
+import { type SidebarState } from "@/features/shell/sidebar";
 import { cn } from "@/lib/utils";
 
 /**
- * One navigation, two containers: a 72px icon rail inside the canvas, and a
+ * One navigation, three widths: expanded (240px), collapsed (72px), and a
  * labelled drawer below 768px.
  *
- * Pawgress is a website, so this is a persistent rail rather than a bottom tab
- * bar — bottom tabs are native-app chrome and fight the browser's own bottom
- * bar and the on-screen keyboard (docs/navigation.md §1).
+ * Pawgress is a website, so this is a persistent sidebar rather than a bottom
+ * tab bar — bottom tabs are native-app chrome and fight the browser's own
+ * bottom bar and the on-screen keyboard (docs/navigation.md §1).
  *
- * The rail is icon-only, which is only defensible because each item carries a
- * real accessible name AND a hover/focus tooltip. Five destinations is inside
- * what an icon rail can carry; a sixth would need labels back.
+ * Collapsing is a real preference, remembered in a cookie so the server renders
+ * the right width and nothing snaps after hydration. Expanded is the default:
+ * icon-only navigation is a compromise, and it should be one a student opts
+ * into rather than one they have to discover their way out of.
  *
  * Client Component because the current route drives the active item.
  */
@@ -27,150 +37,169 @@ type NavItem = {
   href: string;
   label: string;
   Icon: ComponentType<{ className?: string }>;
+  /** Shown in the tooltip and read by assistive tech. */
+  hint: string;
 };
 
-const PRIMARY: NavItem[] = [
-  { href: "/dashboard", label: "Home", Icon: House },
-  { href: "/subjects", label: "Subjects", Icon: Layers },
-  { href: "/assistant", label: "Ask", Icon: MessageSquare },
-  { href: "/progress", label: "Progress", Icon: BarChart3 },
+const SECTIONS: { heading: string; items: NavItem[] }[] = [
+  {
+    heading: "Study",
+    items: [
+      { href: "/dashboard", label: "Home", Icon: House, hint: "What to study today" },
+      { href: "/subjects", label: "Subjects", Icon: Layers, hint: "Your classes and files" },
+      {
+        href: "/assistant",
+        label: "Ask",
+        Icon: MessageSquare,
+        hint: "Questions about your material",
+      },
+      { href: "/progress", label: "Progress", Icon: BarChart3, hint: "Mastery and quiz history" },
+    ],
+  },
+  {
+    heading: "Account",
+    items: [
+      { href: "/settings", label: "Settings", Icon: Settings, hint: "Profile and appearance" },
+    ],
+  },
 ];
-
-const SECONDARY: NavItem[] = [{ href: "/settings", label: "Settings", Icon: Settings }];
 
 function isCurrent(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function RailLink({
+function NavLink({
   item,
   current,
+  collapsed,
   onNavigate,
 }: {
   item: NavItem;
   current: boolean;
+  collapsed: boolean;
   onNavigate?: () => void;
 }) {
-  const { href, label, Icon } = item;
+  const { href, label, Icon, hint } = item;
+
   return (
-    <li className="group relative flex justify-center">
+    <li className="group relative">
       <Link
         href={href}
         onClick={onNavigate}
         aria-current={current ? "page" : undefined}
         className={cn(
-          "flex size-11 items-center justify-center rounded-full transition-colors",
+          "relative flex items-center rounded-[var(--radius-pill)] transition-colors",
+          collapsed ? "size-11 justify-center" : "h-11 gap-3 px-3.5",
           current
-            ? "bg-ink text-on-ink shadow-[var(--shadow-pill)]"
-            : "text-ink-subtle hover:bg-surface-sunken hover:text-ink",
-        )}
-      >
-        <Icon className="size-[1.125rem]" aria-hidden />
-        <span className="sr-only">{label}</span>
-      </Link>
-
-      {/* Tooltip. `sr-only` above carries the name for assistive tech; this is
-          for the sighted student who does not recognise the glyph. */}
-      <span
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2",
-          "rounded-[var(--radius-control)] bg-ink px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-on-ink",
-          "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
-        )}
-      >
-        {label}
-      </span>
-    </li>
-  );
-}
-
-function DrawerLink({
-  item,
-  current,
-  onNavigate,
-}: {
-  item: NavItem;
-  current: boolean;
-  onNavigate?: () => void;
-}) {
-  const { href, label, Icon } = item;
-  return (
-    <li>
-      <Link
-        href={href}
-        onClick={onNavigate}
-        aria-current={current ? "page" : undefined}
-        className={cn(
-          "flex items-center gap-3 rounded-[var(--radius-pill)] px-4 py-3 text-[0.9375rem] transition-colors",
-          current
-            ? "bg-ink font-medium text-on-ink"
+            ? "bg-ink font-medium text-on-ink shadow-[var(--shadow-pill)]"
             : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
         )}
       >
         <Icon className="size-[1.125rem] shrink-0" aria-hidden />
-        {label}
+        {/* The label is removed from the tree when collapsed rather than hidden
+            with CSS — a width transition on a wrapping label looks broken, and
+            the tooltip already carries the name for assistive tech. */}
+        {collapsed ? (
+          <span className="sr-only">{label}</span>
+        ) : (
+          <span className="truncate text-[0.9375rem]">{label}</span>
+        )}
       </Link>
+
+      {/* Only when collapsed. An expanded item already shows its name, and a
+          tooltip repeating it is noise that covers the item beside it. */}
+      {collapsed && (
+        <span
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute top-1/2 left-full z-50 ml-2 -translate-y-1/2",
+            "rounded-[var(--radius-control)] bg-ink px-2.5 py-1.5 whitespace-nowrap text-on-ink",
+            "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
+          )}
+        >
+          <span className="block text-xs font-medium">{label}</span>
+          <span className="block text-[0.6875rem] opacity-70">{hint}</span>
+        </span>
+      )}
     </li>
   );
 }
 
 export type SideNavProps = {
-  /** Labelled drawer mode, used below 768px. */
+  state: SidebarState;
+  onToggle?: () => void;
+  /** Labelled drawer mode, used below 768px. Never collapsed. */
   drawer?: boolean;
-  /** Called after a link is followed — closes the drawer on narrow viewports. */
   onNavigate?: () => void;
   quota?: { used: number; limit: number; resetsAt: string };
   className?: string;
 };
 
-export function SideNav({ drawer = false, onNavigate, quota, className }: SideNavProps) {
+export function SideNav({
+  state,
+  onToggle,
+  drawer = false,
+  onNavigate,
+  quota,
+  className,
+}: SideNavProps) {
   const pathname = usePathname();
-  const Item = drawer ? DrawerLink : RailLink;
+  const collapsed = !drawer && state === "collapsed";
 
   return (
     <nav
       aria-label="Main"
       className={cn(
-        "flex h-full flex-col",
-        drawer ? "w-[17rem] gap-1 bg-frame p-4" : "w-[4.5rem] items-center gap-1.5 py-5",
+        "flex h-full flex-col border-r border-rule bg-frame",
+        // The width itself is the animation. Everything inside is laid out for
+        // the width it is at, so nothing has to slide independently.
+        "transition-[width] duration-200 ease-out motion-reduce:transition-none",
+        drawer ? "w-[17rem] p-4" : collapsed ? "w-[4.5rem] px-3 py-5" : "w-60 px-3 py-5",
         className,
       )}
     >
-      <div className={cn("mb-4", drawer && "px-2")}>
-        <Link href="/dashboard" aria-label="Pawgress home">
+      <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "gap-2 px-1")}>
+        <Link href="/dashboard" aria-label="Pawgress home" className="shrink-0">
           <AppMark />
         </Link>
+        {!collapsed && (
+          <span className="truncate font-display text-[1.0625rem] leading-none font-semibold tracking-[-0.02em]">
+            Pawgress
+          </span>
+        )}
       </div>
 
-      <ul className={cn("flex flex-col gap-1.5", drawer && "w-full gap-1")}>
-        {PRIMARY.map((item) => (
-          <Item
-            key={item.href}
-            item={item}
-            current={isCurrent(pathname, item.href)}
-            onNavigate={onNavigate}
-          />
+      <div className="flex min-h-0 flex-1 flex-col gap-6">
+        {SECTIONS.map((section) => (
+          <div key={section.heading} className="flex flex-col gap-1">
+            {/* A heading above a single item would be noise when collapsed, and
+                there is no room for it anyway. */}
+            {!collapsed && (
+              <p className="px-3.5 pb-1 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-subtle uppercase">
+                {section.heading}
+              </p>
+            )}
+            <ul className={cn("flex flex-col gap-1", collapsed && "items-center gap-1.5")}>
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  current={isCurrent(pathname, item.href)}
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <div className={cn("mt-auto flex flex-col gap-1.5", drawer && "w-full gap-1")}>
-        <ul className={cn("flex flex-col gap-1.5", drawer && "gap-1")}>
-          {SECONDARY.map((item) => (
-            <Item
-              key={item.href}
-              item={item}
-              current={isCurrent(pathname, item.href)}
-              onNavigate={onNavigate}
-            />
-          ))}
-        </ul>
-
-        {/* A limit that only shows up when it blocks you is a bug (NFR-C1).
-            The rail has no room for a meter, so it appears in the drawer and in
-            Settings; the rail keeps the quota out of the way, not hidden. */}
-        {quota && drawer && (
-          <div className="mt-3 border-t border-rule px-2 pt-4">
+      <div className="mt-auto flex flex-col gap-3 pt-4">
+        {/* A limit that only appears when it blocks you is a bug (NFR-C1). It
+            needs room to be readable, so the collapsed rail omits it rather
+            than showing an unlabelled sliver. */}
+        {quota && !collapsed && (
+          <div className="border-t border-rule px-1 pt-4">
             <QuotaMeter
               label="AI today"
               used={quota.used}
@@ -178,6 +207,29 @@ export function SideNav({ drawer = false, onNavigate, quota, className }: SideNa
               resetsAt={quota.resetsAt}
             />
           </div>
+        )}
+
+        {!drawer && onToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "flex items-center rounded-[var(--radius-pill)] text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink",
+              collapsed ? "size-11 justify-center self-center" : "h-10 gap-3 px-3.5",
+            )}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="size-[1.125rem]" aria-hidden />
+            ) : (
+              <>
+                <PanelLeftClose className="size-[1.125rem] shrink-0" aria-hidden />
+                <span className="text-sm">Collapse</span>
+              </>
+            )}
+          </button>
         )}
       </div>
     </nav>

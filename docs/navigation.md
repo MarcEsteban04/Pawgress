@@ -289,7 +289,7 @@ No orphans: every screen appears in at least one flow.
 |---|---|
 | 1280 px+ *(primary design target)* | Persistent 240 px sidebar, breadcrumbs, content capped at 1200 px, subject hub in 2–3 columns, assistant as a side panel, progress as real tables |
 | 1024–1279 px | Persistent sidebar, 2 columns, side panel still available |
-| 768–1023 px | Sidebar collapses to a 72 px icon rail, 2 columns where content earns it, dialogs |
+| 768–1023 px | Sidebar available at both widths (240 px / 72 px, remembered), 2 columns where content earns it, dialogs |
 | 360–767 px | Sidebar becomes a drawer, single column, sheets instead of dialogs, tables become stacked cards, primary action in the content column |
 
 Rules:

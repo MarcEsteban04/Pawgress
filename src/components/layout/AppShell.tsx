@@ -3,6 +3,7 @@
 import { Bell, CircleHelp, Menu as MenuIcon, X } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { persistSidebarState, type SidebarState } from "@/features/shell/sidebar";
 import { SideNav } from "./SideNav";
 import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "@/components/shared/Logo";
@@ -49,10 +50,23 @@ export type AppShellProps = {
   toolbar?: ReactNode;
   user: { name: string; email: string };
   quota?: { used: number; limit: number; resetsAt: string };
+  /**
+   * Read from a cookie on the server, so the first paint is already the right
+   * width. Passing it down rather than reading it here is what avoids the
+   * expand-then-snap that a client-only preference always produces.
+   */
+  initialSidebar: SidebarState;
 };
 
-export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
+export function AppShell({ children, toolbar, user, quota, initialSidebar }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebar, setSidebar] = useState<SidebarState>(initialSidebar);
+
+  function toggleSidebar() {
+    const next: SidebarState = sidebar === "collapsed" ? "expanded" : "collapsed";
+    setSidebar(next);
+    persistSidebarState(next);
+  }
 
   return (
     <div className="min-h-dvh md:h-dvh">
@@ -65,9 +79,9 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
           "md:h-full",
         )}
       >
-        {/* Icon rail — 768px and up */}
+        {/* Persistent sidebar — 768px and up */}
         <div className="hidden shrink-0 md:block">
-          <SideNav />
+          <SideNav state={sidebar} onToggle={toggleSidebar} quota={quota} />
         </div>
 
         {/* Drawer — below 768px */}
@@ -79,7 +93,12 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
               onClick={() => setDrawerOpen(false)}
             />
             <div className="absolute inset-y-0 left-0 shadow-[var(--shadow-pop)]">
-              <SideNav drawer quota={quota} onNavigate={() => setDrawerOpen(false)} />
+              <SideNav
+                drawer
+                state="expanded"
+                quota={quota}
+                onNavigate={() => setDrawerOpen(false)}
+              />
             </div>
           </div>
         )}
@@ -95,7 +114,9 @@ export function AppShell({ children, toolbar, user, quota }: AppShellProps) {
               {drawerOpen ? <X className="size-5" /> : <MenuIcon className="size-5" />}
             </button>
 
-            <Link href="/dashboard" className="shrink-0 max-md:hidden">
+            {/* The sidebar carries the brand from 768px up, so repeating it in
+                the top bar would be the wordmark twice on one screen. */}
+            <Link href="/dashboard" className="shrink-0 md:hidden">
               <Logo />
             </Link>
 
