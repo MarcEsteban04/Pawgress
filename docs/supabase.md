@@ -142,12 +142,34 @@ getter in `config/env.ts` so importing the module never loads a key the request 
 
 ---
 
-## 6. Email confirmation, and the one place we deviate from the spec
+## 6. Email confirmation — a 6-digit code
 
-**Set this in the dashboard before testing sign-up:** Authentication → URL Configuration →
-Redirect URLs must include `http://localhost:3000/**` (and your production URL later). The
-confirmation email points at `/auth/callback`, and an address that is not allowlisted is silently
-rewritten to the site root, which looks exactly like a broken link.
+Sign-up confirms with a **code the student types**, not a link they click.
+
+### The one dashboard step you must do
+
+Supabase decides link-vs-code purely by **which variable the email template renders**. There is no
+separate setting:
+
+| Template renders | What is sent |
+|---|---|
+| `{{ .ConfirmationURL }}` | A magic link |
+| `{{ .Token }}` | A 6-digit code |
+
+The local stack is already wired: [`supabase/config.toml`](../supabase/config.toml) points
+`[auth.email.template.confirmation]` at
+[`supabase/templates/confirm-signup.html`](../supabase/templates/confirm-signup.html).
+
+**The hosted project needs the same change by hand:** Authentication → Email Templates → *Confirm
+signup* → paste the contents of that file. Until you do, the hosted project keeps sending links,
+`/verify-email` shows a code box nobody has a code for, and the flow dead-ends.
+
+Code length and lifetime come from `otp_length = 6` and `otp_expiry = 3600` in `config.toml`;
+match them in the dashboard under Authentication → Providers → Email if you change them.
+
+`/auth/callback` is kept even though sign-up no longer uses it — the password-reset link in
+Sprint 12 lands there. That is also why Redirect URLs should still include
+`http://localhost:3000/**` and your production URL.
 
 ### The deviation
 
@@ -173,8 +195,8 @@ The code does not assume which way the switch is set. `registerAction` checks wh
 returned a session:
 
 - **Session returned** (confirmation off) → straight to `/dashboard`.
-- **No session** (confirmation on) → `/verify-email`, where the "Continue to Pawgress" button from
-  the wireframe is hidden, because it would bounce them back to `/login`.
+- **No session** (confirmation on) → `/verify-email`, where they type the code. Confirming returns a
+  live session, so a student is signed in the moment they confirm — no second trip through sign-in.
 
 If you want the wireframe's behaviour exactly, the honest options are: turn confirmation **off** and
 drop the verification claim, or schedule the custom flow as its own sprint. Do not leave the

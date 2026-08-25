@@ -22,7 +22,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 06 | Design system — tokens, type ramp, primitive set, landing page as the smoke test | done | re-cut for "Daylight" |
 | 07 | Application architecture — route groups, app shell, DAL + `proxy.ts` auth, AI abstraction, job contract, error strategy | done | |
 | 09 | Supabase setup — clients, proxy session refresh, env wiring, local stack | done | hosted project connected |
-| 10 | Registration — sign-up, password strength, duplicate handling, email verification | done | redirect URL must be allowlisted in the dashboard |
+| 10 | Registration — sign-up, password strength, duplicate handling, 6-digit email code | done | the hosted project's *Confirm signup* email template must be updated by hand |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
@@ -71,7 +71,7 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | # | Item | Pri | Sprint | Story |
 |---|---|---|---|---|
 | 1 | Supabase clients, proxy session refresh, local dev config, env wiring | M | 09 | **done** — `lib/supabase/`, `supabase/config.toml`, `docs/supabase.md`. Creating the *hosted* project needs a Supabase account and is still open |
-| 2 | Registration + email verification | M | 10 | **done** — `features/auth/`, `/auth/callback`, `/auth/error`. Unverified sign-in is NOT supported; Supabase has no such mode — see `supabase.md` §6 |
+| 2 | Registration + email verification | M | 10 | **done** — `features/auth/`. Confirmation is a **6-digit code**, not a link. Unverified sign-in is NOT supported; Supabase has no such mode — see `supabase.md` §6 |
 | 3 | Sign in, sign out, session persistence | M | 11 | US-A2 |
 | 4 | Route protection via proxy.ts + `requireSession()` DAL | M | 11 | US-A3 |
 | 5 | Password reset and session-expiry handling | V1 | 12 | US-A4 |

@@ -40,6 +40,21 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const emailOnlySchema = z.object({ email: emailSchema });
 
+/** Confirmation codes are 6 digits — matches `otp_length` in supabase/config.toml. */
+export const OTP_LENGTH = 6;
+
+/**
+ * Strips everything that is not a digit before checking the length, so a code
+ * pasted as "123 456" or "123-456" out of a mail client still works. Being
+ * strict here would only punish the student for their email app's formatting.
+ */
+export const otpSchema = z
+  .string()
+  .transform((value) => value.replace(/\D/g, ""))
+  .refine((value) => value.length === OTP_LENGTH, {
+    message: `Enter all ${OTP_LENGTH} digits.`,
+  });
+
 /* -------------------------------------------------------------------------- */
 /*  Password strength                                                          */
 /* -------------------------------------------------------------------------- */

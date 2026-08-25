@@ -245,6 +245,14 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Sends a 6-digit code instead of a magic link. Supabase picks link-vs-code by
+# which variable the template renders — {{ .Token }} is the code — so this block
+# is the switch. The hosted project needs the same change in the dashboard:
+# Authentication -> Email Templates -> Confirm signup. See docs/supabase.md §6.
+[auth.email.template.confirmation]
+subject = "Your Pawgress confirmation code"
+content_path = "./supabase/templates/confirm-signup.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonStyles, Card, CardBody } from "@/components/ui";
+import { buttonStyles } from "@/components/ui";
 
 export const metadata = { title: "That link did not work" };
 
@@ -42,21 +42,21 @@ export default async function AuthErrorPage({ searchParams }: PageProps<"/auth/e
   const { title, body, action } = REASONS[isReason(raw) ? raw : "invalid"];
 
   return (
-    <Card>
-      <CardBody className="flex flex-col gap-5 pt-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em]">{title}</h1>
-          <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-muted">{body}</p>
-        </div>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="font-display text-[1.75rem] leading-tight font-semibold tracking-[-0.025em]">
+          {title}
+        </h1>
+        <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-muted">{body}</p>
+      </div>
 
-        <Link href={action.href} className={buttonStyles({ variant: "accent", block: true })}>
-          {action.label}
-        </Link>
+      <Link href={action.href} className={buttonStyles({ variant: "accent", block: true })}>
+        {action.label}
+      </Link>
 
-        <p className="text-center text-[0.9375rem] text-ink-muted">
-          Nothing you have uploaded is affected.
-        </p>
-      </CardBody>
-    </Card>
+      <p className="text-center text-[0.9375rem] text-ink-muted">
+        Nothing you have uploaded is affected.
+      </p>
+    </div>
   );
 }

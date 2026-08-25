@@ -1,11 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { publicEnv } from "@/config/env";
 import { type AuthFormState } from "@/features/auth/constants";
-import { getPendingEmail, getResendCooldown, setPendingEmail } from "./pending";
+import { clearPendingEmail, getPendingEmail, getResendCooldown, setPendingEmail } from "./pending";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { registerSchema } from "@/lib/validation/auth";
+import { otpSchema, registerSchema } from "@/lib/validation/auth";
 
 /**
  * Registration server actions (Sprint 10 — US-A1, FR-A1, FR-A2).
@@ -85,16 +84,10 @@ export async function registerAction(
   const { email, password } = parsed.data;
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      // Where Supabase sends them from the confirmation email. This URL must
-      // also be allowlisted in the dashboard under Authentication → URL
-      // Configuration, or the link silently bounces to the site root.
-      emailRedirectTo: `${publicEnv.appUrl}/auth/callback?next=/dashboard`,
-    },
-  });
+  // No `emailRedirectTo`: the confirmation email carries a 6-digit code, not a
+  // link, so there is nowhere for Supabase to send them. Which one gets sent is
+  // decided entirely by the email template — see supabase/templates/.
+  const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     return { ...mapAuthError(error.status, error.code), email };
@@ -146,20 +139,80 @@ export async function resendVerificationAction(): Promise<AuthFormState> {
   const remaining = await getResendCooldown();
   if (remaining > 0) {
     return fail({
-      message: `Another link can be sent in ${remaining}s.`,
+      message: `Another code can be sent in ${remaining}s.`,
       nextStep: "Check your spam folder while you wait — it is usually there.",
     });
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email,
-    options: { emailRedirectTo: `${publicEnv.appUrl}/auth/callback?next=/dashboard` },
-  });
+  const { error } = await supabase.auth.resend({ type: "signup", email });
 
   if (error) return { ...mapAuthError(error.status, error.code), email };
 
   await setPendingEmail(email);
   return { status: "idle", email };
+}
+
+/**
+ * Confirms the account with the 6-digit code from the email (FR-A2).
+ *
+ * On success Supabase returns a live session, which the server client writes
+ * straight to cookies — so the student is signed in the moment they confirm,
+ * with no second trip through sign-in.
+ *
+ * The address comes from the httpOnly cookie rather than the form: taking it
+ * from user input would turn this into an oracle where anyone could brute-force
+ * codes against an address they do not own.
+ */
+export async function verifyOtpAction(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = await getPendingEmail();
+  if (!email) {
+    return fail({
+      message: "We do not know which address to confirm.",
+      nextStep: "Enter your email again to restart sign-up.",
+    });
+  }
+
+  const parsed = otpSchema.safeParse(formData.get("code") ?? "");
+  if (!parsed.success) {
+    return fail({
+      email,
+      message: parsed.error.issues[0]?.message ?? "That code is not right.",
+      nextStep: "Check the email and type the code again.",
+    });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: parsed.data,
+    type: "signup",
+  });
+
+  if (error) {
+    // Supabase reports a wrong code and an expired code with the same status,
+    // so the copy has to cover both without guessing which happened.
+    if (error.status === 403 || error.code === "otp_expired") {
+      return fail({
+        email,
+        message: "That code did not work.",
+        nextStep: "Codes expire after an hour — check the newest email, or send a fresh code.",
+      });
+    }
+    return { ...mapAuthError(error.status, error.code), email };
+  }
+
+  if (!data.session) {
+    return fail({
+      email,
+      message: "The code was accepted but we could not sign you in.",
+      nextStep: "Try signing in with your email and password.",
+    });
+  }
+
+  await clearPendingEmail();
+  redirect("/dashboard");
 }

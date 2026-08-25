@@ -35,6 +35,13 @@ export async function setPendingEmail(email: string) {
   store.set(LAST_SENT_COOKIE, String(Date.now()), shared);
 }
 
+/** Drops the cookies once the address is confirmed — nothing pending to keep. */
+export async function clearPendingEmail() {
+  const store = await cookies();
+  store.delete(PENDING_EMAIL_COOKIE);
+  store.delete(LAST_SENT_COOKIE);
+}
+
 export async function getPendingEmail(): Promise<string | null> {
   const store = await cookies();
   return store.get(PENDING_EMAIL_COOKIE)?.value ?? null;

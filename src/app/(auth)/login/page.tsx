@@ -1,24 +1,24 @@
 import Link from "next/link";
-import { Card, CardBody } from "@/components/ui";
 import { NotBuiltYet } from "@/components/shared/NotBuiltYet";
 
 export const metadata = { title: "Sign in" };
 
 export default function LoginPage() {
   return (
-    <Card>
-      <CardBody className="flex flex-col gap-5 pt-6">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-[-0.02em]">Welcome back</h1>
-          <p className="mt-2 text-[0.9375rem] text-ink-muted">
-            New here?{" "}
-            <Link href="/register" className="font-semibold text-accent underline">
-              Create an account
-            </Link>
-          </p>
-        </div>
-        <NotBuiltYet what="Signing in" sprint="Sprint 11" />
-      </CardBody>
-    </Card>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-[1.75rem] leading-tight font-semibold tracking-[-0.025em]">
+          Welcome back
+        </h1>
+        <p className="mt-2 text-[0.9375rem] text-ink-muted">
+          New here?{" "}
+          <Link href="/register" className="font-medium text-accent underline underline-offset-4">
+            Create an account
+          </Link>
+        </p>
+      </div>
+
+      <NotBuiltYet what="Signing in" sprint="Sprint 11" />
+    </div>
   );
 }

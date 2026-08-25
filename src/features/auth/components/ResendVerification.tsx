@@ -6,7 +6,7 @@ import { RESEND_COOLDOWN_SECONDS, type AuthFormState } from "@/features/auth/con
 import { resendVerificationAction } from "@/features/auth/server/actions";
 
 /**
- * Resend the confirmation link, with a visible countdown.
+ * Resend the confirmation code, with a visible countdown.
  *
  * The cooldown is shown rather than enforced silently: a disabled button with
  * no explanation reads as broken, and a student who cannot see why will click
@@ -47,7 +47,7 @@ export function ResendVerification({ initialCooldown }: { initialCooldown: numbe
 
       <div className="flex items-center gap-3">
         <Button variant="subtle" onClick={resend} disabled={waiting || isPending}>
-          {isPending ? "Sending…" : "Resend link"}
+          {isPending ? "Sending…" : "Send a new code"}
         </Button>
         {waiting && (
           <span className="tabular text-sm text-ink-muted" aria-live="polite">
