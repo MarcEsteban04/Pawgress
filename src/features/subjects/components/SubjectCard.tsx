@@ -1,10 +1,12 @@
 import { ArrowRight, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Button, Card, CardBody } from "@/components/ui";
+import { ArchiveSubjectButton } from "./ArchiveSubjectButton";
 import { DeleteSubjectDialog } from "./DeleteSubjectDialog";
 import { SubjectDialog } from "./SubjectDialog";
 import { SUBJECT_TONE, SubjectGlyph } from "./SubjectIcon";
 import { type Subject } from "@/server/subjects/queries";
+import { formatAcademicYear } from "@/lib/validation/subject";
 import { cn } from "@/lib/utils";
 
 /** "3 days ago" beats a date a student has to subtract from today. */
@@ -35,6 +37,11 @@ function relative(iso: string): string {
  *     display size. "12 files" as a grey pill is a label; a large tabular 12
  *     over a small FILES is a number — and numbers are what this card is for.
  *
+ * An archived subject (US-B6) keeps its card and its numbers — the whole
+ * point is that the data stays readable — but drops the colour and the hover
+ * lift. It is out of the way, not gone, and it should not compete with the
+ * classes a student is actually taking.
+ *
  * The whole card is a stretched link: one real `<a>` on the title with an
  * `::after` covering the card. Ctrl-click and "open in new tab" keep working,
  * the destination shows in the status bar, and there is still exactly one tab
@@ -44,13 +51,16 @@ function relative(iso: string): string {
  */
 export function SubjectCard({ subject }: { subject: Subject }) {
   const tone = SUBJECT_TONE[subject.colorSlot];
+  const archived = subject.archivedAt !== null;
 
   return (
     <Card
       className={cn(
         "group relative flex h-full flex-col overflow-hidden",
         "transition-[transform,box-shadow,border-color] duration-200 ease-out",
-        "hover:-translate-y-0.5 hover:border-rule-strong hover:shadow-pop",
+        archived
+          ? "hover:border-rule-strong"
+          : "hover:-translate-y-0.5 hover:border-rule-strong hover:shadow-pop",
         /* Focus lands on the card, because the card is what the link covers.
            Same outline token and offset as the global `:focus-visible` rule in
            globals.css — the one focus treatment relocated, not a second one. */
@@ -60,21 +70,26 @@ export function SubjectCard({ subject }: { subject: Subject }) {
       {/* Decorative layers. `pointer-events-none` so they never intercept a
           click meant for the link overlay, and no z-index: they sit after the
           card's background and before its content simply by document order. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: `radial-gradient(120% 88% at 100% 0%, ${tone.soft} 0%, transparent 68%)`,
-        }}
-      />
+      {!archived && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `radial-gradient(120% 88% at 100% 0%, ${tone.soft} 0%, transparent 68%)`,
+          }}
+        />
+      )}
 
       {/* The subject's icon at display size, bleeding off the corner. At 8%
           it is texture rather than an icon — enough to give each card its own
           character without competing with a single word of the title. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -top-4 -right-4 opacity-[0.08] transition-transform duration-300 ease-out group-hover:scale-110"
-        style={{ color: tone.hue }}
+        className={cn(
+          "pointer-events-none absolute -top-4 -right-4 transition-transform duration-300 ease-out",
+          archived ? "opacity-[0.05]" : "opacity-[0.08] group-hover:scale-110",
+        )}
+        style={{ color: archived ? "var(--ink-subtle)" : tone.hue }}
       >
         <SubjectGlyph icon={subject.icon} className="size-32" />
       </span>
@@ -85,7 +100,7 @@ export function SubjectCard({ subject }: { subject: Subject }) {
       <span
         aria-hidden
         className="pointer-events-none absolute inset-y-0 left-0 w-1"
-        style={{ backgroundColor: tone.hue }}
+        style={{ backgroundColor: archived ? "var(--rule-strong)" : tone.hue }}
       />
 
       <CardBody className="relative flex flex-1 flex-col gap-5 pt-5">
@@ -97,10 +112,17 @@ export function SubjectCard({ subject }: { subject: Subject }) {
             {subject.name}
           </Link>
           <p className="mt-1.5 text-sm text-ink-subtle">
-            {subject.semester ? `${subject.semester} · ` : ""}
-            {subject.materialCount > 0
-              ? `active ${relative(subject.lastActivityAt)}`
-              : `created ${relative(subject.createdAt)}`}
+            {[
+              subject.academicYear !== null ? formatAcademicYear(subject.academicYear) : null,
+              subject.semester,
+              archived
+                ? `archived ${relative(subject.archivedAt!)}`
+                : subject.materialCount > 0
+                  ? `active ${relative(subject.lastActivityAt)}`
+                  : `created ${relative(subject.createdAt)}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
 
@@ -128,7 +150,7 @@ export function SubjectCard({ subject }: { subject: Subject }) {
               the card opens — making it a second <a> to the same place would
               add a tab stop that goes nowhere new. */}
           <span className="flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors group-hover:text-ink">
-            Open
+            {archived ? "Archived" : "Open"}
             <ArrowRight
               className="size-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5"
               aria-hidden
@@ -140,13 +162,23 @@ export function SubjectCard({ subject }: { subject: Subject }) {
               until hover only where hover exists; on touch they are always on,
               and focus reveals them for keyboard users. */}
           <div className="relative flex items-center gap-1 transition-opacity duration-200 md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
-            <SubjectDialog
-              subject={subject}
-              trigger={
-                <Button variant="ghost" size="sm" aria-label={`Edit ${subject.name}`}>
-                  <Pencil aria-hidden />
-                </Button>
-              }
+            {/* Editing an archived subject is a strange thing to want, and
+                offering it invites a student to tidy the archive instead of
+                studying. Restore first, then edit. */}
+            {!archived && (
+              <SubjectDialog
+                subject={subject}
+                trigger={
+                  <Button variant="ghost" size="sm" aria-label={`Edit ${subject.name}`}>
+                    <Pencil aria-hidden />
+                  </Button>
+                }
+              />
+            )}
+            <ArchiveSubjectButton
+              subjectId={subject.id}
+              subjectName={subject.name}
+              archived={archived}
             />
             <DeleteSubjectDialog subjectId={subject.id} subjectName={subject.name} />
           </div>

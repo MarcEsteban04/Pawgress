@@ -15,11 +15,17 @@ import {
   ErrorState,
   Field,
   Input,
+  Select,
 } from "@/components/ui";
 import { SUBJECT_TONE, subjectIconFor } from "./SubjectIcon";
 import { initialSubjectState } from "@/features/subjects/types";
 import { createSubjectAction, updateSubjectAction } from "@/features/subjects/server/actions";
-import { COLOR_SLOTS, SUBJECT_ICONS } from "@/lib/validation/subject";
+import {
+  academicYearOptions,
+  COLOR_SLOTS,
+  formatAcademicYear,
+  SUBJECT_ICONS,
+} from "@/lib/validation/subject";
 import { type Subject } from "@/server/subjects/queries";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +39,17 @@ import { cn } from "@/lib/utils";
  * of `<button>`s would need arrow-key handling written by hand, and radios get
  * it, plus a name and a checked state, for free.
  */
+
+/**
+ * Computed once at module scope, not per render.
+ *
+ * `new Date()` in a component body is a render-time read of a moving value:
+ * the server and the client can straddle midnight on New Year's Eve and
+ * disagree about which years to offer, which React reports as a hydration
+ * mismatch. Once per process is stable, and a process does not outlive an
+ * academic year.
+ */
+const YEAR_OPTIONS = academicYearOptions(new Date());
 
 function SubmitButton({ editing }: { editing: boolean }) {
   const { pending } = useFormStatus();
@@ -59,6 +76,7 @@ export function SubjectDialog({
   const [icon, setIcon] = useState<string>(subject?.icon ?? "book");
   const nameId = useId();
   const semesterId = useId();
+  const yearId = useId();
 
   return (
     <Dialog>
@@ -166,15 +184,33 @@ export function SubjectDialog({
             </div>
           </fieldset>
 
-          <Field label="Semester" htmlFor={semesterId} optional>
-            <Input
-              id={semesterId}
-              name="semester"
-              defaultValue={subject?.semester ?? ""}
-              maxLength={60}
-              placeholder="1st sem 2026"
-            />
-          </Field>
+          {/* Semester and year are one thought, so they sit on one row. The
+              year is a select rather than a text box on purpose: two students
+              typing "2025-2026" and "2025–2026" would land in two different
+              groups, and grouping is the entire reason the field exists
+              (docs/supabase.md, Sprint 22 migration). */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Semester" htmlFor={semesterId} optional>
+              <Input
+                id={semesterId}
+                name="semester"
+                defaultValue={subject?.semester ?? ""}
+                maxLength={60}
+                placeholder="1st sem"
+              />
+            </Field>
+
+            <Field label="Academic year" htmlFor={yearId} optional>
+              <Select id={yearId} name="academicYear" defaultValue={subject?.academicYear ?? ""}>
+                <option value="">Not set</option>
+                {YEAR_OPTIONS.map((year) => (
+                  <option key={year} value={year}>
+                    {formatAcademicYear(year)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
 
           <DialogFooter>
             <DialogClose asChild>

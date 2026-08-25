@@ -1,14 +1,16 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { Archive, Search, Undo2, X } from "lucide-react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Select } from "@/components/ui";
-import { SUBJECT_SORTS } from "@/features/subjects/query";
+import { SUBJECT_GROUPS, SUBJECT_SORTS } from "@/features/subjects/query";
+import { formatAcademicYear } from "@/lib/validation/subject";
 import { cn } from "@/lib/utils";
 
 /**
- * Search, sort and semester filter (FR-S2, US-B2).
+ * Search, grouping, sorting and filtering (FR-S2, FR-S6, US-B2, US-B6).
  *
  * **The URL is the state.** A filtered list can be linked, reloaded, and moved
  * between tabs, and the back button undoes a search the way a student expects.
@@ -18,11 +20,25 @@ import { cn } from "@/lib/utils";
  * previous page under six history entries.
  *
  * The debounce is 250ms: long enough that a fast typist causes one query
- * instead of eight, short enough not to feel laggy. The pending flag drives a
- * spinner-free "searching" affordance — the list dims rather than disappearing,
- * because a list that vanishes mid-keystroke reads as "no results".
+ * instead of eight, short enough not to feel laggy. The pending flag dims the
+ * row rather than emptying it — a list that vanishes mid-keystroke reads as
+ * "no results".
+ *
+ * Every control appears only when the data can answer it. A semester dropdown
+ * over subjects that have no semester is a control that can only ever return
+ * nothing.
  */
-export function SubjectFilters({ semesters }: { semesters: string[] }) {
+export function SubjectFilters({
+  semesters,
+  years,
+  archivedCount,
+  archived,
+}: {
+  semesters: string[];
+  years: number[];
+  archivedCount: number;
+  archived: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -30,7 +46,9 @@ export function SubjectFilters({ semesters }: { semesters: string[] }) {
 
   const searchId = useId();
   const sortId = useId();
+  const groupId = useId();
   const semesterId = useId();
+  const yearId = useId();
 
   const [search, setSearch] = useState(params.get("q") ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,81 +73,141 @@ export function SubjectFilters({ semesters }: { semesters: string[] }) {
   useEffect(() => () => (timer.current ? clearTimeout(timer.current) : undefined), []);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center",
-        isPending && "opacity-70 transition-opacity",
-      )}
-    >
-      <label
-        htmlFor={searchId}
-        className="group flex h-11 flex-1 items-center gap-2.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-4 transition-colors focus-within:border-rule-strong hover:border-rule-strong"
-      >
-        <Search className="size-[1.125rem] shrink-0 text-ink-subtle" aria-hidden />
-        <span className="sr-only">Search subjects by name</span>
-        <input
-          id={searchId}
-          type="search"
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search subjects"
-          className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-subtle"
-        />
-        {search && (
-          <button
-            type="button"
-            aria-label="Clear search"
-            onClick={() => {
-              setSearch("");
-              apply({ q: null });
-            }}
-            className="shrink-0 rounded-full p-1 text-ink-subtle transition-colors hover:text-ink"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        )}
-      </label>
-
-      <div className="flex gap-3">
-        {/* Only offered when there is something to filter by. An empty dropdown
-            is a control that does nothing. */}
-        {semesters.length > 0 && (
-          <>
-            <label htmlFor={semesterId} className="sr-only">
-              Filter by semester
-            </label>
-            <Select
-              id={semesterId}
-              value={params.get("semester") ?? ""}
-              onChange={(event) => apply({ semester: event.target.value || null })}
-              className="h-11 w-auto rounded-[var(--radius-pill)]"
-            >
-              <option value="">All semesters</option>
-              {semesters.map((semester) => (
-                <option key={semester} value={semester}>
-                  {semester}
-                </option>
-              ))}
-            </Select>
-          </>
-        )}
-
-        <label htmlFor={sortId} className="sr-only">
-          Sort subjects
-        </label>
-        <Select
-          id={sortId}
-          value={params.get("sort") ?? "activity"}
-          onChange={(event) => apply({ sort: event.target.value })}
-          className="h-11 w-auto rounded-[var(--radius-pill)]"
+    <div className={cn("flex flex-col gap-3", isPending && "opacity-70 transition-opacity")}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label
+          htmlFor={searchId}
+          className="group flex h-11 flex-1 items-center gap-2.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-4 transition-colors focus-within:border-rule-strong hover:border-rule-strong"
         >
-          {Object.entries(SUBJECT_SORTS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </Select>
+          <Search className="size-[1.125rem] shrink-0 text-ink-subtle" aria-hidden />
+          <span className="sr-only">Search subjects by name</span>
+          <input
+            id={searchId}
+            type="search"
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={archived ? "Search archived subjects" : "Search subjects"}
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink-subtle"
+          />
+          {search && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => {
+                setSearch("");
+                apply({ q: null });
+              }}
+              className="shrink-0 rounded-full p-1 text-ink-subtle transition-colors hover:text-ink"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          )}
+        </label>
+
+        <div className="flex flex-wrap gap-3">
+          {years.length > 0 && (
+            <>
+              <label htmlFor={yearId} className="sr-only">
+                Filter by academic year
+              </label>
+              <Select
+                id={yearId}
+                value={params.get("year") ?? ""}
+                onChange={(event) => apply({ year: event.target.value || null })}
+                className="h-11 w-auto rounded-[var(--radius-pill)]"
+              >
+                <option value="">All years</option>
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {formatAcademicYear(year)}
+                  </option>
+                ))}
+              </Select>
+            </>
+          )}
+
+          {semesters.length > 0 && (
+            <>
+              <label htmlFor={semesterId} className="sr-only">
+                Filter by semester
+              </label>
+              <Select
+                id={semesterId}
+                value={params.get("semester") ?? ""}
+                onChange={(event) => apply({ semester: event.target.value || null })}
+                className="h-11 w-auto rounded-[var(--radius-pill)]"
+              >
+                <option value="">All semesters</option>
+                {semesters.map((semester) => (
+                  <option key={semester} value={semester}>
+                    {semester}
+                  </option>
+                ))}
+              </Select>
+            </>
+          )}
+
+          {(years.length > 0 || semesters.length > 0) && (
+            <>
+              <label htmlFor={groupId} className="sr-only">
+                Group subjects
+              </label>
+              <Select
+                id={groupId}
+                value={params.get("group") ?? "none"}
+                onChange={(event) => apply({ group: event.target.value })}
+                className="h-11 w-auto rounded-[var(--radius-pill)]"
+              >
+                {Object.entries(SUBJECT_GROUPS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </>
+          )}
+
+          <label htmlFor={sortId} className="sr-only">
+            Sort subjects
+          </label>
+          <Select
+            id={sortId}
+            value={params.get("sort") ?? "activity"}
+            onChange={(event) => apply({ sort: event.target.value })}
+            className="h-11 w-auto rounded-[var(--radius-pill)]"
+          >
+            {Object.entries(SUBJECT_SORTS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
+
+      {/* The way into and out of the archive. A link rather than a toggle
+          button: it swaps which set of subjects the page is showing, which is
+          navigation — so it should be linkable, and Back should undo it.
+          Offered only once something has been archived; an empty archive is a
+          door to an empty room. */}
+      {(archivedCount > 0 || archived) && (
+        <Link
+          href={archived ? "/subjects" : "/subjects?archived=1"}
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+        >
+          {archived ? (
+            <>
+              <Undo2 className="size-4" aria-hidden />
+              Back to active subjects
+            </>
+          ) : (
+            <>
+              <Archive className="size-4" aria-hidden />
+              {archivedCount} archived
+            </>
+          )}
+        </Link>
+      )}
     </div>
   );
 }

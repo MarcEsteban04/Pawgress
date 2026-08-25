@@ -22,7 +22,7 @@ import { type SubjectFormState } from "../types";
  * requires it to equal `auth.uid()`; it is never accepted from the form.
  */
 
-const FIELDS = ["name", "colorSlot", "icon", "semester"] as const;
+const FIELDS = ["name", "colorSlot", "icon", "semester", "academicYear"] as const;
 
 export async function createSubjectAction(
   _prevState: SubjectFormState,
@@ -49,6 +49,7 @@ export async function createSubjectAction(
     color_slot: parsed.data.colorSlot,
     icon: parsed.data.icon,
     semester: parsed.data.semester,
+    academic_year: parsed.data.academicYear,
   });
 
   if (error) {
@@ -109,6 +110,7 @@ export async function updateSubjectAction(
       color_slot: parsed.data.colorSlot,
       icon: parsed.data.icon,
       semester: parsed.data.semester,
+      academic_year: parsed.data.academicYear,
     })
     .eq("id", id);
 
@@ -223,4 +225,59 @@ export async function loadDeletionSummaryAction(
   } catch {
     return null;
   }
+}
+
+/**
+ * Archive and restore a subject (FR-S6, US-B6).
+ *
+ * Archiving is the answer to "I finished this class but I am not throwing away
+ * a term of notes". Nothing is deleted and nothing is detached — a timestamp is
+ * set, the main list stops returning the row, and every material, topic and
+ * mastery score stays exactly where it was and stays readable.
+ *
+ * It is deliberately the low-friction sibling of deletion: one click, no
+ * confirmation, immediately reversible. That is the point of offering it — a
+ * student who cannot archive will eventually delete, and deletion is the one
+ * that cannot be undone. The delete dialog stays as heavy as it was.
+ *
+ * The timestamp rather than a boolean is what makes "restore" honest and lets
+ * the archive be ordered by when things were retired.
+ */
+export async function setSubjectArchivedAction(
+  _prevState: SubjectFormState,
+  formData: FormData,
+): Promise<SubjectFormState> {
+  await requireSession();
+
+  const id = String(formData.get("id") ?? "");
+  const archived = formData.get("archived") === "true";
+
+  if (!id) {
+    return {
+      status: "error",
+      message: "We could not tell which subject to change.",
+      nextStep: "Reload the page and try again.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("subjects")
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq("id", id);
+
+  if (error) {
+    return {
+      status: "error",
+      message: archived
+        ? "We could not archive that subject."
+        : "We could not restore that subject.",
+      nextStep: "Try again in a moment. Nothing has changed.",
+    };
+  }
+
+  /* Layout-wide: an archived subject has to leave the dashboard and the
+     readiness list too, not just this page. */
+  revalidatePath("/", "layout");
+  return { status: "saved" };
 }

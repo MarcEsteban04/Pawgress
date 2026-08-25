@@ -1,9 +1,10 @@
-import { ArrowLeft, ListTree } from "lucide-react";
+import { Archive, ArrowLeft, ListTree } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, EmptyState, SectionLabel, Skeleton } from "@/components/ui";
+import { ArchiveSubjectButton } from "@/features/subjects/components/ArchiveSubjectButton";
 import { SUBJECT_TONE, SubjectGlyph } from "@/features/subjects/components/SubjectIcon";
 import { TopicDialog } from "@/features/topics/components/TopicDialog";
 import { TopicList } from "@/features/topics/components/TopicList";
@@ -66,16 +67,36 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
   if (!subject) notFound();
 
   const tone = SUBJECT_TONE[subject.colorSlot];
+  const archived = subject.archivedAt !== null;
 
   return (
     <div className="flex flex-col gap-5">
       <Link
-        href="/subjects"
+        href={archived ? "/subjects?archived=1" : "/subjects"}
         className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        All subjects
+        {archived ? "Archived subjects" : "All subjects"}
       </Link>
+
+      {/* US-B6 promises an archived subject stays READABLE, so the page opens
+          normally rather than redirecting. What it must not do is stay silent:
+          a student wondering why this subject vanished from their list should
+          find the answer here, next to the control that undoes it. */}
+      {archived && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-tile)] border border-rule bg-surface-sunken px-4 py-3">
+          <p className="flex items-center gap-2 text-sm text-ink-muted">
+            <Archive className="size-4 shrink-0" aria-hidden />
+            Archived. Everything here is intact — it is just hidden from your subject list.
+          </p>
+          <ArchiveSubjectButton
+            subjectId={subject.id}
+            subjectName={subject.name}
+            archived
+            variant="labelled"
+          />
+        </div>
+      )}
 
       <PageHeader
         eyebrow={subject.semester ?? "Subject"}

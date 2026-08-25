@@ -20,6 +20,8 @@ export type Subject = {
   colorSlot: 1 | 2 | 3 | 4 | 5;
   icon: SubjectIcon | null;
   semester: string | null;
+  /** Starting year of the academic year — 2025 means 2025–2026. */
+  academicYear: number | null;
   archivedAt: string | null;
   createdAt: string;
   materialCount: number;
@@ -29,16 +31,26 @@ export type Subject = {
 };
 
 export const listSubjects = cache(
-  async ({ search, sort = "activity", semester }: SubjectQuery = {}): Promise<Subject[]> => {
+  async ({
+    search,
+    sort = "activity",
+    semester,
+    year,
+    archived = false,
+  }: SubjectQuery = {}): Promise<Subject[]> => {
     await requireSession();
     const supabase = await createSupabaseServerClient();
 
     let query = supabase
       .from("subjects")
       .select(
-        "id, name, color_slot, icon, semester, archived_at, created_at, updated_at, materials(count), topics(count)",
-      )
-      .is("archived_at", null);
+        "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, updated_at, materials(count), topics(count)",
+      );
+
+    /* Archived is a MODE, not a filter — the two sets never mix. An archived
+       subject that still turns up in the main list has not been archived, it
+       has been labelled (US-B6). */
+    query = archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
 
     /* `%` and `_` are wildcards in LIKE, so a student searching for "50%" would
        otherwise match everything. Escaped before interpolation. */
@@ -47,6 +59,7 @@ export const listSubjects = cache(
       if (escaped) query = query.ilike("name", `%${escaped}%`);
     }
     if (semester) query = query.eq("semester", semester);
+    if (year !== undefined) query = query.eq("academic_year", year);
 
     const { data, error } = await query;
     if (error || !data) return [];
@@ -78,6 +91,7 @@ export const listSubjects = cache(
       colorSlot: row.color_slot as 1 | 2 | 3 | 4 | 5,
       icon: (row.icon as SubjectIcon | null) ?? null,
       semester: row.semester,
+      academicYear: row.academic_year,
       archivedAt: row.archived_at,
       createdAt: row.created_at,
       materialCount: row.materials?.[0]?.count ?? 0,
@@ -95,19 +109,50 @@ export const listSubjects = cache(
   },
 );
 
-/** Distinct semesters, for the filter. Empty when nobody has set one. */
-export const listSemesters = cache(async (): Promise<string[]> => {
+/**
+ * What the filter bar can actually offer, read from the data rather than
+ * assumed.
+ *
+ * Scoped to the view being shown: offering "1st sem" while looking at the
+ * archive, when nothing archived has that semester, is a control that can only
+ * produce an empty result.
+ */
+export type SubjectFacets = { semesters: string[]; years: number[] };
+
+export const listSubjectFacets = cache(async (archived = false): Promise<SubjectFacets> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const { data } = await supabase
-    .from("subjects")
-    .select("semester")
-    .not("semester", "is", null)
-    .is("archived_at", null);
+  let query = supabase.from("subjects").select("semester, academic_year");
+  query = archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
 
-  const unique = new Set((data ?? []).map((row) => row.semester).filter(Boolean) as string[]);
-  return [...unique].sort((a, b) => a.localeCompare(b));
+  const { data } = await query;
+
+  const semesters = new Set<string>();
+  const years = new Set<number>();
+  for (const row of data ?? []) {
+    if (row.semester) semesters.add(row.semester);
+    if (row.academic_year !== null) years.add(row.academic_year);
+  }
+
+  return {
+    semesters: [...semesters].sort((a, b) => a.localeCompare(b)),
+    // Newest first: this year's classes are the ones being looked for.
+    years: [...years].sort((a, b) => b - a),
+  };
+});
+
+/** How many subjects are archived, for deciding whether to offer the archive. */
+export const countArchivedSubjects = cache(async (): Promise<number> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { count } = await supabase
+    .from("subjects")
+    .select("id", { count: "exact", head: true })
+    .not("archived_at", "is", null);
+
+  return count ?? 0;
 });
 
 /**
@@ -215,7 +260,7 @@ export const getSubject = cache(async (id: string): Promise<Subject | null> => {
   const { data, error } = await supabase
     .from("subjects")
     .select(
-      "id, name, color_slot, icon, semester, archived_at, created_at, updated_at, materials(count), topics(count)",
+      "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, updated_at, materials(count), topics(count)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -228,6 +273,7 @@ export const getSubject = cache(async (id: string): Promise<Subject | null> => {
     colorSlot: data.color_slot as 1 | 2 | 3 | 4 | 5,
     icon: (data.icon as SubjectIcon | null) ?? null,
     semester: data.semester,
+    academicYear: data.academic_year,
     archivedAt: data.archived_at,
     createdAt: data.created_at,
     materialCount: data.materials?.[0]?.count ?? 0,

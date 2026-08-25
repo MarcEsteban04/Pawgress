@@ -820,6 +820,7 @@ export type Database = {
       }
       subjects: {
         Row: {
+          academic_year: number | null
           archived_at: string | null
           color_slot: number
           created_at: string
@@ -831,6 +832,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          academic_year?: number | null
           archived_at?: string | null
           color_slot?: number
           created_at?: string
@@ -842,6 +844,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          academic_year?: number | null
           archived_at?: string | null
           color_slot?: number
           created_at?: string

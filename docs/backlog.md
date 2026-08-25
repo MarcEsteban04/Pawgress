@@ -34,15 +34,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 19 | Subject creation — create, edit, delete with counted confirmation, colour and icon | done | dropped the unique-name constraint that contradicted US-B1 |
 | 20 | Subject list — URL-driven search, sort and semester filter, cards, two empty states | done | delete counts moved off page load and onto dialog open |
 | 21 | Topic management — create, rename, delete with detach-not-delete confirmation, per-topic mastery | done | added a minimal `/subjects/[id]` page for topics to live on; Sprint 23 expands it |
+| 22 | Semesters and archiving — academic year column, grouping, archive/restore as a separate view | done | `academic_year` is a smallint start year, not free text — see the migration for why |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 22 | Semesters and archiving | 21 |
 | 23 | Subject hub page | 21 |
 | 24 | Manual reordering of subjects and topics | 21 |
+| 25 | File upload | 16, 17 |
 
 ---
 

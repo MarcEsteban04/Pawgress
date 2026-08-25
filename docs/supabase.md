@@ -328,6 +328,23 @@ npm run db:types:remote -- --check  # fail if the committed types are stale
 Both routes record what was applied in `supabase_migrations.schema_migrations`, the table the CLI
 itself reads, so they are interchangeable.
 
+### Applied so far
+
+| Migration | Sprint | What it does |
+|---|---|---|
+| `20260826090000_initial_schema.sql` | 13 | 17 tables, enums, triggers, 61 indexes, RLS enabled with no policies |
+| `20260826120000_rls_policies.sql` | 14 | 67 policies and the composite foreign keys that close the gap policies cannot see |
+| `20260826150000_storage_buckets.sql` | 16 | Two private buckets and their path-ownership policies |
+| `20260826170000_drop_storage_delete_trigger.sql` | 16 | Removes the trigger that broke account deletion — Supabase forbids `delete from storage.objects` |
+| `20260826180000_subjects_allow_duplicate_names.sql` | 19 | Drops `unique (user_id, name)`, which contradicted US-B1 |
+| `20260827090000_subjects_academic_year.sql` | 22 | Adds `academic_year`, plus partial indexes for grouping and for the archive |
+
+**Why `academic_year` is a `smallint` and not text.** It stores the STARTING year — 2025 means
+2025–2026 — and the UI renders the range. A free-text box produces "2025-2026", "2025–2026" (en
+dash), "AY 2025-26" and "25/26" across four subjects, and every one of those becomes its own group.
+Storing a number makes grouping exact by construction, makes the ordering numeric rather than
+lexical, and leaves the dash style a display decision that can change without a data migration.
+
 **The Docker route is still the one that proves anything.** Applying a migration forward is not
 evidence that it replays from an empty database — only `db:reset` shows that, and a migration that
 cannot rebuild the schema from scratch is a migration you cannot recover from. Install Docker before

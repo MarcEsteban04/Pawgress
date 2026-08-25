@@ -35,6 +35,31 @@ export const SUBJECT_ICONS = [
 
 export type SubjectIcon = (typeof SUBJECT_ICONS)[number];
 
+/**
+ * Bounds for the academic year, matching the CHECK constraint in the Sprint 22
+ * migration. A sanity check rather than a policy: it catches a mistyped 202
+ * while leaving room for someone entering next year's classes early.
+ */
+export const ACADEMIC_YEAR_MIN = 2000;
+export const ACADEMIC_YEAR_MAX = 2100;
+
+/** "2025–2026" from 2025. An en dash, because it is a range, not a hyphenation. */
+export function formatAcademicYear(startYear: number): string {
+  return `${startYear}–${startYear + 1}`;
+}
+
+/**
+ * The years worth offering in a dropdown, newest first.
+ *
+ * A span around today rather than the full 2000–2100 range the constraint
+ * allows: a student is enrolling for this year or the next one, and a hundred
+ * options to scroll past is a worse control than eight.
+ */
+export function academicYearOptions(today: Date): number[] {
+  const current = today.getMonth() >= 6 ? today.getFullYear() : today.getFullYear() - 1;
+  return [current + 1, current, current - 1, current - 2, current - 3, current - 4];
+}
+
 export const subjectSchema = z.object({
   name: z
     .string()
@@ -49,6 +74,25 @@ export const subjectSchema = z.object({
     .max(60, "Semester is limited to 60 characters.")
     .transform((value) => (value.length === 0 ? null : value))
     .nullable(),
+  /**
+   * The academic year's STARTING year — 2025 means 2025–2026 (FR-S6, US-B6).
+   *
+   * An empty select posts `""`, which `z.coerce.number()` would happily turn
+   * into 0 and then reject as out of range with a message about the year 2000.
+   * The pre-transform maps empty to null first, so "I did not set one" reads as
+   * unset rather than as an error.
+   */
+  academicYear: z
+    .preprocess(
+      (value) => (value === "" || value === null || value === undefined ? null : Number(value)),
+      z
+        .number()
+        .int()
+        .min(ACADEMIC_YEAR_MIN, "Pick an academic year.")
+        .max(ACADEMIC_YEAR_MAX, "Pick an academic year.")
+        .nullable(),
+    )
+    .catch(null),
 });
 
 export type SubjectInput = z.infer<typeof subjectSchema>;
