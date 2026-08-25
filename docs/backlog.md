@@ -36,15 +36,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 21 | Topic management — create, rename, delete with detach-not-delete confirmation, per-topic mastery | done | added a minimal `/subjects/[id]` page for topics to live on; Sprint 23 expands it |
 | 22 | Semesters and archiving — academic year column, grouping, archive/restore as a separate view | done | `academic_year` is a smallint start year, not free text — see the migration for why |
 | 23 | Subject hub — readiness, weak topics, materials, upcoming, recent activity | done | six independent Suspense boundaries; panels say WHY they are empty rather than inventing numbers |
+| 24 | Organization polish — topic reordering, `last_activity_at`, topic-aware search, per-panel error boundaries | done | `npm run db:test:reorder`; subject reordering deliberately NOT built — see note |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 24 | Manual reordering of subjects and topics | 21 |
 | 25 | File upload | 16, 17 |
 | 26 | Material list and detail | 25 |
+| 27 | Text extraction pipeline | 26 |
 
 ---
 

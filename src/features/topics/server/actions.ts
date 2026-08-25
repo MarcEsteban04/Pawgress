@@ -202,3 +202,44 @@ export async function loadTopicDeletionSummaryAction(
     return null;
   }
 }
+
+/**
+ * Move a topic to a new position among its siblings (FR-S7).
+ *
+ * The work happens in `move_topic()`, a Postgres function, and that is a
+ * correctness decision rather than a performance one. Reading the neighbours,
+ * computing a midpoint and writing it back is three round trips from here; two
+ * tabs reordering at once can interleave between any of them and both land on
+ * the same position. Inside one statement they cannot.
+ *
+ * The function is SECURITY INVOKER, so RLS applies exactly as it would to a
+ * direct UPDATE — a forged topic id belonging to someone else finds no row.
+ */
+export async function moveTopicAction(topicId: string, toIndex: number): Promise<TopicFormState> {
+  await requireSession();
+
+  if (!topicId || !Number.isInteger(toIndex) || toIndex < 0) {
+    return {
+      status: "error",
+      message: "We could not work out where to move that topic.",
+      nextStep: "Reload the page and try again.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("move_topic", {
+    p_topic_id: topicId,
+    p_to_index: toIndex,
+  });
+
+  if (error) {
+    return {
+      status: "error",
+      message: "We could not save the new order.",
+      nextStep: "Try again in a moment. The order has not changed.",
+    };
+  }
+
+  revalidatePath(`/subjects`, "layout");
+  return { status: "saved" };
+}

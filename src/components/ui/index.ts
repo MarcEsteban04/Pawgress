@@ -50,6 +50,7 @@ export {
   type QuotaMeterProps,
 } from "./Feedback";
 export { MasteryBar, type MasteryBarProps } from "./MasteryBar";
+export { PanelBoundary } from "./PanelBoundary";
 export { StatusBadge, statusLabel, type StatusBadgeProps } from "./StatusBadge";
 export { Donut, type DonutSegment } from "./Donut";
 export { StatTile } from "./StatTile";

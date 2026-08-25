@@ -826,6 +826,7 @@ export type Database = {
           created_at: string
           icon: string | null
           id: string
+          last_activity_at: string
           name: string
           semester: string | null
           updated_at: string
@@ -838,6 +839,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          last_activity_at?: string
           name: string
           semester?: string | null
           updated_at?: string
@@ -850,6 +852,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          last_activity_at?: string
           name?: string
           semester?: string | null
           updated_at?: string
@@ -900,7 +903,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      move_topic: {
+        Args: { p_to_index: number; p_topic_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       job_status:

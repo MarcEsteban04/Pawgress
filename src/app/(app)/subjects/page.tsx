@@ -71,7 +71,7 @@ async function SubjectList({ search, sort, group, semester, year, archived }: Qu
         title="No subjects match"
         description={
           search
-            ? `Nothing here is called “${search}”. Check the spelling, or clear the filters.`
+            ? `No subject or topic here matches “${search}”. Check the spelling, or clear the filters.`
             : "Nothing here matches those filters."
         }
         action={

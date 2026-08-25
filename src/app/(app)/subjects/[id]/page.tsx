@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardBody, EmptyState, SectionLabel, Skeleton } from "@/components/ui";
+import { Card, CardBody, EmptyState, PanelBoundary, SectionLabel, Skeleton } from "@/components/ui";
 import { ArchiveSubjectButton } from "@/features/subjects/components/ArchiveSubjectButton";
 import { SUBJECT_TONE, SubjectGlyph } from "@/features/subjects/components/SubjectIcon";
 import {
@@ -31,12 +31,17 @@ import { cn } from "@/lib/utils";
 /**
  * The subject hub (FR-S5, US-B5).
  *
- * **Every panel is its own Suspense boundary, and that is the requirement, not
- * a flourish.** US-B5 says a section must never block the others from
- * rendering. One `getSubjectDetail()` awaited at the top would make the whole
- * page as slow as its slowest query and blank while it waited; six independent
- * boundaries mean each panel streams in as its own data lands, and a panel that
- * fails takes only its own card down.
+ * **Every panel is its own Suspense boundary AND its own error boundary.**
+ * US-B5 says a section must never block the others from rendering. One
+ * `getSubjectDetail()` awaited at the top would make the whole page as slow as
+ * its slowest query and blank while it waited; independent boundaries mean each
+ * panel streams in as its own data lands.
+ *
+ * Suspense alone only covers half of that. It handles a PENDING promise; a
+ * rejected one passes through it to the nearest error boundary, which without
+ * `PanelBoundary` is this route's `error.tsx` — replacing the entire page over
+ * one failed query. Sprint 23 claimed the isolation; this pairs each Suspense
+ * with the boundary that actually delivers it.
  *
  * The header — name, colour, counts — is awaited directly rather than
  * suspended. It is the one thing the page cannot be identified without, and a
@@ -186,31 +191,43 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
       {/* Readiness and what to do about it sit together, because one is the
           answer to the other. */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Suspense fallback={<PanelSkeleton title="Readiness" />}>
-          <Progress subjectId={subject.id} />
-        </Suspense>
-        <Suspense fallback={<PanelSkeleton title="Needs attention" />}>
-          <WeakTopics subjectId={subject.id} />
-        </Suspense>
+        <PanelBoundary title="Readiness">
+          <Suspense fallback={<PanelSkeleton title="Readiness" />}>
+            <Progress subjectId={subject.id} />
+          </Suspense>
+        </PanelBoundary>
+        <PanelBoundary title="Needs attention">
+          <Suspense fallback={<PanelSkeleton title="Needs attention" />}>
+            <WeakTopics subjectId={subject.id} />
+          </Suspense>
+        </PanelBoundary>
       </div>
 
       <section className="flex flex-col gap-3">
         <SectionLabel>Topics</SectionLabel>
-        <Suspense fallback={<TopicsSkeleton />}>
-          <Topics subjectId={subject.id} />
-        </Suspense>
+        <PanelBoundary title="Topics">
+          <Suspense fallback={<TopicsSkeleton />}>
+            <Topics subjectId={subject.id} />
+          </Suspense>
+        </PanelBoundary>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Suspense fallback={<PanelSkeleton title="Materials" />}>
-          <Materials subjectId={subject.id} totalCount={subject.materialCount} />
-        </Suspense>
-        <Suspense fallback={<PanelSkeleton title="Upcoming" />}>
-          <Upcoming subjectId={subject.id} today={today} />
-        </Suspense>
-        <Suspense fallback={<PanelSkeleton title="Recent activity" />}>
-          <Activity subjectId={subject.id} />
-        </Suspense>
+        <PanelBoundary title="Materials">
+          <Suspense fallback={<PanelSkeleton title="Materials" />}>
+            <Materials subjectId={subject.id} totalCount={subject.materialCount} />
+          </Suspense>
+        </PanelBoundary>
+        <PanelBoundary title="Upcoming">
+          <Suspense fallback={<PanelSkeleton title="Upcoming" />}>
+            <Upcoming subjectId={subject.id} today={today} />
+          </Suspense>
+        </PanelBoundary>
+        <PanelBoundary title="Recent activity">
+          <Suspense fallback={<PanelSkeleton title="Recent activity" />}>
+            <Activity subjectId={subject.id} />
+          </Suspense>
+        </PanelBoundary>
       </div>
     </div>
   );

@@ -339,12 +339,33 @@ itself reads, so they are interchangeable.
 | `20260826180000_subjects_allow_duplicate_names.sql` | 19 | Drops `unique (user_id, name)`, which contradicted US-B1 |
 | `20260827090000_subjects_academic_year.sql` | 22 | Adds `academic_year`, plus partial indexes for grouping and for the archive |
 | `20260827120000_avatar_size_limit.sql` | — | Raises the avatar bucket to 25 MB at the product owner’s direction |
+| `20260828090000_subject_last_activity.sql` | 24 | `last_activity_at` on subjects, maintained by a trigger on materials |
+| `20260828093000_reorder_topics.sql` | 24 | `move_topic()` — atomic sparse-position reordering with respacing |
 
 **Why `academic_year` is a `smallint` and not text.** It stores the STARTING year — 2025 means
 2025–2026 — and the UI renders the range. A free-text box produces "2025-2026", "2025–2026" (en
 dash), "AY 2025-26" and "25/26" across four subjects, and every one of those becomes its own group.
 Storing a number makes grouping exact by construction, makes the ordering numeric rather than
 lexical, and leaves the dash style a display decision that can change without a data migration.
+
+### Two functions, two security models
+
+`handle_deleted_user_storage()` and `touch_subject_activity()` are SECURITY
+DEFINER. `move_topic()` is SECURITY INVOKER. The difference is not stylistic:
+
+- A definer function is needed when the trigger writes to a DIFFERENT table
+  from the one the statement touched. `touch_subject_activity()` fires on
+  `materials` and updates `subjects`; under invoker rights it would have to
+  satisfy the subjects UPDATE policy from inside a materials statement. That
+  holds today and would stop holding the first time a background job writes on
+  a student's behalf — and the symptom would be a silently stale sort order.
+- `move_topic()` writes to the same table the caller may already write to, so
+  invoker rights give exactly the enforcement a direct UPDATE would. Making it
+  a definer would hand out an escape from the policy for no reason: any student
+  could reorder any other student's topics by passing their id.
+
+Every definer function pins `search_path`. Resolving names through a
+caller-controlled path is an escalation route, not a style preference.
 
 **The Docker route is still the one that proves anything.** Applying a migration forward is not
 evidence that it replays from an empty database — only `db:reset` shows that, and a migration that

@@ -26,7 +26,7 @@ export type Subject = {
   createdAt: string;
   materialCount: number;
   topicCount: number;
-  /** Newest material, or the subject's own last edit if it has none. */
+  /** Newest material, or when the subject was created if it has none. */
   lastActivityAt: string;
 };
 
@@ -44,7 +44,7 @@ export const listSubjects = cache(
     let query = supabase
       .from("subjects")
       .select(
-        "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, updated_at, materials(count), topics(count)",
+        "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, last_activity_at, materials(count), topics(count)",
       );
 
     /* Archived is a MODE, not a filter — the two sets never mix. An archived
@@ -52,11 +52,56 @@ export const listSubjects = cache(
        has been labelled (US-B6). */
     query = archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
 
-    /* `%` and `_` are wildcards in LIKE, so a student searching for "50%" would
-       otherwise match everything. Escaped before interpolation. */
+    /**
+     * Search matches a subject's NAME or any of its TOPIC names.
+     *
+     * Name-only search fails the way a student actually searches. Someone
+     * hunting for photosynthesis types "photosynthesis", not "Biology" — they
+     * are looking for the material, and the subject is just where it lives.
+     * Matching topics turns the search box into a way to find the thing rather
+     * than a way to filter a list you already know.
+     *
+     * Two queries rather than an embedded filter: PostgREST's `!inner` join
+     * would DROP subjects whose name matches but which have no topics at all,
+     * which is most of them early on. Resolving the topic hits first and
+     * OR-ing the ids keeps both halves.
+     *
+     * `%` and `_` are wildcards in LIKE, so a student searching for "50%"
+     * would otherwise match everything. Escaped before interpolation.
+     */
     if (search) {
       const escaped = search.trim().replace(/[\\%_]/g, (ch) => `\\${ch}`);
-      if (escaped) query = query.ilike("name", `%${escaped}%`);
+      if (escaped) {
+        const { data: topicHits } = await supabase
+          .from("topics")
+          .select("subject_id")
+          .ilike("name", `%${escaped}%`)
+          .limit(200);
+
+        const subjectIds = [...new Set((topicHits ?? []).map((row) => row.subject_id))];
+
+        /* A comma or a parenthesis inside `in.(…)` would end the list early,
+           so the ids are checked to be uuids rather than trusted. They come
+           from our own database, but the day one does not, this is the line
+           that decides whether that becomes a broken filter or a broken
+           query. */
+        const safeIds = subjectIds.filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+
+        /* `or()` takes ONE string, and PostgREST splits it on commas and
+           parentheses. A student searching for "Ch 1, 2" or "History (AP)"
+           would otherwise have their search term parsed as extra conditions
+           and get a 400. Double-quoting the value is how PostgREST is told
+           where it ends; the inner escape is for a quote inside the quotes.
+           None of this applies to the `.ilike()` path below, where the value
+           travels as its own query parameter. */
+        const pattern = `%${escaped}%`;
+        const quoted = `"${pattern.replace(/(["\\])/g, "\\$1")}"`;
+
+        query =
+          safeIds.length > 0
+            ? query.or(`name.ilike.${quoted},id.in.(${safeIds.join(",")})`)
+            : query.ilike("name", pattern);
+      }
     }
     if (semester) query = query.eq("semester", semester);
     if (year !== undefined) query = query.eq("academic_year", year);
@@ -64,27 +109,10 @@ export const listSubjects = cache(
     const { data, error } = await query;
     if (error || !data) return [];
 
-    /**
-     * "Last activity" needs the newest material per subject, which PostgREST
-     * cannot aggregate in the same select as the counts. One extra query for
-     * two tiny columns beats N+1, and beats fetching every material row whole.
-     *
-     * If the library ever grows past a few thousand materials per account, this
-     * becomes a `last_activity_at` column maintained by a trigger. It is not
-     * worth the write amplification before then.
-     */
-    const { data: activity } = await supabase
-      .from("materials")
-      .select("subject_id, created_at")
-      .order("created_at", { ascending: false });
-
-    const newestBySubject = new Map<string, string>();
-    for (const row of activity ?? []) {
-      if (!newestBySubject.has(row.subject_id)) {
-        newestBySubject.set(row.subject_id, row.created_at);
-      }
-    }
-
+    /* "Last activity" used to mean reading every material row in the account
+       and reducing them here — a cost that grew with the whole library rather
+       than with the page. It is a column now, maintained by a trigger
+       (Sprint 24 migration), so the sort reads what it sorts on. */
     const subjects: Subject[] = data.map((row) => ({
       id: row.id,
       name: row.name,
@@ -96,7 +124,7 @@ export const listSubjects = cache(
       createdAt: row.created_at,
       materialCount: row.materials?.[0]?.count ?? 0,
       topicCount: row.topics?.[0]?.count ?? 0,
-      lastActivityAt: newestBySubject.get(row.id) ?? row.updated_at,
+      lastActivityAt: row.last_activity_at,
     }));
 
     /* Sorted here rather than in the query, because `activity` is derived above
@@ -260,7 +288,7 @@ export const getSubject = cache(async (id: string): Promise<Subject | null> => {
   const { data, error } = await supabase
     .from("subjects")
     .select(
-      "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, updated_at, materials(count), topics(count)",
+      "id, name, color_slot, icon, semester, academic_year, archived_at, created_at, last_activity_at, materials(count), topics(count)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -278,6 +306,6 @@ export const getSubject = cache(async (id: string): Promise<Subject | null> => {
     createdAt: data.created_at,
     materialCount: data.materials?.[0]?.count ?? 0,
     topicCount: data.topics?.[0]?.count ?? 0,
-    lastActivityAt: data.updated_at,
+    lastActivityAt: data.last_activity_at,
   };
 });
