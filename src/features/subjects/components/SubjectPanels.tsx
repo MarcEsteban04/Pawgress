@@ -1,6 +1,8 @@
 import { CalendarDays, FileText, Gauge, History, Target, TrendingUp, Upload } from "lucide-react";
+import { type ReactNode } from "react";
 import {
   Card,
+  CardActions,
   CardBody,
   CardHeader,
   CardTitle,
@@ -162,22 +164,29 @@ export function WeakTopicsPanel({
 export function MaterialsPanel({
   materials,
   totalCount,
+  action,
 }: {
   materials: SubjectMaterial[];
   totalCount: number;
+  /** The upload control. Passed in because this file is a Server Component. */
+  action?: ReactNode;
 }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Materials</CardTitle>
+        {action && <CardActions>{action}</CardActions>}
       </CardHeader>
       <CardBody className={materials.length > 0 ? "p-0" : undefined}>
         {materials.length === 0 ? (
+          /* No longer an "awaiting" empty state: uploading exists now, so this
+             offers the action instead of apologising for its absence. What is
+             still awaited is PROCESSING, and the queued badge on each row says
+             so without this panel having to. */
           <PanelEmpty
             Icon={Upload}
             title="No files yet"
             description="Lecture slides, notes and past papers go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
-            awaiting="Uploading arrives in a later sprint."
           />
         ) : (
           <>

@@ -1,9 +1,17 @@
-import { Archive, ArrowLeft, ListTree } from "lucide-react";
+import { Archive, ArrowLeft, ListTree, Upload } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardBody, EmptyState, PanelBoundary, SectionLabel, Skeleton } from "@/components/ui";
+import {
+  Button,
+  Card,
+  CardBody,
+  EmptyState,
+  PanelBoundary,
+  SectionLabel,
+  Skeleton,
+} from "@/components/ui";
 import { ArchiveSubjectButton } from "@/features/subjects/components/ArchiveSubjectButton";
 import { SUBJECT_TONE, SubjectGlyph } from "@/features/subjects/components/SubjectIcon";
 import {
@@ -14,6 +22,7 @@ import {
   UpcomingPanel,
   WeakTopicsPanel,
 } from "@/features/subjects/components/SubjectPanels";
+import { UploadDialog } from "@/features/materials/components/UploadDialog";
 import { TopicDialog } from "@/features/topics/components/TopicDialog";
 import { TopicList } from "@/features/topics/components/TopicList";
 import {
@@ -102,9 +111,35 @@ async function WeakTopics({ subjectId }: { subjectId: string }) {
   return <WeakTopicsPanel topics={topics} measuredTopics={progress.measuredTopics} />;
 }
 
+/**
+ * The upload control needs the subject's topics so a file can be filed under
+ * one as it is uploaded (FR-U1). `listTopics` is `cache()`d and the topic
+ * section already asked for it, so this is the same query, not a second one.
+ */
 async function Materials({ subjectId, totalCount }: { subjectId: string; totalCount: number }) {
-  const materials = await listSubjectMaterials(subjectId);
-  return <MaterialsPanel materials={materials} totalCount={totalCount} />;
+  const [materials, topics] = await Promise.all([
+    listSubjectMaterials(subjectId),
+    listTopics(subjectId),
+  ]);
+
+  return (
+    <MaterialsPanel
+      materials={materials}
+      totalCount={totalCount}
+      action={
+        <UploadDialog
+          subjectId={subjectId}
+          topics={topics}
+          trigger={
+            <Button variant="subtle" size="sm">
+              <Upload aria-hidden />
+              Upload
+            </Button>
+          }
+        />
+      }
+    />
+  );
 }
 
 async function Upcoming({ subjectId, today }: { subjectId: string; today: string }) {

@@ -32,6 +32,16 @@ export const TERMINAL_JOB_STATUSES = [
   "over_quota",
 ] as const satisfies readonly JobStatus[];
 
+/**
+ * What kind of thing a material is (FR-U1, FR-U5).
+ *
+ * Mirrors the `material_kind` enum. Every image collapses to `image` because
+ * that is the distinction the product makes downstream: documents are parsed,
+ * images are OCR'd. Whether a photo arrived as JPEG or PNG changes nothing
+ * after upload, so recording it would be a column nobody reads.
+ */
+export type MaterialKind = "pdf" | "pptx" | "docx" | "image" | "note";
+
 export function isTerminalStatus(status: JobStatus): boolean {
   return (TERMINAL_JOB_STATUSES as readonly JobStatus[]).includes(status);
 }

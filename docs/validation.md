@@ -67,6 +67,31 @@ to parse.
 Three checks sit behind it regardless: the bucket's own `file_size_limit` and `allowed_mime_types`,
 and the storage policies. Those cannot be edited out in a console.
 
+### Where the material upload is checked, and where it is not
+
+From Sprint 25 the bytes of a material go **browser → Supabase Storage**, never
+through Next. That is forced rather than chosen: a Server Action body is capped
+at 1 MB by default and about 4.5 MB on a serverless host, both far under the
+25 MB the bucket accepts.
+
+The consequence has to be stated plainly. `validateUpload()` still runs — but
+in the BROWSER, where it buys speed rather than safety. What actually gates a
+material upload is:
+
+| Gate | Where | What it stops |
+|---|---|---|
+| Type, size, empty-file checks | Server Action, before a ticket is minted | A client asking to upload something we do not accept |
+| Subject ownership | Server Action, before a ticket is minted | Filing a file into someone else's subject, and orphan bytes from a row that would fail |
+| The object path | Chosen by the server, never accepted from the client | Writing outside the caller's own folder |
+| `file_size_limit`, `allowed_mime_types` | The bucket | Anything the client lied about in the request |
+| Storage policies on the first path segment | Postgres | Reading or writing another student's objects |
+
+**What is NOT yet checked is the bytes that actually landed.** A file declared
+as a PDF and containing HTML passes today, because nothing on the server has
+seen it. That is Sprint 26's job, and it will read the stored object rather than
+a request body. Recording it here so the gap is a known one rather than an
+assumption someone makes later.
+
 ### Shrinking before upload is not validation
 
 `features/settings/downscale.ts` re-encodes a picked avatar to at most 512px before the form
