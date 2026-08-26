@@ -46,15 +46,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 31 | AI service layer — Anthropic provider, model registry and pricing, usage log, quotas, rate limiting | done | **migration `20260829090000` is written but NOT applied** — run `npm run db:push:remote` then `npm run db:types:remote`. Job runner moved to 32 |
 | 32 | Text extraction — PDF, DOCX, PPTX, normalisation, and the job runner that drives it | done | **migration `20260829120000` also pending.** Needs `JOBS_SECRET` and the `pg_cron` sweeper from `architecture.md` §5 |
 | 33 | OCR — reads photos through the vision model, self-reported confidence, correctable transcription | done | two more pending migrations (`20260830090000`, `20260830091000`). Costs AI quota, unlike Tesseract — reasoning in `lib/extraction/ocr.ts` |
+| 34 | Chunking — structure-first splitting, page provenance, overlap, subject-scoped storage | done | migration `20260830120000`. `ready` now means chunked, not just extracted |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 34 | Chunking with page provenance | 32 |
 | 35 | Embeddings + pgvector, and the embeddings provider | 34 |
 | 36 | Retrieval — vector search, ranking, context assembly | 35 |
+| 37 | Assistant chat UI | 36 |
 
 ---
 
@@ -149,7 +150,7 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | 3b | Embeddings provider | M | 35 | Anthropic has no embeddings endpoint. `embed()` throws a clear failure until Sprint 35 picks a provider — writing a client against an unverified API shape would be worse than an honest gap |
 | 4 | PDF / DOCX / PPTX extraction + normalization | M | 32 | **done** — US-D3. `unpdf` for PDF (per-page, so citations get page numbers); DOCX and PPTX read directly from their zipped XML with `fflate`, because no library gives slide numbers and both formats are a handful of tag matches. Normalisation rejoins hyphens, drops running page numbers, and detects repeated headers/footers rather than being told about them |
 | 4b | Image-only PDF detection | M | 32 | **done** — deferred from Sprint 26 because it needs the extractor. A PDF yielding under 40 characters is named as a scan, with what to do instead |
-| 5 | Chunking with page/slide provenance | M | 34 | US-D3 |
+| 5 | Chunking with page/slide provenance | M | 34 | **done** — US-D3. ~350 tokens with 15% overlap, split on the document's own structure (blank line, then line, then sentence) before any arithmetic. Page ranges come from the `page_offsets` column added in Sprint 32, so a chunk spanning a page break reports both pages. `subject_id` denormalised onto chunks for scoped vector search; topic deliberately not, because re-filing a material would leave it stale |
 | 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | US-D4, NFR-C4 |
 | 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | US-D4 |
 | 8 | Material status UI with live updates | M | 31–35 | US-D1 |

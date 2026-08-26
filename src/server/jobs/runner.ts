@@ -5,6 +5,7 @@ import { toAppError } from "@/lib/errors";
 import { logAiError, logAiEvent } from "@/lib/ai/log";
 import { type JobStatus } from "@/types";
 import { type Database } from "@/types/database";
+import { chunkTextHandler } from "./handlers/chunkText";
 import { extractTextHandler } from "./handlers/extractText";
 import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
@@ -33,21 +34,28 @@ import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./typ
 const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   extract_text: extractTextHandler,
   ocr_image: ocrImageHandler,
-  // chunk_text: Sprint 34, embed_chunks: Sprint 35.
+  chunk_text: chunkTextHandler,
+  // embed_chunks: Sprint 35.
 };
 
 /**
- * What the material's status becomes when a job of this kind finishes.
+ * What happens when a job of this kind finishes: hand on to the next stage, or
+ * settle the material's status.
  *
- * Extraction ends at `ready` today because `ready` means "we can generate from
- * this", and generation reads `extracted_text` directly (Sprints 43+). Search
- * and the assistant need embeddings, which is a separate stage — when Sprint 34
- * lands, `extract_text` points at `chunk_text` here instead and nothing else
- * changes.
+ * The pipeline lives here and nowhere else. A handler that enqueued its own
+ * successor would have to know where it sits in a sequence that is not its
+ * business, and the sequence would then be spread across every handler.
+ *
+ * `ready` after chunking, not after extraction. A material with text but no
+ * chunks can be generated FROM — generation reads `extracted_text` directly —
+ * but it cannot be searched, and "ready" that means "half of ready" is the kind
+ * of half-truth that makes a status display worthless. Sprint 35 inserts
+ * `embed_chunks` between chunking and ready.
  */
 const NEXT_STAGE: Partial<Record<JobKind, { enqueue: JobKind } | { status: JobStatus }>> = {
-  extract_text: { status: "ready" },
-  ocr_image: { status: "ready" },
+  extract_text: { enqueue: "chunk_text" },
+  ocr_image: { enqueue: "chunk_text" },
+  chunk_text: { status: "ready" },
 };
 
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];

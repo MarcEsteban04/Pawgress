@@ -9,6 +9,7 @@ import { parseForm } from "@/lib/validation/form";
 import { noteSchema } from "@/lib/validation/note";
 import { getMaterial } from "@/server/materials/queries";
 import { requireSession } from "@/server/auth/session";
+import { enqueueJob } from "@/server/jobs/enqueue";
 import { type NoteFormState } from "@/features/notes/types";
 
 /**
@@ -45,18 +46,20 @@ function hashText(text: string): string {
 }
 
 /**
- * A note's text needs no extraction, so it is usable the moment it is saved.
+ * A note skips extraction — the text is already here — and goes straight to
+ * chunking, which is the stage that makes it searchable.
  *
- * `ready` here means what it means everywhere: generation can run against this
- * material. Retrieval for the assistant additionally needs embeddings, which is
- * a later stage for every material regardless of how its text arrived.
+ * The status is left to the runner rather than set here. A note that claimed
+ * `ready` the instant it was saved would be lying for as long as it took to
+ * index, and the point of one status vocabulary is that it means the same thing
+ * however the text arrived.
  */
-async function markNoteReady(materialId: string): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  await supabase
-    .from("materials")
-    .update({ status: "ready", processed_at: new Date().toISOString() })
-    .eq("id", materialId);
+async function enqueueNoteIndexing(
+  userId: string,
+  subjectId: string | null,
+  materialId: string,
+): Promise<void> {
+  await enqueueJob({ userId, kind: "chunk_text", subjectId, targetId: materialId });
 }
 
 /** Shared failure copy for a subject that is not the caller's, or is gone. */
@@ -127,7 +130,7 @@ export async function createNoteAction(
      the indexing stage. Until Sprint 34 has a chunk handler the runner has
      nothing to do with it, which is why the status is honest about waiting
      rather than claiming ready. */
-  await markNoteReady(data.id);
+  await enqueueNoteIndexing(session.userId, subjectId, data.id);
 
   revalidatePath("/", "layout");
   // Straight to the note, because the first thing a student wants after writing
@@ -153,7 +156,7 @@ export async function updateNoteAction(
   _prevState: NoteFormState,
   formData: FormData,
 ): Promise<NoteFormState> {
-  await requireSession();
+  const session = await requireSession();
 
   const id = String(formData.get("id") ?? "");
   if (!id) {
@@ -229,7 +232,7 @@ export async function updateNoteAction(
   }
 
   if (textChanged) {
-    await markNoteReady(id);
+    await enqueueNoteIndexing(session.userId, existing.subjectId, id);
 
     /* Chunks go AFTER the text is safely stored. The other order risks losing
        the old chunks and then failing to save the new body, leaving a note that

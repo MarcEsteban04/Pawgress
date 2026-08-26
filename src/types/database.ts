@@ -18,7 +18,7 @@ export type Json =
 
 /*
  * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind`, `claim_jobs` and
- * `materials.page_offsets` were added by hand in Sprints 31–32, matching the
+ * `materials.page_offsets` and `material_chunks.subject_id` were added by hand in Sprints 31–34, matching the
  * shape the generator produces. The
  * migration that creates them is
  * `20260829090000_ai_calls_and_jobs.sql`; run `npm run db:types:remote` after
@@ -251,6 +251,7 @@ export type Database = {
       }
       material_chunks: {
         Row: {
+          subject_id: string
           chunk_index: number
           content: string
           created_at: string
@@ -263,6 +264,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          subject_id: string
           chunk_index: number
           content: string
           created_at?: string
@@ -275,6 +277,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          subject_id?: string
           chunk_index?: number
           content?: string
           created_at?: string
