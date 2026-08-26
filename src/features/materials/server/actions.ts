@@ -246,7 +246,10 @@ export async function recordMaterialAction(input: {
      student is waiting on (docs/architecture.md §5). */
   await enqueueJob({
     userId: session.userId,
-    kind: "extract_text",
+    /* Photos go through OCR; documents through the text extractor. Two kinds
+       rather than one branching handler, so the status a student sees says
+       which of the two is happening. */
+    kind: kind === "image" ? "ocr_image" : "extract_text",
     subjectId: input.subjectId,
     targetId: data.id,
   });

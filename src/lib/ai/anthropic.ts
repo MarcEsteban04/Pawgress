@@ -13,6 +13,7 @@ import {
   type Citation,
   type GenerateOptions,
   type GenerateResult,
+  type ImageInput,
   type RetrievedChunk,
 } from "./types";
 import { checkQuota, claimCall, settleCall, type CallOutcome } from "./usage";
@@ -91,6 +92,35 @@ function contextBlock(chunks: RetrievedChunk[]): string {
   return fenceUntrusted(body, "STUDENT_MATERIAL");
 }
 
+/**
+ * The user turn: images first, then the grounding block, then the instruction.
+ *
+ * Order is not cosmetic. An image goes before the text that refers to it, and
+ * the instruction goes last so it is the most recent thing in the turn rather
+ * than something the model has to hold across a page of transcribed material.
+ */
+function userContent(
+  prompt: string,
+  chunks: RetrievedChunk[],
+  images: ImageInput[] | undefined,
+): Anthropic.ContentBlockParam[] {
+  const blocks: Anthropic.ContentBlockParam[] = [];
+
+  for (const image of images ?? []) {
+    blocks.push({
+      type: "image",
+      source: { type: "base64", media_type: image.mediaType, data: image.base64 },
+    });
+  }
+
+  /* No grounding block when there is no retrieval: an OCR call has an image and
+     an instruction, and a "NO MATERIAL WAS RETRIEVED" line would be noise it has
+     to reason past. */
+  const text = chunks.length > 0 ? `${contextBlock(chunks)}\n\n${prompt}` : prompt;
+  blocks.push({ type: "text", text });
+  return blocks;
+}
+
 /** The sources a call was grounded on, deduplicated by material and page. */
 function citationsFrom(chunks: RetrievedChunk[]): Citation[] {
   const seen = new Map<string, Citation>();
@@ -150,9 +180,15 @@ function outcomeFor(error: AppError): CallOutcome {
 }
 
 export function createAnthropicService(): AiService {
-  const model: ModelSpec = resolveModel(process.env.AI_CHAT_MODEL);
+  const defaultModel: ModelSpec = resolveModel(process.env.AI_CHAT_MODEL);
 
-  async function guard(meta: AiCallMeta) {
+  /* A per-call override, resolved through the same registry so an unknown value
+     falls back to the default rather than reaching the API. */
+  function modelFor(options: GenerateOptions): ModelSpec {
+    return options.model ? resolveModel(options.model) : defaultModel;
+  }
+
+  async function guard(meta: AiCallMeta, model: ModelSpec) {
     const quota = await checkQuota(meta.userId, meta.task);
     if (!quota.ok) throw quota.error;
     return claimCall(meta, model);
@@ -165,7 +201,8 @@ export function createAnthropicService(): AiService {
       schema: ZodType<T>,
       options: GenerateOptions,
     ): Promise<GenerateResult<T>> {
-      const claim = await guard(meta);
+      const model = modelFor(options);
+      const claim = await guard(meta, model);
       const startedAt = Date.now();
 
       try {
@@ -183,7 +220,9 @@ export function createAnthropicService(): AiService {
             effort: "high",
             format: zodOutputFormat(schema),
           },
-          messages: [{ role: "user", content: `${contextBlock(options.context)}\n\n${prompt}` }],
+          messages: [
+            { role: "user", content: userContent(prompt, options.context, options.images) },
+          ],
         });
 
         const tokens = {
@@ -250,7 +289,8 @@ export function createAnthropicService(): AiService {
     },
 
     async stream(meta: AiCallMeta, prompt: string, options: GenerateOptions) {
-      const claim = await guard(meta);
+      const model = modelFor(options);
+      const claim = await guard(meta, model);
       const startedAt = Date.now();
 
       const stream = client().messages.stream({
@@ -260,7 +300,7 @@ export function createAnthropicService(): AiService {
         cache_control: { type: "ephemeral" },
         thinking: { type: "adaptive" },
         output_config: { effort: "high" },
-        messages: [{ role: "user", content: `${contextBlock(options.context)}\n\n${prompt}` }],
+        messages: [{ role: "user", content: userContent(prompt, options.context, options.images) }],
       });
 
       async function* textStream(): AsyncIterable<string> {

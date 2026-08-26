@@ -298,6 +298,7 @@ export type Database = {
       }
       materials: {
         Row: {
+          ocr_confidence: number | null
           page_offsets: Json | null
           byte_size: number | null
           content_hash: string | null
@@ -318,6 +319,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ocr_confidence?: number | null
           page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
@@ -338,6 +340,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ocr_confidence?: number | null
           page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
@@ -1044,6 +1047,7 @@ export type Database = {
         | "practice_questions"
         | "quiz"
         | "short_answer_grade"
+        | "ocr"
         | "embedding"
       job_kind:
         | "extract_text"

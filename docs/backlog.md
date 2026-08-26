@@ -45,15 +45,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 30 | Typed notes — write, edit, file to a topic, re-index on change | done | no migration needed: a note's text IS its `extracted_text`, and the Sprint 13 CHECK constraint already allowed it |
 | 31 | AI service layer — Anthropic provider, model registry and pricing, usage log, quotas, rate limiting | done | **migration `20260829090000` is written but NOT applied** — run `npm run db:push:remote` then `npm run db:types:remote`. Job runner moved to 32 |
 | 32 | Text extraction — PDF, DOCX, PPTX, normalisation, and the job runner that drives it | done | **migration `20260829120000` also pending.** Needs `JOBS_SECRET` and the `pg_cron` sweeper from `architecture.md` §5 |
+| 33 | OCR — reads photos through the vision model, self-reported confidence, correctable transcription | done | two more pending migrations (`20260830090000`, `20260830091000`). Costs AI quota, unlike Tesseract — reasoning in `lib/extraction/ocr.ts` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 33 | OCR for images | 32 |
 | 34 | Chunking with page provenance | 32 |
 | 35 | Embeddings + pgvector, and the embeddings provider | 34 |
+| 36 | Retrieval — vector search, ranking, context assembly | 35 |
 
 ---
 
@@ -152,7 +153,9 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | US-D4, NFR-C4 |
 | 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | US-D4 |
 | 8 | Material status UI with live updates | M | 31–35 | US-D1 |
-| 9 | OCR pipeline for images, with confidence signalling | V1 | 33 | US-C7 |
+| 9 | OCR pipeline for images, with confidence signalling | V1 | 33 | **done** — US-C7. Reads photos through the vision model rather than Tesseract: handwriting is the main case, and Tesseract is poor at it. Confidence is asked for and stored, so a shaky reading is flagged in the library and on the viewer, and the student can correct the text — which then stops being a guess |
+| 9b | Shrink photos in the browser before upload | V1 | — | `features/settings/downscale.ts` already does this for avatars. Would remove the 5 MB OCR refusal, cut storage and save metered data. Left as a follow-up rather than changing a working upload path mid-sprint |
+| 9c | HEIC conversion | L | — | The API does not accept HEIC, so an iPhone photo is refused with instructions to change the camera format. Converting in the browser is the real fix and needs a decoder browsers do not all have |
 
 ### E06 — Assistant (Phase 8, Sprints 37–42)
 

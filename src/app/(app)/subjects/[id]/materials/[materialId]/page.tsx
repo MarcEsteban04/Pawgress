@@ -8,6 +8,7 @@ import {
   RenameMaterialDialog,
 } from "@/features/materials/components/MaterialActions";
 import { fileUrl, MaterialPreview } from "@/features/materials/components/MaterialPreview";
+import { OcrTranscript } from "@/features/materials/components/OcrTranscript";
 import { formatBytes, KIND_LABELS } from "@/features/materials/upload";
 import { getMaterial, getMaterialText } from "@/server/materials/queries";
 import { getSubject } from "@/server/subjects/queries";
@@ -85,6 +86,12 @@ export default async function Page({
      extraction. */
   const noteBody = isNote ? await getMaterialText(materialId) : null;
 
+  /* An OCR'd photo carries its transcription into the page too. A student
+     cannot judge whether a reviewer will be any good without seeing what
+     Pawgress actually read (US-C7). */
+  const isOcrImage = material.kind === "image" && material.status === "ready";
+  const transcript = isOcrImage ? await getMaterialText(materialId) : null;
+
   return (
     <div className="flex flex-col gap-5">
       <Link
@@ -133,7 +140,16 @@ export default async function Page({
       {/* Preview takes the width; details sit beside it from xl up, and stack
           under it below that. */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-        <MaterialPreview material={material} page={page} noteBody={noteBody} />
+        <div className="flex min-w-0 flex-col gap-5">
+          <MaterialPreview material={material} page={page} noteBody={noteBody} />
+          {transcript && (
+            <OcrTranscript
+              materialId={material.id}
+              text={transcript}
+              confidence={material.ocrConfidence}
+            />
+          )}
+        </div>
 
         <div className="flex flex-col gap-4">
           <Card>

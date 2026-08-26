@@ -6,6 +6,7 @@ import { logAiError, logAiEvent } from "@/lib/ai/log";
 import { type JobStatus } from "@/types";
 import { type Database } from "@/types/database";
 import { extractTextHandler } from "./handlers/extractText";
+import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
 
 /**
@@ -31,7 +32,8 @@ import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./typ
 
 const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   extract_text: extractTextHandler,
-  // chunk_text: Sprint 34, embed_chunks: Sprint 35, ocr_image: Sprint 33.
+  ocr_image: ocrImageHandler,
+  // chunk_text: Sprint 34, embed_chunks: Sprint 35.
 };
 
 /**
@@ -45,6 +47,7 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
  */
 const NEXT_STAGE: Partial<Record<JobKind, { enqueue: JobKind } | { status: JobStatus }>> = {
   extract_text: { status: "ready" },
+  ocr_image: { status: "ready" },
 };
 
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];

@@ -27,6 +27,8 @@ export type Material = {
   storagePath: string | null;
   /** SHA-256 of the text, so an edit can tell whether re-indexing is needed. */
   contentHash: string | null;
+  /** 0-1 OCR confidence. Null unless this is a photo that went through OCR. */
+  ocrConfidence: number | null;
   failureMessage: string | null;
   failureNextStep: string | null;
   createdAt: string;
@@ -40,7 +42,7 @@ export const listMaterials = cache(
     let request = supabase
       .from("materials")
       .select(
-        "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, failure_message, failure_next_step, created_at, topics(name)",
+        "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, ocr_confidence, failure_message, failure_next_step, created_at, topics(name)",
       )
       .eq("subject_id", subjectId);
 
@@ -91,6 +93,7 @@ export const listMaterials = cache(
       topicName: row.topics?.name ?? null,
       storagePath: row.storage_path,
       contentHash: row.content_hash,
+      ocrConfidence: row.ocr_confidence,
       failureMessage: row.failure_message,
       failureNextStep: row.failure_next_step,
       createdAt: row.created_at,
@@ -106,7 +109,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, failure_message, failure_next_step, created_at, topics(name)",
+      "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, ocr_confidence, failure_message, failure_next_step, created_at, topics(name)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -125,6 +128,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
     topicName: data.topics?.name ?? null,
     storagePath: data.storage_path,
     contentHash: data.content_hash,
+    ocrConfidence: data.ocr_confidence,
     failureMessage: data.failure_message,
     failureNextStep: data.failure_next_step,
     createdAt: data.created_at,

@@ -10,6 +10,7 @@ import {
 } from "@/features/materials/components/MaterialActions";
 import { setMaterialTopicAction } from "@/features/materials/server/actions";
 import { formatBytes, KIND_LABELS } from "@/features/materials/upload";
+import { LOW_CONFIDENCE_THRESHOLD } from "@/features/materials/ocr";
 import { type Material } from "@/server/materials/queries";
 import { type MaterialKind } from "@/types";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,16 @@ export function MaterialRow({
           <span aria-hidden>·</span>
           <span>{relative(material.createdAt)}</span>
         </div>
+
+        {/* A shaky transcription is not a failure, so it is not styled as one —
+            but it does change how much a student should trust anything built
+            from this photo (US-C7). */}
+        {material.ocrConfidence !== null && material.ocrConfidence < LOW_CONFIDENCE_THRESHOLD && (
+          <p className="mt-1.5 flex items-start gap-1.5 text-xs text-warn">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            <span>Hard to read — check the text before relying on it</span>
+          </p>
+        )}
 
         {/* A failure states the stage AND what to do, never just "failed"
             (docs/states.md §5). */}

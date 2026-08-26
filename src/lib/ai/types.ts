@@ -18,6 +18,8 @@ export type AiTaskKind =
   | "practice_questions"
   | "quiz"
   | "short_answer_grade"
+  /** Reading text out of a photograph (Sprint 33). Metered like a generation. */
+  | "ocr"
   | "embedding";
 
 /** What a call cost. Recorded for every call, attributed to a user (NFR-C3). */
@@ -61,6 +63,20 @@ export type Citation = {
   page: number | null;
 };
 
+/**
+ * An image for the model to read.
+ *
+ * Only the four media types the API documents. HEIC is deliberately absent:
+ * iPhones produce it, the API does not accept it, and pretending otherwise
+ * would turn a clear "your phone saved this in a format we cannot read" into a
+ * provider error nobody can act on.
+ */
+export type ImageInput = {
+  mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+  /** Base64, no data: prefix and no newlines. */
+  base64: string;
+};
+
 export type GenerateOptions = {
   /**
    * The chunks the answer must be grounded in. An empty array is meaningful:
@@ -68,6 +84,21 @@ export type GenerateOptions = {
    * than letting the model improvise (FR-C3, product principle 1).
    */
   context: RetrievedChunk[];
+  /**
+   * Images the model should read, for OCR (Sprint 33).
+   *
+   * Placed before the prompt in the request, which is what the API's own
+   * guidance recommends: the instruction should follow the thing it refers to.
+   */
+  images?: ImageInput[];
+  /**
+   * A model for this call only, overriding the configured default.
+   *
+   * Exists for tasks where the default is the wrong shape rather than too
+   * expensive — transcription is not reasoning. Left to configuration rather
+   * than chosen here, because trading model quality is a product decision.
+   */
+  model?: string;
   /** Hard cap so one request cannot run away with the budget. */
   maxOutputTokens?: number;
   temperature?: number;

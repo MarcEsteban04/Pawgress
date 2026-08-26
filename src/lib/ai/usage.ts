@@ -27,6 +27,10 @@ function quotaKindFor(task: AiCallMeta["task"]): AiQuotaKind | null {
   if (task === "assistant") return "messages";
   // Embeddings are metered by document pages, not by call — see maxPagesPerDocument.
   if (task === "embedding") return null;
+  /* Everything else, OCR included, draws on the generation allowance. Reading a
+     photo costs money, so it counts; the alternative was an unmetered paid call,
+     which makes the whole ceiling decorative. The consequence is real and worth
+     knowing: twenty photos in a day is a day's generations. */
   return "generations";
 }
 
@@ -109,7 +113,7 @@ export async function checkQuota(userId: string, task: AiCallMeta["task"]): Prom
 function tasksFor(kind: AiQuotaKind): AiCallMeta["task"][] {
   return kind === "messages"
     ? ["assistant"]
-    : ["reviewer", "flashcards", "practice_questions", "quiz", "short_answer_grade"];
+    : ["reviewer", "flashcards", "practice_questions", "quiz", "short_answer_grade", "ocr"];
 }
 
 export type ClaimedCall = {
