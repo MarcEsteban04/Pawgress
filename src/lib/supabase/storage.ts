@@ -77,13 +77,27 @@ export function pathBelongsTo(path: string, userId: string): boolean {
 export async function createSignedUrl(
   bucket: BucketName,
   path: string | null | undefined,
+  options?: {
+    /**
+     * A filename to force a download instead of rendering inline.
+     *
+     * Storage sets `Content-Disposition: attachment` with this name. Without
+     * it a PDF opens in the browser's viewer, which is what the preview wants
+     * and what a Download button must not do.
+     */
+    download?: string;
+  },
 ): Promise<string | null> {
   if (!path) return null;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(path, SIGNED_URL_SECONDS);
+    .createSignedUrl(
+      path,
+      SIGNED_URL_SECONDS,
+      options?.download ? { download: options.download } : undefined,
+    );
 
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;

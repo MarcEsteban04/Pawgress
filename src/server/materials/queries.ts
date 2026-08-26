@@ -16,6 +16,7 @@ import { type JobStatus, type MaterialKind } from "@/types";
 
 export type Material = {
   id: string;
+  subjectId: string;
   title: string;
   kind: MaterialKind;
   status: JobStatus;
@@ -37,7 +38,7 @@ export const listMaterials = cache(
     let request = supabase
       .from("materials")
       .select(
-        "id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
+        "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
       )
       .eq("subject_id", subjectId);
 
@@ -78,6 +79,7 @@ export const listMaterials = cache(
 
     return data.map((row) => ({
       id: row.id,
+      subjectId: row.subject_id,
       title: row.title,
       kind: row.kind as MaterialKind,
       status: row.status as JobStatus,
@@ -93,7 +95,7 @@ export const listMaterials = cache(
   },
 );
 
-/** One material, for the viewer in Sprint 29 and for delete confirmations. */
+/** One material, for the viewer (Sprint 29) and for delete confirmations. */
 export const getMaterial = cache(async (id: string): Promise<Material | null> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
@@ -101,7 +103,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
+      "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -110,6 +112,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
 
   return {
     id: data.id,
+    subjectId: data.subject_id,
     title: data.title,
     kind: data.kind as MaterialKind,
     status: data.status as JobStatus,

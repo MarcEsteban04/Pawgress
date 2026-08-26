@@ -144,6 +144,11 @@ Buckets are private. Nothing is ever served from a public URL:
 
 - Upload and download go through **short-lived signed URLs** minted server-side after the DAL has
   confirmed ownership.
+- **A signed URL is never embedded in a page.** It expires in 30 minutes, so an `<iframe src>` or
+  `<img src>` rendered into HTML breaks for anyone who leaves a tab open — and it puts the token in
+  view-source and in browser history. Pages point at an app route
+  (`/subjects/[id]/materials/[materialId]/file`) which re-checks ownership per request and 302s to a
+  freshly minted URL. Stable link, no token in markup, and `Content-Disposition` stays ours to set.
 - Storage policies mirror the row policies, so a leaked object path is not a leaked object.
 - Deleting a material deletes its object, its extracted text, its chunks and its embeddings in one
   transaction — a partial delete leaving orphaned storage is a bug (US-B3).

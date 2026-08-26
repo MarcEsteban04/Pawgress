@@ -41,15 +41,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 26 | File validation — stored-byte check, PDF encryption/truncation, duplicate detection | done | image-only PDF detection needs the extractor, deferred to 32/33 |
 | 27 | Upload progress — per-file bars, cancel, retry, concurrency of 2 | done | XHR not fetch (fetch cannot report request progress); **resumability deliberately deferred** |
 | 28 | Material library — list, search, filter by type/status/topic, sort, rename, re-file, delete | done | its own route `/subjects/[id]/materials`; nine job statuses collapse to three filters |
+| 29 | Material preview — browser PDF viewer, image preview, metadata, download, delete | done | native viewer, not pdf.js; page deep-links via `#page=N` ready for Sprint 36 |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 29 | Material preview — PDF and image viewer | 28 |
 | 30 | Typed notes as first-class material | 28 |
 | 31 | AI provider integration | 07 |
+| 32 | Text extraction — PDF, DOCX, PPTX | 31 |
 
 ---
 
@@ -128,7 +129,8 @@ Row numbers are local to their epic, so adding work to one epic never renumbers 
 | 3 | Per-file progress, cancel, retry, failed state | M | 27 | US-C1 |
 | 4 | Material library: list, search, filter, sort, rename, delete + storage cleanup | M | 28 | US-C4 |
 | 5 | Typed notes as material, with re-processing on edit | M | 30 | US-C3 |
-| 6 | In-app PDF/image viewer and download | V1 | 29 | US-C6 |
+| 6 | In-app PDF/image viewer and download | V1 | 29 | **done** — US-C6. Browser PDF viewer rather than pdf.js: ~1 MB of JS to render what the browser already renders, on metered data, and `#page=N` deep links come free. Traded against iframed PDFs being unreliable on mobile, so narrow viewports get a real Open button instead of a blank frame |
+| 8 | pdf.js, if page highlighting or in-app text selection is ever required | L | — | Only `MaterialPreview.tsx` would change |
 | 7 | Duplicate detection by content hash | V1 | 26 | — |
 
 ### E05 — Processing & RAG (Phase 7, Sprints 31–36)

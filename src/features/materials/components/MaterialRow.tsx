@@ -1,30 +1,14 @@
 "use client";
 
-import { FileImage, FileText, Pencil, Presentation, Trash2, TriangleAlert } from "lucide-react";
-import { useActionState, useId, useState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
+import { FileImage, FileText, Presentation, TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import { useId, useState, useTransition } from "react";
+import { Select, StatusBadge, Tag } from "@/components/ui";
 import {
-  Button,
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-  DialogTrigger,
-  ErrorState,
-  Field,
-  Input,
-  Select,
-  StatusBadge,
-  Tag,
-} from "@/components/ui";
-import {
-  deleteMaterialAction,
-  renameMaterialAction,
-  setMaterialTopicAction,
-} from "@/features/materials/server/actions";
-import { initialMaterialState } from "@/features/materials/types";
+  DeleteMaterialDialog,
+  RenameMaterialDialog,
+} from "@/features/materials/components/MaterialActions";
+import { setMaterialTopicAction } from "@/features/materials/server/actions";
 import { formatBytes, KIND_LABELS } from "@/features/materials/upload";
 import { type Material } from "@/server/materials/queries";
 import { type MaterialKind } from "@/types";
@@ -37,10 +21,9 @@ import { cn } from "@/lib/utils";
  * US-C4 names, because a library that shows only names makes a student open
  * files to find out what they are.
  *
- * Rename edits the TITLE, not the stored object. They are different things: the
- * path was generated at upload and is referenced by the row, so renaming the
- * object would mean rewriting that reference for no gain, and failing halfway
- * would leave a row pointing at a file that no longer exists.
+ * The title links to the file's own page (Sprint 29), where it can be previewed.
+ * Rename and delete live in `MaterialActions.tsx` because that page needs the
+ * same two dialogs, and two dialogs that delete the same thing will drift.
  */
 
 const KIND_ICONS: Record<MaterialKind, typeof FileText> = {
@@ -59,125 +42,6 @@ function relative(iso: string): string {
   if (days < 7) return `${days}d ago`;
   if (days < 30) return `${Math.floor(days / 7)}w ago`;
   return `${Math.floor(days / 30)}mo ago`;
-}
-
-function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="accent" disabled={pending}>
-      {pending ? pendingLabel : label}
-    </Button>
-  );
-}
-
-function DeleteButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" variant="danger" disabled={pending}>
-      {pending ? "Deleting…" : "Delete file"}
-    </Button>
-  );
-}
-
-function RenameDialog({ material }: { material: Material }) {
-  const [state, formAction] = useActionState(renameMaterialAction, initialMaterialState);
-  const titleId = useId();
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={`Rename ${material.title}`}>
-          <Pencil aria-hidden />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogTitle>Rename file</DialogTitle>
-        <DialogDescription>
-          This changes what the file is called in Pawgress. The original upload is untouched.
-        </DialogDescription>
-
-        <form action={formAction} className="mt-4 flex flex-col gap-4">
-          <input type="hidden" name="id" value={material.id} />
-
-          {state.status === "error" && state.message && (
-            <ErrorState title={state.message} nextStep={state.nextStep ?? ""} />
-          )}
-
-          <Field label="Name" htmlFor={titleId}>
-            <Input
-              id={titleId}
-              name="title"
-              defaultValue={material.title}
-              required
-              maxLength={300}
-              autoFocus
-            />
-          </Field>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="subtle">Cancel</Button>
-            </DialogClose>
-            {state.status === "saved" ? (
-              <DialogClose asChild>
-                <Button variant="accent">Saved</Button>
-              </DialogClose>
-            ) : (
-              <SubmitButton label="Save name" pendingLabel="Saving…" />
-            )}
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * Deleting a file (US-C4).
- *
- * Confirmed, but without the type-to-confirm a subject demands. Friction should
- * match the loss: a subject takes a term of work with it, one file takes
- * itself. Making both feel equally dangerous is what teaches students to click
- * through the one that matters.
- *
- * What the copy has to be honest about is that the FILE goes, not just the
- * entry — a student who thinks the original is still somewhere will not keep
- * their own copy.
- */
-function DeleteMaterialDialog({ material }: { material: Material }) {
-  const [state, formAction] = useActionState(deleteMaterialAction, initialMaterialState);
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={`Delete ${material.title}`}>
-          <Trash2 aria-hidden />
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogTitle>Delete “{material.title}”?</DialogTitle>
-        <DialogDescription>
-          The uploaded file is removed from storage, not just hidden. Anything generated from it
-          goes with it, and there is no copy.
-        </DialogDescription>
-
-        <form action={formAction} className="mt-4 flex flex-col gap-4">
-          <input type="hidden" name="id" value={material.id} />
-
-          {state.status === "error" && state.message && (
-            <ErrorState title={state.message} nextStep={state.nextStep ?? ""} />
-          )}
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="subtle">Keep it</Button>
-            </DialogClose>
-            <DeleteButton />
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 export function MaterialRow({
@@ -205,7 +69,14 @@ export function MaterialRow({
       <Icon className="hidden size-4 shrink-0 text-ink-subtle sm:block" aria-hidden />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{material.title}</p>
+        {/* A real link, so ctrl-click opens the file in its own tab — students
+            keep a lecture open beside their notes (docs/navigation.md §1). */}
+        <Link
+          href={`/subjects/${material.subjectId}/materials/${material.id}`}
+          className="block truncate font-medium underline decoration-transparent underline-offset-2 transition-colors hover:decoration-rule-strong"
+        >
+          {material.title}
+        </Link>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-subtle">
           <span>{KIND_LABELS[material.kind]}</span>
           {material.byteSize !== null && (
@@ -271,7 +142,7 @@ export function MaterialRow({
 
       <div className="flex shrink-0 items-center gap-1">
         <StatusBadge status={material.status} />
-        <RenameDialog material={material} />
+        <RenameMaterialDialog material={material} />
         <DeleteMaterialDialog material={material} />
       </div>
     </li>
