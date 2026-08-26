@@ -16,6 +16,13 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+/*
+ * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind` and `claim_jobs` were
+ * added by hand in Sprint 31, matching the shape the generator produces. The
+ * migration that creates them is
+ * `20260829090000_ai_calls_and_jobs.sql`; run `npm run db:types:remote` after
+ * applying it and this note can go.
+ */
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -24,6 +31,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_calls: {
+        Row: {
+          cache_read_tokens: number
+          cache_write_tokens: number
+          completed_at: string | null
+          cost_usd: number
+          created_at: string
+          failure_code: string | null
+          id: string
+          idempotency_key: string
+          input_tokens: number
+          latency_ms: number | null
+          model: string
+          outcome: string
+          output_tokens: number
+          task: Database["public"]["Enums"]["ai_task_kind"]
+          user_id: string
+        }
+        Insert: {
+          cache_read_tokens?: number
+          cache_write_tokens?: number
+          completed_at?: string | null
+          cost_usd?: number
+          created_at?: string
+          failure_code?: string | null
+          id?: string
+          idempotency_key: string
+          input_tokens?: number
+          latency_ms?: number | null
+          model: string
+          outcome?: string
+          output_tokens?: number
+          task: Database["public"]["Enums"]["ai_task_kind"]
+          user_id: string
+        }
+        Update: {
+          cache_read_tokens?: number
+          cache_write_tokens?: number
+          completed_at?: string | null
+          cost_usd?: number
+          created_at?: string
+          failure_code?: string | null
+          id?: string
+          idempotency_key?: string
+          input_tokens?: number
+          latency_ms?: number | null
+          model?: string
+          outcome?: string
+          output_tokens?: number
+          task?: Database["public"]["Enums"]["ai_task_kind"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          failure_message: string | null
+          failure_next_step: string | null
+          id: string
+          kind: Database["public"]["Enums"]["job_kind"]
+          leased_until: string | null
+          slice_cursor: number | null
+          status: Database["public"]["Enums"]["job_status"]
+          subject_id: string | null
+          target_id: string
+          total_slices: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          failure_message?: string | null
+          failure_next_step?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["job_kind"]
+          leased_until?: string | null
+          slice_cursor?: number | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subject_id?: string | null
+          target_id: string
+          total_slices?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          failure_message?: string | null
+          failure_next_step?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["job_kind"]
+          leased_until?: string | null
+          slice_cursor?: number | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subject_id?: string | null
+          target_id?: string
+          total_slices?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements: {
         Row: {
           code: string
@@ -903,12 +1023,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_jobs: {
+        Args: { lease_seconds?: number; max_jobs?: number }
+        Returns: Database["public"]["Tables"]["jobs"]["Row"][]
+      }
       move_topic: {
         Args: { p_to_index: number; p_topic_id: string }
         Returns: undefined
       }
     }
     Enums: {
+      ai_task_kind:
+        | "assistant"
+        | "reviewer"
+        | "flashcards"
+        | "practice_questions"
+        | "quiz"
+        | "short_answer_grade"
+        | "embedding"
+      job_kind:
+        | "extract_text"
+        | "chunk_text"
+        | "embed_chunks"
+        | "ocr_image"
+        | "generate_reviewer"
+        | "generate_quiz"
       job_status:
         | "queued"
         | "uploading"

@@ -1,3 +1,5 @@
+import { type ZodType } from "zod";
+
 /**
  * The AI service contract.
  *
@@ -88,13 +90,17 @@ export type GenerateResult<T> = {
  */
 export interface AiService {
   /**
-   * Grounded generation with a schema the output must satisfy.
-   * `parse` is the caller's Zod schema; a schema miss is retried once inside.
+   * Grounded generation constrained to a Zod schema.
+   *
+   * The schema goes to the provider, not just to us: structured output is
+   * enforced at the API boundary, and a response that does not match is a
+   * generation failure rather than something a feature has to validate after
+   * the fact (NFR-R4).
    */
   generate<T>(
     meta: AiCallMeta,
     prompt: string,
-    parse: (value: unknown) => T,
+    schema: ZodType<T>,
     options: GenerateOptions,
   ): Promise<GenerateResult<T>>;
 
@@ -109,7 +115,13 @@ export interface AiService {
     done: Promise<{ citations: Citation[]; usage: AiUsage }>;
   }>;
 
-  /** Embeddings for chunking and search. Batched — never one call per chunk. */
+  /**
+   * Embeddings for chunking and search. Batched — never one call per chunk.
+   *
+   * Anthropic publishes no embeddings endpoint, so this needs a second
+   * provider. The Anthropic implementation throws until Sprint 35 picks one —
+   * see `anthropic.ts`.
+   */
   embed(meta: AiCallMeta, texts: string[]): Promise<{ vectors: number[][]; usage: AiUsage }>;
 }
 

@@ -251,7 +251,7 @@ is one new implementation and no feature changes.
 
 | Question | Sprint |
 |---|---|
-| Rate-limit store — Postgres counters or an edge KV | 31 |
+| ~~Rate-limit store~~ | **Resolved in Sprint 31** — Postgres counters over `ai_calls`. One source of truth for what a student has spent, and no second store to keep in step |
 | Whether the sweeper runs on Vercel Cron or Supabase `pg_cron` (granularity differs by plan) | 13 |
 | Streaming transport for the assistant — Server Actions vs a route handler | 37 |
 | Global search implementation — Postgres full-text vs reusing the vector index | 20 |

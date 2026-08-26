@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { AppShell } from "@/components/layout/AppShell";
 import { parseSidebarState, SIDEBAR_COOKIE } from "@/features/shell/sidebar";
-import { AI_QUOTAS } from "@/lib/ai/types";
+import { getQuotaStatus } from "@/lib/ai";
 import { requireSession } from "@/server/auth/session";
 import { getProfile } from "@/server/profile/queries";
 
@@ -23,6 +23,9 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
   const sidebar = parseSidebarState(cookieStore.get(SIDEBAR_COOKIE)?.value);
   // The name the student chose, not the part of their address before the @.
   const profile = await getProfile();
+  // Real usage from the AI call log (Sprint 31). A limit a student cannot see
+  // coming is a limit that feels like a bug (NFR-C1).
+  const quota = await getQuotaStatus("generations");
 
   return (
     <AppShell
@@ -33,9 +36,7 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
       }}
       toolbar={toolbar}
       initialSidebar={sidebar}
-      // Usage comes from the AI call log once Sprint 31 lands; the shell already
-      // has somewhere to show it so the quota is never a surprise.
-      quota={{ used: 0, limit: AI_QUOTAS.generationsPerDay, resetsAt: "midnight" }}
+      quota={{ used: quota.used, limit: quota.limit, resetsAt: quota.resetsAt }}
     >
       {children}
     </AppShell>
