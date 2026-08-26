@@ -25,6 +25,8 @@ export type Material = {
   topicId: string | null;
   topicName: string | null;
   storagePath: string | null;
+  /** SHA-256 of the text, so an edit can tell whether re-indexing is needed. */
+  contentHash: string | null;
   failureMessage: string | null;
   failureNextStep: string | null;
   createdAt: string;
@@ -38,7 +40,7 @@ export const listMaterials = cache(
     let request = supabase
       .from("materials")
       .select(
-        "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
+        "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, failure_message, failure_next_step, created_at, topics(name)",
       )
       .eq("subject_id", subjectId);
 
@@ -88,6 +90,7 @@ export const listMaterials = cache(
       topicId: row.topic_id,
       topicName: row.topics?.name ?? null,
       storagePath: row.storage_path,
+      contentHash: row.content_hash,
       failureMessage: row.failure_message,
       failureNextStep: row.failure_next_step,
       createdAt: row.created_at,
@@ -103,7 +106,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
   const { data, error } = await supabase
     .from("materials")
     .select(
-      "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, failure_message, failure_next_step, created_at, topics(name)",
+      "id, subject_id, title, kind, status, byte_size, page_count, topic_id, storage_path, content_hash, failure_message, failure_next_step, created_at, topics(name)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -121,6 +124,7 @@ export const getMaterial = cache(async (id: string): Promise<Material | null> =>
     topicId: data.topic_id,
     topicName: data.topics?.name ?? null,
     storagePath: data.storage_path,
+    contentHash: data.content_hash,
     failureMessage: data.failure_message,
     failureNextStep: data.failure_next_step,
     createdAt: data.created_at,
@@ -153,4 +157,27 @@ export const listMaterialFacets = cache(async (subjectId: string): Promise<Mater
   }
 
   return { kinds: [...kinds], statuses: [...statuses], total: data?.length ?? 0 };
+});
+
+/**
+ * A note's text (FR-U5, US-C3).
+ *
+ * Deliberately its own query rather than a column on `Material`. `extracted_text`
+ * holds up to 50,000 characters for a note and a whole lecture deck's worth for
+ * an upload, and `getMaterial` is called by the library, the delete dialog and
+ * the file route — none of which read the text. Loading it there would put a
+ * novel on the wire every time a student opens a menu.
+ */
+export const getMaterialText = cache(async (id: string): Promise<string | null> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("materials")
+    .select("extracted_text")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data.extracted_text;
 });

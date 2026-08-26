@@ -1,4 +1,4 @@
-import { ArrowLeft, Download, ExternalLink, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, Pencil, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -9,7 +9,7 @@ import {
 } from "@/features/materials/components/MaterialActions";
 import { fileUrl, MaterialPreview } from "@/features/materials/components/MaterialPreview";
 import { formatBytes, KIND_LABELS } from "@/features/materials/upload";
-import { getMaterial } from "@/server/materials/queries";
+import { getMaterial, getMaterialText } from "@/server/materials/queries";
 import { getSubject } from "@/server/subjects/queries";
 import { isTerminalStatus } from "@/types";
 
@@ -78,6 +78,12 @@ export default async function Page({
       : undefined;
 
   const canOpen = Boolean(material.storagePath);
+  const isNote = material.kind === "note";
+
+  /* Only notes carry their text into the page. `extracted_text` on an upload is
+     a whole lecture deck, and the viewer shows the file itself rather than the
+     extraction. */
+  const noteBody = isNote ? await getMaterialText(materialId) : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -93,7 +99,15 @@ export default async function Page({
         eyebrow={subject.name}
         title={material.title}
         action={
-          canOpen ? (
+          isNote ? (
+            <Link
+              href={`/subjects/${id}/materials/${materialId}/edit`}
+              className={buttonStyles({ variant: "primary", size: "sm" })}
+            >
+              <Pencil aria-hidden />
+              Edit note
+            </Link>
+          ) : canOpen ? (
             <div className="flex items-center gap-2">
               <a
                 href={fileUrl(material, { page })}
@@ -119,7 +133,7 @@ export default async function Page({
       {/* Preview takes the width; details sit beside it from xl up, and stack
           under it below that. */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
-        <MaterialPreview material={material} page={page} />
+        <MaterialPreview material={material} page={page} noteBody={noteBody} />
 
         <div className="flex flex-col gap-4">
           <Card>
@@ -205,8 +219,9 @@ export default async function Page({
                 />
               </div>
               <p className="mt-1 text-xs leading-relaxed text-ink-subtle">
-                Renaming changes the name in Pawgress only. Deleting removes the stored file, and
-                there is no copy.
+                {isNote
+                  ? "Renaming changes the title only — use Edit note to change what it says. Deleting is permanent."
+                  : "Renaming changes the name in Pawgress only. Deleting removes the stored file, and there is no copy."}
               </p>
             </CardBody>
           </Card>

@@ -1,5 +1,6 @@
-import { ExternalLink, FileQuestion, FileText, ImageOff, NotebookPen } from "lucide-react";
-import { buttonStyles, Card, CardBody } from "@/components/ui";
+import { ExternalLink, FileQuestion, FileText, ImageOff, Pencil } from "lucide-react";
+import Link from "next/link";
+import { buttonStyles, Card, CardBody, CardFooter } from "@/components/ui";
 import { KIND_LABELS } from "@/features/materials/upload";
 import { type Material } from "@/server/materials/queries";
 
@@ -83,15 +84,41 @@ function NoPreview({
   );
 }
 
-export function MaterialPreview({ material, page }: { material: Material; page?: number }) {
+export function MaterialPreview({
+  material,
+  page,
+  noteBody,
+}: {
+  material: Material;
+  page?: number;
+  /** The note's text. Only fetched for notes — see `getMaterialText`. */
+  noteBody?: string | null;
+}) {
   if (material.kind === "note") {
+    /* `whitespace-pre-wrap` because a student's line breaks are the structure
+       of the note. Rendered as text, never as markup: this is untrusted input
+       and React escaping is the reason it is safe (lib/sanitize.ts). */
     return (
-      <NoPreview
-        Icon={NotebookPen}
-        title="This is a typed note"
-        description="Notes are written and edited in Pawgress rather than uploaded. Editing them arrives in Sprint 30."
-        material={material}
-      />
+      <Card>
+        <CardBody className="p-6 sm:p-8">
+          {noteBody ? (
+            <div className="mx-auto max-w-[68ch] text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+              {noteBody}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-muted">This note is empty.</p>
+          )}
+        </CardBody>
+        <CardFooter>
+          <Link
+            href={`/subjects/${material.subjectId}/materials/${material.id}/edit`}
+            className={buttonStyles({ variant: "subtle", size: "sm" })}
+          >
+            <Pencil aria-hidden />
+            Edit note
+          </Link>
+        </CardFooter>
+      </Card>
     );
   }
 

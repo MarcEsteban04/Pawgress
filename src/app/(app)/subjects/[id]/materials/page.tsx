@@ -1,4 +1,4 @@
-import { ArrowLeft, FileSearch, Upload } from "lucide-react";
+import { ArrowLeft, FileSearch, PenLine, Upload } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -89,8 +89,19 @@ async function MaterialList({
       <EmptyState
         Icon={Upload}
         title="No files yet"
-        description="Lecture slides, notes and past papers go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
-        action={<UploadDialog subjectId={subjectId} topics={topics} />}
+        description="Lecture slides, past papers and your own typed notes all go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <UploadDialog subjectId={subjectId} topics={topics} />
+            <Link
+              href={`/subjects/${subjectId}/materials/new-note`}
+              className={buttonStyles({ variant: "subtle" })}
+            >
+              <PenLine aria-hidden />
+              Write a note
+            </Link>
+          </div>
+        }
       />
     );
   }
@@ -172,7 +183,18 @@ export default async function Page({
         eyebrow="Everything you have uploaded"
         title="Files"
         description="Rename, re-file or remove anything here. Reviewers, flashcards and quizzes are built from these."
-        action={<UploadDialog subjectId={id} topics={topics} />}
+        action={
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/subjects/${id}/materials/new-note`}
+              className={buttonStyles({ variant: "subtle" })}
+            >
+              <PenLine aria-hidden />
+              Write a note
+            </Link>
+            <UploadDialog subjectId={id} topics={topics} />
+          </div>
+        }
       />
 
       {/* Filters are furniture above an empty library. They appear once there

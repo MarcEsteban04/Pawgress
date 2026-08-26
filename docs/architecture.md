@@ -153,6 +153,10 @@ Buckets are private. Nothing is ever served from a public URL:
 - Deleting a material deletes its object, its extracted text, its chunks and its embeddings in one
   transaction — a partial delete leaving orphaned storage is a bug (US-B3).
 - Uploaded filenames are untrusted input, including when they end up in a prompt (NFR-S5).
+- **A typed note is a material with no object.** `kind = 'note'`, `storage_path` null, and the text
+  in `extracted_text` — the same column an extractor fills for an upload. Everything downstream
+  (chunking, embedding, retrieval, generation) therefore reads one column regardless of where the
+  text came from, instead of branching on material kind forever.
 
 ---
 
