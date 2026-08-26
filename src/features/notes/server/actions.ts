@@ -44,6 +44,21 @@ function hashText(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
+/**
+ * A note's text needs no extraction, so it is usable the moment it is saved.
+ *
+ * `ready` here means what it means everywhere: generation can run against this
+ * material. Retrieval for the assistant additionally needs embeddings, which is
+ * a later stage for every material regardless of how its text arrived.
+ */
+async function markNoteReady(materialId: string): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  await supabase
+    .from("materials")
+    .update({ status: "ready", processed_at: new Date().toISOString() })
+    .eq("id", materialId);
+}
+
 /** Shared failure copy for a subject that is not the caller's, or is gone. */
 function subjectGone(): NoteFormState {
   return {
@@ -107,6 +122,12 @@ export async function createNoteAction(
       nextStep: "Check you are still signed in, then try again.",
     };
   }
+
+  /* A note skips extraction — the text is already here — and goes straight to
+     the indexing stage. Until Sprint 34 has a chunk handler the runner has
+     nothing to do with it, which is why the status is honest about waiting
+     rather than claiming ready. */
+  await markNoteReady(data.id);
 
   revalidatePath("/", "layout");
   // Straight to the note, because the first thing a student wants after writing
@@ -208,6 +229,8 @@ export async function updateNoteAction(
   }
 
   if (textChanged) {
+    await markNoteReady(id);
+
     /* Chunks go AFTER the text is safely stored. The other order risks losing
        the old chunks and then failing to save the new body, leaving a note that
        is neither searchable nor recoverable. A leftover set of stale chunks is

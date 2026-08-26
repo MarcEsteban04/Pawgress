@@ -44,15 +44,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 29 | Material preview — browser PDF viewer, image preview, metadata, download, delete | done | native viewer, not pdf.js; page deep-links via `#page=N` ready for Sprint 36 |
 | 30 | Typed notes — write, edit, file to a topic, re-index on change | done | no migration needed: a note's text IS its `extracted_text`, and the Sprint 13 CHECK constraint already allowed it |
 | 31 | AI service layer — Anthropic provider, model registry and pricing, usage log, quotas, rate limiting | done | **migration `20260829090000` is written but NOT applied** — run `npm run db:push:remote` then `npm run db:types:remote`. Job runner moved to 32 |
+| 32 | Text extraction — PDF, DOCX, PPTX, normalisation, and the job runner that drives it | done | **migration `20260829120000` also pending.** Needs `JOBS_SECRET` and the `pg_cron` sweeper from `architecture.md` §5 |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 32 | Text extraction + the job runner that drives it | 31 |
 | 33 | OCR for images | 32 |
 | 34 | Chunking with page provenance | 32 |
+| 35 | Embeddings + pgvector, and the embeddings provider | 34 |
 
 ---
 
@@ -143,9 +144,10 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 |---|---|---|---|---|
 | 1 | AI service layer: Anthropic provider, model registry with pricing, request logging, usage accounting, error mapping | M | 31 | **done** — US-D5. `messages.parse()` with a Zod schema so malformed output never reaches a screen; no raw `complete()` for a feature to route around it |
 | 2 | Per-user AI quotas and rate limiting | M | 31 | **done** — NFR-C1, NFR-S4. Counted from `ai_calls`, so one source of truth; claimed BEFORE the call so a crashed generation still counts |
-| 3 | Job runner: queued, retryable, idempotent, status-reporting | M | 32 | **moved from 31.** The `jobs` table and `claim_jobs()` ship in the Sprint 31 migration; the runner lands with text extraction, the first real handler, so it is exercised rather than assumed |
+| 3 | Job runner: queued, retryable, idempotent, status-reporting | M | 32 | **done** — lease-based claim via `claim_jobs()`, retry under `MAX_JOB_ATTEMPTS` without alarming the student, terminal failure surfaced with copy they can act on. Kicked immediately on enqueue via `after()`; swept every minute by `pg_cron` |
 | 3b | Embeddings provider | M | 35 | Anthropic has no embeddings endpoint. `embed()` throws a clear failure until Sprint 35 picks a provider — writing a client against an unverified API shape would be worse than an honest gap |
-| 4 | PDF / DOCX / PPTX extraction + normalization | M | 32 | US-D3 |
+| 4 | PDF / DOCX / PPTX extraction + normalization | M | 32 | **done** — US-D3. `unpdf` for PDF (per-page, so citations get page numbers); DOCX and PPTX read directly from their zipped XML with `fflate`, because no library gives slide numbers and both formats are a handful of tag matches. Normalisation rejoins hyphens, drops running page numbers, and detects repeated headers/footers rather than being told about them |
+| 4b | Image-only PDF detection | M | 32 | **done** — deferred from Sprint 26 because it needs the extractor. A PDF yielding under 40 characters is named as a scan, with what to do instead |
 | 5 | Chunking with page/slide provenance | M | 34 | US-D3 |
 | 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | US-D4, NFR-C4 |
 | 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | US-D4 |

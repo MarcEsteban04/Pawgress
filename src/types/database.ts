@@ -17,8 +17,9 @@ export type Json =
   | Json[]
 
 /*
- * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind` and `claim_jobs` were
- * added by hand in Sprint 31, matching the shape the generator produces. The
+ * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind`, `claim_jobs` and
+ * `materials.page_offsets` were added by hand in Sprints 31–32, matching the
+ * shape the generator produces. The
  * migration that creates them is
  * `20260829090000_ai_calls_and_jobs.sql`; run `npm run db:types:remote` after
  * applying it and this note can go.
@@ -297,6 +298,7 @@ export type Database = {
       }
       materials: {
         Row: {
+          page_offsets: Json | null
           byte_size: number | null
           content_hash: string | null
           created_at: string
@@ -316,6 +318,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
           created_at?: string
@@ -335,6 +338,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
           created_at?: string

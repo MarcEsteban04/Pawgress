@@ -13,6 +13,7 @@ import {
 import { verifyStoredHead, verifyStoredPdfTail } from "@/lib/validation/files";
 import { getMaterial } from "@/server/materials/queries";
 import { requireSession } from "@/server/auth/session";
+import { enqueueJob } from "@/server/jobs/enqueue";
 import { MATERIAL_MIME_TYPES, materialKindFor } from "../upload";
 import { type MaterialFormState, type UploadTicketResult, type VerifyResult } from "../types";
 
@@ -239,6 +240,16 @@ export async function recordMaterialAction(input: {
       nextStep: "Try uploading it again.",
     };
   }
+
+  /* The upload is recorded; now start reading it. Enqueued rather than done
+     inline: parsing a 100-page PDF does not belong in the request that a
+     student is waiting on (docs/architecture.md §5). */
+  await enqueueJob({
+    userId: session.userId,
+    kind: "extract_text",
+    subjectId: input.subjectId,
+    targetId: data.id,
+  });
 
   revalidatePath("/", "layout");
   return { status: "saved", materialId: data.id };

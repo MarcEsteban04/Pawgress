@@ -193,8 +193,45 @@ wrong for this.
 6. Every handler is **idempotent** (NFR-R1): writes are keyed on `(targetId, cursor)` and upsert, so
    a retry never produces duplicate chunks, embeddings or questions.
 
-The contract is in [`src/server/jobs/types.ts`](../src/server/jobs/types.ts). The runner and the
-table land in Sprints 13 and 31.
+The contract is in [`src/server/jobs/types.ts`](../src/server/jobs/types.ts); the table and
+`claim_jobs()` shipped in Sprint 31, and the runner in Sprint 32.
+
+### One correction, found in Sprint 32
+
+Point 3 above assumed every handler would slice. That is right for embedding and **wrong for
+extraction**: pdf.js parses a document as a unit, so there is no half of a PDF to read. Extraction
+runs in one pass, and what makes that safe is the 100-page cap rather than slicing — a document over
+the cap is refused with an explanation instead of being silently truncated. The `continue` path
+remains for Sprint 35, which genuinely needs it.
+
+### The scheduler: Supabase `pg_cron`, not Vercel Cron
+
+The other open question, decided in Sprint 32. Vercel's free tier allows only **daily** crons, and a
+document that might take 24 hours to start processing is not a pipeline. `pg_cron` runs every minute
+on Supabase's free tier, and the queue already lives in that database — the scheduler sits next to the
+thing it schedules.
+
+Install it once, in the Supabase SQL editor:
+
+```sql
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'pawgress-jobs-sweeper',
+  '* * * * *',
+  $
+  select net.http_post(
+    url := 'https://<your-domain>/api/jobs/run',
+    headers := jsonb_build_object('x-jobs-secret', '<JOBS_SECRET>')
+  );
+  $
+);
+```
+
+The sweeper is a safety net, not the main path: `enqueueJob` kicks the worker immediately so a
+student is not watching "Waiting to start" for up to a minute. The cron exists to reclaim expired
+leases and pick up anything a kick missed.
 
 ---
 
@@ -252,7 +289,7 @@ is one new implementation and no feature changes.
 | Question | Sprint |
 |---|---|
 | ~~Rate-limit store~~ | **Resolved in Sprint 31** — Postgres counters over `ai_calls`. One source of truth for what a student has spent, and no second store to keep in step |
-| Whether the sweeper runs on Vercel Cron or Supabase `pg_cron` (granularity differs by plan) | 13 |
+| ~~Sweeper scheduler~~ | **Resolved in Sprint 32** — Supabase `pg_cron`. Vercel's free tier is daily-only; `pg_cron` is per-minute and lives beside the queue. SQL in §5 |
 | Streaming transport for the assistant — Server Actions vs a route handler | 37 |
 | Global search implementation — Postgres full-text vs reusing the vector index | 20 |
 | Error tracking vendor | 08 |
