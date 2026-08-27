@@ -290,6 +290,6 @@ is one new implementation and no feature changes.
 |---|---|
 | ~~Rate-limit store~~ | **Resolved in Sprint 31** — Postgres counters over `ai_calls`. One source of truth for what a student has spent, and no second store to keep in step |
 | ~~Sweeper scheduler~~ | **Resolved in Sprint 32** — Supabase `pg_cron`. Vercel's free tier is daily-only; `pg_cron` is per-minute and lives beside the queue. SQL in §5 |
-| Streaming transport for the assistant — Server Actions vs a route handler | 37 |
+| Streaming transport for the assistant — Server Actions vs a route handler. The RAG loop already streams; Sprint 37 only chooses how it reaches the browser | 37 |
 | Global search implementation — Postgres full-text vs reusing the vector index | 20 |
 | Error tracking vendor | 08 |

@@ -18,7 +18,8 @@ export type Json =
 
 /*
  * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind`, `claim_jobs` and
- * `materials.page_offsets` and `material_chunks.subject_id` were added by hand in Sprints 31–34, matching the
+ * `materials.page_offsets`, `material_chunks.subject_id` and `match_chunks` were added by hand in
+ * Sprints 31–36, matching the
  * shape the generator produces. The
  * migration that creates them is
  * `20260829090000_ai_calls_and_jobs.sql`; run `npm run db:types:remote` after
@@ -1033,6 +1034,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      match_chunks: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          min_similarity?: number
+          p_subject_id?: string | null
+          p_topic_id?: string | null
+        }
+        Returns: {
+          chunk_id: string
+          material_id: string
+          material_title: string
+          page_from: number | null
+          page_to: number | null
+          content: string
+          similarity: number
+        }[]
+      }
       claim_jobs: {
         Args: { lease_seconds?: number; max_jobs?: number }
         Returns: Database["public"]["Tables"]["jobs"]["Row"][]

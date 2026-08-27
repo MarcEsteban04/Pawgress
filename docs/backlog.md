@@ -48,15 +48,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 33 | OCR — reads photos through the vision model, self-reported confidence, correctable transcription | done | two more pending migrations (`20260830090000`, `20260830091000`). Costs AI quota, unlike Tesseract — reasoning in `lib/extraction/ocr.ts` |
 | 34 | Chunking — structure-first splitting, page provenance, overlap, subject-scoped storage | done | migration `20260830120000`. `ready` now means chunked, not just extracted |
 | 35 | Embeddings — OpenAI text-embedding-3-small, batched and sliced, stored in pgvector | done | no migration — 1536 dims already matched. Needs `EMBEDDINGS_API_KEY`. `ready` now means fully indexed |
+| 36 | Retrieval — cosine vector search, relevance floor, per-material diversity, context assembly, the RAG loop | done | migration `20260831090000`. UI is Sprint 37; the relevance floor is uncalibrated until there is real usage |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 36 | Retrieval — vector search, ranking, relevance floor, context assembly | 35 |
-| 37 | Assistant chat UI | 36 |
-| 38 | Material-aware questions | 37 |
+| 37 | Assistant chat UI — message history, streaming, citations, states | 36 |
+| 38 | Material-aware questions and study modes | 37 |
+| 39 | Subject context for the assistant | 38 |
 
 ---
 
@@ -154,7 +155,8 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | 5 | Chunking with page/slide provenance | M | 34 | **done** — US-D3. ~350 tokens with 15% overlap, split on the document's own structure (blank line, then line, then sentence) before any arithmetic. Page ranges come from the `page_offsets` column added in Sprint 32, so a chunk spanning a page break reports both pages. `subject_id` denormalised onto chunks for scoped vector search; topic deliberately not, because re-filing a material would leave it stale |
 | 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | **done** — US-D4, NFR-C4. OpenAI text-embedding-3-small at 1536 dims, so no migration. Batched against all three documented API limits at once; sliced across invocations — the first genuine use of the `continue` path from Sprint 07. Idempotent by SELECTION (only chunks with a null embedding), so a retry or a second worker converge rather than duplicate |
 | 6b | Stall guard on re-enqueued slices | M | 35 | **done** — a slice that asks for another turn without advancing is failed rather than trusted. A paid loop with no exit is the worst failure mode in the runner |
-| 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | US-D4 |
+| 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | **done** — US-D4. `match_chunks` is `security invoker`, so RLS scopes a search to the caller's own chunks. Over-fetches then trims, because HNSW plus a `where` clause under-returns. Per-material diversity cap so one long lecture series cannot take every slot from a better two-page handout. Context is assembled in READING order, not score order |
+| 7b | Calibrate the relevance floor | M | — | 0.25 is a starting point chosen deliberately permissive: a missed relevant chunk is worse than a marginal one, because the model can ignore a weak chunk but cannot invent a missing one. Needs real questions against real material to tune |
 | 8 | Material status UI with live updates | M | 31–35 | US-D1 |
 | 9 | OCR pipeline for images, with confidence signalling | V1 | 33 | **done** — US-C7. Reads photos through the vision model rather than Tesseract: handwriting is the main case, and Tesseract is poor at it. Confidence is asked for and stored, so a shaky reading is flagged in the library and on the viewer, and the student can correct the text — which then stops being a guess |
 | 9b | Shrink photos in the browser before upload | V1 | — | `features/settings/downscale.ts` already does this for avatars. Would remove the 5 MB OCR refusal, cut storage and save metered data. Left as a follow-up rather than changing a working upload path mid-sprint |
