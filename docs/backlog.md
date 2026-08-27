@@ -49,15 +49,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 34 | Chunking — structure-first splitting, page provenance, overlap, subject-scoped storage | done | migration `20260830120000`. `ready` now means chunked, not just extracted |
 | 35 | Embeddings — OpenAI text-embedding-3-small, batched and sliced, stored in pgvector | done | no migration — 1536 dims already matched. Needs `EMBEDDINGS_API_KEY`. `ready` now means fully indexed |
 | 36 | Retrieval — cosine vector search, relevance floor, per-material diversity, context assembly, the RAG loop | done | migration `20260831090000`. UI is Sprint 37; the relevance floor is uncalibrated until there is real usage |
+| 37 | Assistant chat — streaming answers, citations, stop, subject scope, the honest empty case | done | no migration. History is in-session only; persistence is Sprint 40 |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 37 | Assistant chat UI — message history, streaming, citations, states | 36 |
-| 38 | Material-aware questions and study modes | 37 |
-| 39 | Subject context for the assistant | 38 |
+| 38 | Material-aware questions — explain, hint, why was I wrong | 37 |
+| 39 | Subject context — scope inherited from the page, topic scoping | 38 |
+| 40 | Conversation history — save, rename, resume, delete | 37 |
 
 ---
 
@@ -166,7 +167,8 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 
 | # | Item | Pri | Sprint | Story |
 |---|---|---|---|---|
-| 1 | Chat UI with streaming, loading, and error states | M | 37 | US-E1 |
+| 1 | Chat UI with streaming, loading, and error states | M | 37 | **done** — US-E1. NDJSON over a route handler rather than a Server Action, because a stream that cannot be ABORTED keeps spending tokens for a student who has left. Stop button, citations as source chips, and the honest empty case with an explicit opt-in |
+| 1b | Conversation history | V1 | 40 | In-session only for now. A reload starts fresh, which is honest — a half-built persistence layer that loses messages on refresh is worse than one that never claimed to keep them |
 | 2 | Grounded answers with clickable citations | M | 38 | US-E1 |
 | 3 | Subject/topic scoping with visible active scope | M | 39 | US-E3 |
 | 4 | No-context behavior and labeled general-knowledge fallback | M | 42 | US-E2 |
