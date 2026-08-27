@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AppError, errors } from "@/lib/errors";
 import { logAiEvent } from "./log";
-import { estimateCostUsd, type ModelSpec, type TokenCounts } from "./models";
+import { type TokenCounts } from "./models";
 import { AI_QUOTAS, type AiCallMeta, type AiQuotaKind, type QuotaStatus } from "./types";
 
 /**
@@ -25,7 +25,11 @@ import { AI_QUOTAS, type AiCallMeta, type AiQuotaKind, type QuotaStatus } from "
 /** Which quota a task draws from. Assistant messages and generations are separate allowances. */
 function quotaKindFor(task: AiCallMeta["task"]): AiQuotaKind | null {
   if (task === "assistant") return "messages";
-  // Embeddings are metered by document pages, not by call — see maxPagesPerDocument.
+  /* Embeddings are counted and costed but draw on no daily allowance. A student
+     should not lose their reviewers for the day because they uploaded a long
+     PDF — indexing is a consequence of uploading, not a thing they chose to
+     spend. The per-minute burst limit still applies, and the page cap
+     (`maxPagesPerDocument`) is what bounds the cost of one document. */
   if (task === "embedding") return null;
   /* Everything else, OCR included, draws on the generation allowance. Reading a
      photo costs money, so it counts; the alternative was an unmetered paid call,
@@ -129,7 +133,12 @@ export type ClaimedCall = {
  * job or a double-clicked button hits the conflict and gets the existing row
  * back instead of paying twice (NFR-C4, NFR-C5).
  */
-export async function claimCall(meta: AiCallMeta, model: ModelSpec): Promise<ClaimedCall> {
+export async function claimCall(
+  meta: AiCallMeta,
+  /* Only the id is needed, so both the chat and embedding registries satisfy
+     this without the ledger knowing which of them it is holding. */
+  model: { id: string },
+): Promise<ClaimedCall> {
   const supabase = createSupabaseAdminClient();
 
   const { data, error } = await supabase
@@ -172,14 +181,16 @@ export type CallOutcome = "ok" | "refused" | "failed" | "invalid_output";
 /** Settle a claimed call with what it actually used. */
 export async function settleCall(
   callId: string,
-  model: ModelSpec,
+  model: { id: string },
   outcome: CallOutcome,
   tokens: TokenCounts,
+  /* Computed by the caller, which is the only place that knows the price list
+     for the provider it just called. */
+  costUsd: number,
   latencyMs: number,
   failureCode?: string,
 ): Promise<void> {
   const supabase = createSupabaseAdminClient();
-  const costUsd = estimateCostUsd(model, tokens);
 
   await supabase
     .from("ai_calls")

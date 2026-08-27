@@ -86,6 +86,39 @@ export function resolveModel(configured?: string): ModelSpec {
   return MODELS[isModelId(configured) ? configured : DEFAULT_MODEL];
 }
 
+/**
+ * Embedding models.
+ *
+ * Separate from `MODELS` on purpose. Merging them would let `AI_CHAT_MODEL`
+ * resolve to an embedding model, and `resolveModel` would happily return one —
+ * a misconfiguration that fails deep inside a generation call rather than at the
+ * point someone typed the wrong name.
+ *
+ * `dimensions` is load-bearing: `material_chunks.embedding` is
+ * `vector(1536)`, so a model of a different width needs a migration and a
+ * re-embed, not a config change.
+ */
+export type EmbeddingModelSpec = {
+  id: string;
+  label: string;
+  inputPerMTok: number;
+  dimensions: number;
+};
+
+export const EMBEDDING_MODELS: Record<string, EmbeddingModelSpec> = {
+  "text-embedding-3-small": {
+    id: "text-embedding-3-small",
+    label: "OpenAI text-embedding-3-small",
+    inputPerMTok: 0.02,
+    dimensions: 1536,
+  },
+};
+
+/** Embeddings have no output tokens, so cost is one multiplication. */
+export function estimateEmbeddingCostUsd(model: EmbeddingModelSpec, inputTokens: number): number {
+  return Number(((inputTokens * model.inputPerMTok) / 1_000_000).toFixed(6));
+}
+
 export type TokenCounts = {
   inputTokens: number;
   outputTokens: number;

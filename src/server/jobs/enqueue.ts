@@ -72,7 +72,7 @@ export async function enqueueJob(input: EnqueueInput): Promise<void> {
  * Deliberately not awaited inside the request: the caller is a Server Action
  * returning to a student who should not wait on a document being parsed.
  */
-function kickWorker(): void {
+export function kickWorker(): void {
   const secret = process.env.JOBS_SECRET;
   if (!secret) {
     /* Without the secret the worker refuses the call, so there is no point

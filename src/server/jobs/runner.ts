@@ -6,6 +6,7 @@ import { logAiError, logAiEvent } from "@/lib/ai/log";
 import { type JobStatus } from "@/types";
 import { type Database } from "@/types/database";
 import { chunkTextHandler } from "./handlers/chunkText";
+import { embedChunksHandler } from "./handlers/embedChunks";
 import { extractTextHandler } from "./handlers/extractText";
 import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
@@ -35,7 +36,7 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   extract_text: extractTextHandler,
   ocr_image: ocrImageHandler,
   chunk_text: chunkTextHandler,
-  // embed_chunks: Sprint 35.
+  embed_chunks: embedChunksHandler,
 };
 
 /**
@@ -46,16 +47,17 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
  * successor would have to know where it sits in a sequence that is not its
  * business, and the sequence would then be spread across every handler.
  *
- * `ready` after chunking, not after extraction. A material with text but no
- * chunks can be generated FROM — generation reads `extracted_text` directly —
- * but it cannot be searched, and "ready" that means "half of ready" is the kind
- * of half-truth that makes a status display worthless. Sprint 35 inserts
- * `embed_chunks` between chunking and ready.
+ * `ready` means the full pipeline is done: text extracted, split, and
+ * embedded. A material with chunks but no vectors can be generated FROM —
+ * generation reads `extracted_text` directly — but it cannot be SEARCHED, and
+ * "ready" that means "half of ready" is the kind of half-truth that makes a
+ * status display worthless.
  */
 const NEXT_STAGE: Partial<Record<JobKind, { enqueue: JobKind } | { status: JobStatus }>> = {
   extract_text: { enqueue: "chunk_text" },
   ocr_image: { enqueue: "chunk_text" },
-  chunk_text: { status: "ready" },
+  chunk_text: { enqueue: "embed_chunks" },
+  embed_chunks: { status: "ready" },
 };
 
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
@@ -123,8 +125,19 @@ export async function runJobs(max = 3): Promise<RunSummary> {
   }
 
   if (summary.claimed > 0) logAiEvent("jobs.batch", { ...summary });
+
+  if (kickAgain) {
+    kickAgain = false;
+    const { kickWorker } = await import("./enqueue");
+    kickWorker();
+  }
+
   return summary;
 }
+
+/* Set when a slice re-enqueued itself, so the batch can kick the worker once
+   at the end rather than once per job. */
+let kickAgain = false;
 
 async function runOne(job: Job, summary: RunSummary): Promise<void> {
   const supabase = createSupabaseAdminClient();
@@ -145,6 +158,25 @@ async function runOne(job: Job, summary: RunSummary): Promise<void> {
     const result = await handler(job);
 
     if (result.kind === "continue") {
+      /* **Stall guard.** A slice that comes back asking for another turn without
+         having advanced would kick the worker, get claimed again, and repeat —
+         forever, and at the cost of whatever API calls it makes each time. A
+         paid loop with no exit is the worst failure mode in this file, so a
+         cursor that has not moved is treated as a failure rather than trusted.
+         Nothing in the handlers should do this; that is exactly why it is
+         checked rather than assumed. */
+      if (result.cursor <= (job.cursor ?? 0) && job.cursor !== null) {
+        logAiEvent("jobs.stalled", { jobId: job.id, cursor: result.cursor }, "warn");
+        await failJob(
+          job,
+          "Indexing this material stopped making progress.",
+          "Try again from the file — this one is on us.",
+          false,
+        );
+        summary.failed += 1;
+        return;
+      }
+
       await supabase
         .from("jobs")
         .update({
@@ -155,6 +187,10 @@ async function runOne(job: Job, summary: RunSummary): Promise<void> {
         })
         .eq("id", job.id);
       summary.requeued += 1;
+      /* Nudge the worker again. Without this a long document advances one slice
+         per sweeper tick — up to a minute per batch — and a student watches a
+         progress bar crawl for no reason. */
+      kickAgain = true;
       return;
     }
 

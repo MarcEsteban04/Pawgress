@@ -236,7 +236,15 @@ export function createAnthropicService(): AiService {
            its own copy, and it is billed differently, so it is recorded
            differently too. */
         if (response.stop_reason === "refusal") {
-          await settleCall(claim.id, model, "refused", tokens, Date.now() - startedAt, "refusal");
+          await settleCall(
+            claim.id,
+            model,
+            "refused",
+            tokens,
+            estimateCostUsd(model, tokens),
+            Date.now() - startedAt,
+            "refusal",
+          );
           throw new AppError({
             code: "invalid_ai_output",
             message: "The assistant declined to answer that.",
@@ -251,13 +259,21 @@ export function createAnthropicService(): AiService {
             model,
             "invalid_output",
             tokens,
+            estimateCostUsd(model, tokens),
             Date.now() - startedAt,
             "schema_mismatch",
           );
           throw errors.invalidAiOutput();
         }
 
-        await settleCall(claim.id, model, "ok", tokens, Date.now() - startedAt);
+        await settleCall(
+          claim.id,
+          model,
+          "ok",
+          tokens,
+          estimateCostUsd(model, tokens),
+          Date.now() - startedAt,
+        );
 
         return {
           data: response.parsed_output,
@@ -279,6 +295,9 @@ export function createAnthropicService(): AiService {
             model,
             outcomeFor(error),
             { inputTokens: 0, outputTokens: 0 },
+            /* Nothing was billed for a call that never completed, so the ledger
+               records zero rather than an estimate of what it might have cost. */
+            0,
             Date.now() - startedAt,
             error.code,
           );
@@ -329,6 +348,7 @@ export function createAnthropicService(): AiService {
             model,
             refused ? "refused" : "ok",
             tokens,
+            estimateCostUsd(model, tokens),
             Date.now() - startedAt,
             refused ? "refusal" : undefined,
           );
@@ -350,6 +370,7 @@ export function createAnthropicService(): AiService {
             model,
             "failed",
             { inputTokens: 0, outputTokens: 0 },
+            0,
             Date.now() - startedAt,
             error.code,
           );
@@ -359,20 +380,6 @@ export function createAnthropicService(): AiService {
       })();
 
       return { textStream: textStream(), done };
-    },
-
-    async embed(): Promise<never> {
-      /* Anthropic has no embeddings endpoint, so this needs a second provider.
-         Choosing and wiring one is Sprint 35's job, where the embedding
-         pipeline actually lands — writing a client against an API shape nobody
-         here has verified would be worse than an honest gap. The interface is
-         in place so Sprint 35 changes one file. */
-      throw new AppError({
-        code: "provider_unavailable",
-        message: "Search indexing is not switched on yet.",
-        nextStep: "Reviewers and quizzes still work from your material directly.",
-        context: { reason: "no embeddings provider configured (Sprint 35)" },
-      });
     },
   };
 }

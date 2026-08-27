@@ -146,14 +146,12 @@ export interface AiService {
     done: Promise<{ citations: Citation[]; usage: AiUsage }>;
   }>;
 
-  /**
-   * Embeddings for chunking and search. Batched — never one call per chunk.
-   *
-   * Anthropic publishes no embeddings endpoint, so this needs a second
-   * provider. The Anthropic implementation throws until Sprint 35 picks one —
-   * see `anthropic.ts`.
-   */
-  embed(meta: AiCallMeta, texts: string[]): Promise<{ vectors: number[][]; usage: AiUsage }>;
+  /* No `embed()`. Anthropic publishes no embeddings endpoint, so embeddings are
+     a separate provider with its own key, limits and pricing — see
+     `lib/ai/embeddings.ts`. Sprint 07 assumed one provider would serve every
+     model call; it was wrong, and a method that always throws is worse than no
+     method, because it invites a caller to handle a failure that is really a
+     design gap. */
 }
 
 /**

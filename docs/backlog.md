@@ -47,15 +47,16 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 32 | Text extraction — PDF, DOCX, PPTX, normalisation, and the job runner that drives it | done | **migration `20260829120000` also pending.** Needs `JOBS_SECRET` and the `pg_cron` sweeper from `architecture.md` §5 |
 | 33 | OCR — reads photos through the vision model, self-reported confidence, correctable transcription | done | two more pending migrations (`20260830090000`, `20260830091000`). Costs AI quota, unlike Tesseract — reasoning in `lib/extraction/ocr.ts` |
 | 34 | Chunking — structure-first splitting, page provenance, overlap, subject-scoped storage | done | migration `20260830120000`. `ready` now means chunked, not just extracted |
+| 35 | Embeddings — OpenAI text-embedding-3-small, batched and sliced, stored in pgvector | done | no migration — 1536 dims already matched. Needs `EMBEDDINGS_API_KEY`. `ready` now means fully indexed |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 35 | Embeddings + pgvector, and the embeddings provider | 34 |
-| 36 | Retrieval — vector search, ranking, context assembly | 35 |
+| 36 | Retrieval — vector search, ranking, relevance floor, context assembly | 35 |
 | 37 | Assistant chat UI | 36 |
+| 38 | Material-aware questions | 37 |
 
 ---
 
@@ -151,7 +152,8 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | 4 | PDF / DOCX / PPTX extraction + normalization | M | 32 | **done** — US-D3. `unpdf` for PDF (per-page, so citations get page numbers); DOCX and PPTX read directly from their zipped XML with `fflate`, because no library gives slide numbers and both formats are a handful of tag matches. Normalisation rejoins hyphens, drops running page numbers, and detects repeated headers/footers rather than being told about them |
 | 4b | Image-only PDF detection | M | 32 | **done** — deferred from Sprint 26 because it needs the extractor. A PDF yielding under 40 characters is named as a scan, with what to do instead |
 | 5 | Chunking with page/slide provenance | M | 34 | **done** — US-D3. ~350 tokens with 15% overlap, split on the document's own structure (blank line, then line, then sentence) before any arithmetic. Page ranges come from the `page_offsets` column added in Sprint 32, so a chunk spanning a page break reports both pages. `subject_id` denormalised onto chunks for scoped vector search; topic deliberately not, because re-filing a material would leave it stale |
-| 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | US-D4, NFR-C4 |
+| 6 | Embedding pipeline, pgvector storage, reuse on unchanged material | M | 35 | **done** — US-D4, NFR-C4. OpenAI text-embedding-3-small at 1536 dims, so no migration. Batched against all three documented API limits at once; sliced across invocations — the first genuine use of the `continue` path from Sprint 07. Idempotent by SELECTION (only chunks with a null embedding), so a retry or a second worker converge rather than duplicate |
+| 6b | Stall guard on re-enqueued slices | M | 35 | **done** — a slice that asks for another turn without advancing is failed rather than trusted. A paid loop with no exit is the worst failure mode in the runner |
 | 7 | Retrieval: vector search, ranking, relevance floor, context assembly, source references | M | 36 | US-D4 |
 | 8 | Material status UI with live updates | M | 31–35 | US-D1 |
 | 9 | OCR pipeline for images, with confidence signalling | V1 | 33 | **done** — US-C7. Reads photos through the vision model rather than Tesseract: handwriting is the main case, and Tesseract is poor at it. Confidence is asked for and stored, so a shaky reading is flagged in the library and on the viewer, and the student can correct the text — which then stops being a guess |
