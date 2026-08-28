@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  * One navigation, three widths: expanded (240px), collapsed (72px), and a
  * labelled drawer below 768px.
  *
- * Pawgress is a website, so this is a persistent sidebar rather than a bottom
+ * Acadify is a website, so this is a persistent sidebar rather than a bottom
  * tab bar — bottom tabs are native-app chrome and fight the browser's own
  * bottom bar and the on-screen keyboard (docs/navigation.md §1).
  *
@@ -159,12 +159,12 @@ export function SideNav({
       )}
     >
       <div className={cn("mb-6 flex items-center", collapsed ? "justify-center" : "gap-2 px-1")}>
-        <Link href="/dashboard" aria-label="Pawgress home" className="shrink-0">
+        <Link href="/dashboard" aria-label="Acadify home" className="shrink-0">
           <AppMark />
         </Link>
         {!collapsed && (
           <span className="truncate font-display text-[1.0625rem] leading-none font-semibold tracking-[-0.02em]">
-            Pawgress
+            Acadify
           </span>
         )}
       </div>

@@ -218,7 +218,7 @@ export function errorResponse(thrown: unknown, requestId?: string): Response {
   const error = toAppError(thrown);
 
   if (error.code === "unexpected") {
-    console.error("[pawgress] unexpected error", {
+    console.error("[acadify] unexpected error", {
       requestId,
       cause: error.cause,
       context: error.context,
@@ -255,7 +255,7 @@ export function errorFormState(thrown: unknown): {
 } {
   const error = toAppError(thrown);
   if (error.code === "unexpected") {
-    console.error("[pawgress] unexpected error in action", { cause: error.cause });
+    console.error("[acadify] unexpected error in action", { cause: error.cause });
   }
   return { status: "error", message: error.message, nextStep: error.nextStep };
 }

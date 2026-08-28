@@ -1,4 +1,4 @@
-import { BrandMascot } from "@/components/shared/BrandMascot";
+import { BrandLockup } from "@/components/shared/Logo";
 import { AuthProof } from "./AuthProof";
 
 /**
@@ -12,9 +12,9 @@ import { AuthProof } from "./AuthProof";
 export function AuthAsideDefault() {
   return (
     <>
-      {/* Sign-up is where someone meets the product, so it gets the mascot.
-          Sign-in does not — a returning student has met it already. */}
-      <BrandMascot className="max-w-[15rem]" sizes="260px" />
+      {/* Sign-up is where someone meets the product, so it gets the mark at
+          full size. Sign-in does not — a returning student has met it already. */}
+      <BrandLockup />
 
       <div>
         <p className="text-sm text-ink-muted">For high school and college students</p>

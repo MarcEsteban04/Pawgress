@@ -1,4 +1,4 @@
-# Pawgress — Design System
+# Acadify — Design System
 
 The primitive set every feature builds on, and the standards that keep it coherent. Brand values live
 in [`branding.md`](branding.md); the layouts these serve are in [`wireframes.md`](wireframes.md).
@@ -16,7 +16,7 @@ src/lib/utils.ts                 cn() — class merge, so callers can always ove
 src/types/index.ts               JobStatus vocabulary + mastery thresholds
 src/components/ui/               the primitives, exported from index.ts
 src/components/layout/           AppShell, SideNav, PageHeader, FocusShell, ThemeToggle
-src/components/shared/           Logo, PawMark, AppMark, NotBuiltYet
+src/components/shared/           Logo, AcadifyMark, AppMark, BrandLockup, NotBuiltYet
 src/features/<feature>/          feature components — promoted to ui/ only when a second feature needs them
 ```
 
@@ -127,7 +127,7 @@ node <dataviz-skill>/scripts/validate_palette.js "#175E5A,#22857E,#3FB3AA,#7FD6C
 | `Menu` | Overflow and account menus. Secondary actions only |
 | `SegmentedNav` | Route links in a pill track, not a JS tab widget — each view stays linkable |
 | `Avatar` / `UserPill` | Initials fallback with an optional identity tint; `UserPill` adds name + context |
-| `Logo` / `PawMark` / `AppMark` | Brand marks |
+| `Logo` / `AcadifyMark` / `AppMark` / `BrandLockup` | Brand marks |
 
 ### Shell
 
@@ -204,7 +204,7 @@ The specification names shadcn/ui, and this **is** its architecture: Radix primi
 `cva` for variants, `tailwind-merge` so callers can override. What we skip is the registry.
 
 Pulling components from the registry brings its token vocabulary with them — `--background`,
-`--foreground`, `--muted`, in oklch — and those would sit alongside the Pawgress tokens rather than
+`--foreground`, `--muted`, in oklch — and those would sit alongside the Acadify tokens rather than
 replacing them. Two parallel colour systems in one stylesheet is how a design system rots: the next
 person cannot tell which one is authoritative, and `bg-background` and `bg-surface` slowly diverge.
 

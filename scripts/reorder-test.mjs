@@ -40,7 +40,7 @@ function check(name, actual, expected) {
 }
 
 async function makeUser() {
-  const email = `move-test-${Date.now()}@pawgress.test`;
+  const email = `move-test-${Date.now()}@acadify.test`;
   const password = `move-${Math.random().toString(36).slice(2)}-Aa1!`;
   const res = await fetch(`${URL_BASE}/auth/v1/admin/users`, {
     method: "POST",

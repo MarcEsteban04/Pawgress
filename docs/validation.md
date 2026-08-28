@@ -1,4 +1,4 @@
-# Pawgress — Validation & Error Standards
+# Acadify — Validation & Error Standards
 
 **Sprint 17 deliverable.** Where input is checked, how failures are shaped, and which of the two
 sanitisers to reach for.

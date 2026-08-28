@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
  *
  *  - An empty state names EXACTLY ONE next action. It is the onboarding.
  *  - An error states a cause and a next step. No stack traces, no "Error 503".
- *  - The mascot celebrates; it never apologises. Nothing cute on a failure.
+ *  - Celebration is copy, motion and the accent — never a character, and
+ *    never on a failure. Nothing cute happens when something breaks.
  */
 
 export type EmptyStateProps = {

@@ -17,7 +17,7 @@ export type NoteFormState = {
    * Whether the saved edit actually changed the text.
    *
    * A title-only edit does not invalidate the note's chunks, so the editor says
-   * "Saved" rather than implying Pawgress is re-reading something it is not
+   * "Saved" rather than implying Acadify is re-reading something it is not
    * (US-C3).
    */
   reindexed?: boolean;

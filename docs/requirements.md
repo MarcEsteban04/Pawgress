@@ -1,6 +1,6 @@
-# Pawgress — Product Requirements
+# Acadify — Product Requirements
 
-**Sprint 02 deliverable.** Converts [`pawgress.md`](pawgress.md) (the specification) into
+**Sprint 02 deliverable.** Converts [`acadify.md`](acadify.md) (the specification) into
 development requirements. This document is the scope contract: if something is not here, it is not
 being built yet.
 
@@ -14,7 +14,7 @@ Companion documents:
 
 ## 1. Product definition
 
-Pawgress is a responsive **web application** where a student uploads their own schoolwork and gets
+Acadify is a responsive **web application** where a student uploads their own schoolwork and gets
 back study material generated from *that* material — reviewers, flashcards, practice questions,
 quizzes — plus a record of what they actually understand, so the app can answer one question:
 
@@ -32,7 +32,7 @@ Upload → Extract → Review → Practice → Quiz → Track → Weak topics �
 
 ### Platform scope
 
-Pawgress is a **responsive web application** and nothing else. It runs in a browser — desktop,
+Acadify is a **responsive web application** and nothing else. It runs in a browser — desktop,
 laptop, tablet, phone — deployed on Vercel. There is no native app, no app store, and no APK.
 
 - **Desktop and laptop browsers are the primary design target.** Layouts are designed at 1280 px
@@ -48,7 +48,7 @@ Native mobile clients are a post-V1 possibility only, and no sprint in the roadm
 
 ## 2. Users
 
-| Persona | Context | What they need from Pawgress |
+| Persona | Context | What they need from Acadify |
 |---|---|---|
 | **Grade 11 student** | 6–8 subjects, mostly teacher handouts and PPTX decks. Uploads and studies on a laptop at home, drills on a phone browser in between classes | Turn a deck they barely read into something drillable in 20 minutes; be told which subject is most at risk |
 | **2nd-year college student** | Fewer subjects, denser PDFs, exams cluster in a single week. Works on a laptop with the material open beside the app | Mock-exam-grade practice from lecture PDFs; a realistic plan across a hell week |
@@ -324,7 +324,7 @@ Recorded rather than guessed at. Each one blocks the sprint named.
 
 | # | Decision | Blocks | Recommendation |
 |---|---|---|---|
-| 1 | ~~Roadmap Phases 16–18 describe a React Native app and an APK~~ | — | **Resolved.** Pawgress is a web app only. Phases 16–18 are now installable web app, offline tolerance, cross-browser and accessibility QA, and public launch. Native clients are post-V1 |
+| 1 | ~~Roadmap Phases 16–18 describe a React Native app and an APK~~ | — | **Resolved.** Acadify is a web app only. Phases 16–18 are now installable web app, offline tolerance, cross-browser and accessibility QA, and public launch. Native clients are post-V1 |
 | 2 | Free-only, or a paid tier once AI cost is real | 31, 77 | Ship free with hard quotas (NFR-C1); revisit with real usage data |
 | 3 | Google sign-in at launch | 10 | Add it in V1 — students lose passwords, and it removes the email-verification drop-off |
 | 4 | Mastery formula: raw percent correct vs. recency- and difficulty-weighted | 56 | Weighted, with the weights explained in-product; raw percent reads one lucky quiz as mastery |

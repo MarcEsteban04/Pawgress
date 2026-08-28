@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
  */
 
 export type ThemeChoice = "system" | "light" | "dark";
-const STORAGE_KEY = "pawgress-theme";
-const CHANGE_EVENT = "pawgress-theme-change";
+const STORAGE_KEY = "acadify-theme";
+const CHANGE_EVENT = "acadify-theme-change";
 
 function subscribe(onChange: () => void) {
   window.addEventListener(CHANGE_EVENT, onChange);

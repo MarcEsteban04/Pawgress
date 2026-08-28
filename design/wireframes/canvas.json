@@ -17,7 +17,7 @@
       "x": 0,
       "y": -320,
       "w": 520,
-      "text": "Pawgress MVP wireframes — Sprint 04\n\nPawgress is a responsive WEB APP, not a mobile app. Top row and the first two of the second row are the primary design target at 1280px: persistent 240px sidebar, top bar with breadcrumbs and global search, content capped at 1200px.\n\nThe four small frames are the same website at 360px — one implementation, different container.\n\nLow fidelity on purpose: greyscale, no brand. Colour, mascot and icon set are Sprint 05; components are Sprint 06."
+      "text": "Acadify MVP wireframes — Sprint 04\n\nAcadify is a responsive WEB APP, not a mobile app. Top row and the first two of the second row are the primary design target at 1280px: persistent 240px sidebar, top bar with breadcrumbs and global search, content capped at 1200px.\n\nThe four small frames are the same website at 360px — one implementation, different container.\n\nLow fidelity on purpose: greyscale, no brand. Colour, mascot and icon set are Sprint 05; components are Sprint 06."
     },
     {
       "id": "note-desktopfirst",

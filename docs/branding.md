@@ -1,6 +1,6 @@
-# Pawgress — Brand
+# Acadify — Brand
 
-**Direction "Daylight" is the Pawgress brand.** It replaces "Study Desk", which shipped in Sprint 05
+**Direction "Daylight" is the Acadify brand.** It replaces "Study Desk", which shipped in Sprint 05
 and was superseded by a product-owner redesign against a supplied visual reference. The reasoning behind
 "Study Desk" and the two directions rejected alongside it is preserved in
 [§7](#7-superseded-and-rejected) — none of them is to be revived without being asked.
@@ -10,7 +10,7 @@ The current visual reference is kept at
 neutral ground, one white frame, a dot-textured hero panel, a very large two-tone headline, product
 objects floating around it and cropped by the panel edge, and a single blue call to action.
 
-It is a *language* reference. Its content is not the model; Pawgress's own information architecture
+It is a *language* reference. Its content is not the model; Acadify's own information architecture
 is, unchanged from [`navigation.md`](navigation.md) and [`wireframes.md`](wireframes.md). The file is
 overwritten each time the direction is re-cut, so this document — not the image — is the record.
 
@@ -136,56 +136,60 @@ fallback stack. Rules:
 
 ---
 
-## 4. Logo, mascot, icons
+## 4. Logo and icons
 
-**Logo** — paw mark beside the wordmark, set in Outfit semibold at −2% tracking. Toes take ink, the
-pad takes the accent. [`src/components/shared/Logo.tsx`](../src/components/shared/Logo.tsx) exports
-`Logo` (mark + wordmark), `PawMark` (mark alone) and `AppMark` (the mark on an ink tile, used at the
-top of the icon rail — the only place the brand appears inside the authenticated shell).
+**The mark** — an **A whose crossbar is a progress bar**.
+[`src/components/shared/Logo.tsx`](../src/components/shared/Logo.tsx) exports `AcadifyMark` (the mark
+alone), `AppMark` (the mark on an ink tile), `Logo` (mark + wordmark) and `BrandLockup` (the large
+brand moment on the sign-up aside).
 
-**App icon and favicon** — [`src/app/icon.svg`](../src/app/icon.svg): the mark on an ink tile. At
-favicon size the paw drops from four toes to three rather than shrinking all four; four toes at 16 px
-turn to mud.
+The A is the initial. The accent crossbar is what the product does — so the mark carries the thesis,
+not just the letter. That is deliberate salvage: the *idea* in the old name "Pawgress" was progress,
+and when the name went the idea moved into the mark rather than being thrown away.
 
-**Mascot** — the supplied illustration at
-[`src/assets/brand/pawgress-logo.png`](../src/assets/brand/pawgress-logo.png): a dog in a graduation
-cap studying at a laptop, with the Pawgress wordmark. Rendered through
-[`BrandMascot`](../src/components/shared/BrandMascot.tsx).
+**Wordmark** — "Acadify" in Outfit semibold at −2% tracking. It stays **type**, never artwork: type
+follows the theme, stays crisp at any size, and can be selected and read aloud.
+
+**App icon and favicon** — [`src/app/icon.svg`](../src/app/icon.svg): the mark in white on an ink
+tile, crossbar in accent. Redrawn rather than exported, because the SVG in `Logo.tsx` inherits
+`currentColor` and the favicon cannot. **The two must not drift** — same geometry, inset slightly so
+round caps do not touch the tile's corner radius.
 
 Where it goes:
 
 | Placement | Component | What is shown |
 |---|---|---|
-| Landing hero, sign-up aside | `BrandMascot` | The whole lockup — mascot and wordmark |
-| Nav rail, top bar, auth header, 404 | `BrandMark`, via `Logo` / `AppMark` | The **mascot alone**, cropped square, beside the wordmark set in type |
-| Browser tab | `app/icon.svg` | The drawn paw — the illustration cannot survive 16px |
+| Landing nav, auth header, app top bar | `Logo` | Mark + wordmark |
+| Nav rail | `AppMark` | Mark on an ink tile |
+| Sign-up aside | `BrandLockup` | The tile at 96 px with the wordmark beneath |
+| Browser tab | `app/icon.svg` | The mark, white on ink |
 
-Shrinking the whole lockup into chrome was never an option: at 28px it is an unreadable smudge, and
-it would put the wordmark next to itself. So `BrandMark` crops to the mascot, and the wordmark
-beside it stays **type** — type follows the theme, stays crisp at any size, and can be selected and
-read aloud.
+### Geometry, and why it is what it is
 
-The crop is measured from the PNG's alpha channel, not guessed: the mascot sits at roughly
-x 420–980, y 100–660 of the 1536×1024 source, expressed as percentages of its container. **A square,
-mascot-only export would delete that component entirely** — and would survive the artwork being
-redrawn, which those hard-coded numbers will not.
+Drawn on a 32 grid, stroke 4 (12.5%), round caps and joins.
 
-Two constraints the asset imposes, both worked around rather than ignored:
+- **The crossbar sits low, at y 19.5.** Centred, it collides with the apex once the strokes thicken;
+  low, the counter stays open at small sizes.
+- **Its ends are inset to x 9.6 / 22.4** so the round caps land flush on the legs instead of
+  overhanging them.
+- **There is no fourth element.** Nothing has to be dropped at 16 px, which is the correct amount of
+  detail for a mark that has to live in a browser tab.
 
-- **1.4 MB, 1536×1024.** It is always served through `next/image`, which resizes it to the widths
-  actually requested and re-encodes to AVIF/WebP. It lives in `src/assets/` rather than `public/`,
-  because everything in `public/` is served verbatim at a guessable URL — the unoptimised original
-  would otherwise stay downloadable by anyone who asked, bypassing all of that.
-- **The wordmark's "Paw" is white with a dark outline**, so on a white card it reads by its stroke
-  alone. Every placement sits on the dot-grid panel or a tinted surface. Do not drop it onto
-  `bg-surface`.
+### What this replaced, and why
 
-The artwork also carries roughly 13% empty padding on each side, which `BrandMascot` pulls back with
-a negative block margin so it optically centres in whatever box it is given. A trimmed source would
-be better than the workaround.
+Until the rename the brand was a **1.4 MB raster of a dog in a graduation cap**, and chrome showed it
+by cropping to the dog's face with percentages measured by hand out of the PNG's alpha channel.
 
-It sits *beside* the work rather than performing at you, and it **never** appears on an error, a
-failed upload, or a failed generation.
+Three problems went away with it, and they are worth recording so the mistake is not repeated:
+
+- **Chrome could not follow the theme.** A raster is one set of pixels; ink and dark mode need two.
+- **It cost a download to render a 28 px mark**, and it was the largest above-the-fold image on the
+  landing page.
+- **The crop was hard-coded.** Those numbers described one specific export and would have broken the
+  first time the artwork was redrawn — a fragility the component's own comment admitted to.
+
+**There is no mascot now.** Celebration is carried by copy, motion and the accent, per
+[`states.md` §5](states.md#5-copy-rules) — never by a character, and never on a failure.
 
 **Icons** — Lucide, at **1.6 px stroke, round caps, 24 px grid**. Set once globally via the `.lucide`
 rule in `globals.css`, because CSS overrides Lucide's `stroke-width` attribute — so no icon needs a
@@ -235,6 +239,20 @@ a student is choosing on a phone.
 ## 7. Superseded and rejected
 
 Kept because the reasoning is worth more than the artwork.
+
+**The name "Pawgress"** *(shipped Sprints 01–37, renamed)* — a pun on "paw" and "progress", with a
+1.4 MB illustration of a dog in a graduation cap to match. Renamed to **Acadify** because the name and
+the design system had stopped agreeing with each other: "Daylight" is neutral ground, an ink chrome and
+one blue accent, and nothing in it is playful or animal. A student arriving from the name expected a
+pet app and met a study tool.
+
+The lesson worth keeping is that the *mascot* was the expensive half, not the name. Renaming was a
+find-and-replace; removing the animal meant redrawing the mark, the favicon, the landing hero and the
+sign-up aside, because the illustration had been load-bearing in all four. **A brand carried by an
+illustration is more expensive to change than one carried by type and geometry** — which is the reason
+`Logo.tsx` is now entirely drawn in SVG on `currentColor`.
+
+The idea inside the old name survived: the crossbar of the A is a progress bar (§4).
 
 **"Study Desk"** *(shipped Sprint 05–06, superseded)* — warm paper `#FAF6EF`, terracotta `#A8502F`,
 Newsreader + Public Sans + IBM Plex Mono, 12 px radii. The calm-notebook idea was right about the

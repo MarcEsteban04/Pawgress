@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 import { buttonStyles, Card, CardBody, Donut, MasteryBar, SourceChip } from "@/components/ui";
 import { HeroDecor, HeroStack } from "@/features/marketing/components/HeroDecor";
-import { BrandMascot } from "@/components/shared/BrandMascot";
 import { EVIDENCE_TOPICS } from "@/config/showcase";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -58,7 +57,7 @@ const LOOP = [
   {
     Icon: TrendingUp,
     label: "Track",
-    note: "Every answer sharpens what Pawgress tells you to study next.",
+    note: "Every answer sharpens what Acadify tells you to study next.",
     tone: 5,
   },
 ] as const;
@@ -80,7 +79,7 @@ export default function LandingPage() {
       <div className="w-full">
         {/* ---- Nav ---------------------------------------------------- */}
         <header className="mx-auto flex h-16 w-full max-w-[110rem] items-center gap-4 px-4 sm:h-[4.5rem] sm:px-8 lg:px-12">
-          <Link href="/" aria-label="Pawgress home" className="shrink-0">
+          <Link href="/" aria-label="Acadify home" className="shrink-0">
             <Logo />
           </Link>
 
@@ -115,8 +114,6 @@ export default function LandingPage() {
           <HeroDecor />
 
           <div className="relative mx-auto flex min-h-[34rem] w-full max-w-[70rem] flex-col items-center justify-center gap-7 px-5 py-16 text-center sm:px-8 sm:py-20 xl:min-h-[42rem]">
-            <BrandMascot className="drift" priority sizes="(max-width: 640px) 280px, 380px" />
-
             {/* The two-tone headline: the promise in ink, the payoff in grey. */}
             <h1
               className={cn(
@@ -130,7 +127,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="max-w-[46ch] text-base leading-relaxed text-ink-muted sm:text-lg">
-              Pawgress turns your own schoolwork into reviewers, flashcards and quizzes — then tells
+              Acadify turns your own schoolwork into reviewers, flashcards and quizzes — then tells
               you which topic is actually holding you back.
             </p>
 
@@ -154,7 +151,7 @@ export default function LandingPage() {
             </h2>
             <p className="mt-3 max-w-[54ch] leading-relaxed text-ink-muted">
               Every reviewer and every question comes from the material you uploaded — and every
-              answer you give feeds back into what Pawgress recommends next.
+              answer you give feeds back into what Acadify recommends next.
             </p>
 
             <ol id="loop" className="mt-10 grid scroll-mt-6 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -195,7 +192,7 @@ export default function LandingPage() {
               </h2>
               <p className="mt-4 max-w-[52ch] leading-relaxed text-ink-muted">
                 Every mastery percentage arrives with the number of questions it came from. Under
-                ten answers, Pawgress refuses to show a percentage at all and says so — because a
+                ten answers, Acadify refuses to show a percentage at all and says so — because a
                 confident-looking 100% from three lucky guesses is worse than no number.
               </p>
             </div>
@@ -238,7 +235,7 @@ export default function LandingPage() {
               </h2>
               <p className="mt-4 max-w-[52ch] leading-relaxed text-ink-muted">
                 Summaries, flashcards and quiz questions all point back to the page they came from,
-                so you can check them. If your material doesn&rsquo;t cover something, Pawgress says
+                so you can check them. If your material doesn&rsquo;t cover something, Acadify says
                 so instead of inventing an answer.
               </p>
             </div>
@@ -266,7 +263,7 @@ export default function LandingPage() {
               Find out what to study next
             </h2>
             <p className="max-w-[46ch] leading-relaxed text-ink-muted">
-              Upload one lecture and take one quiz. That is enough for Pawgress to tell you where
+              Upload one lecture and take one quiz. That is enough for Acadify to tell you where
               your weakest topic is.
             </p>
             <Link href="/register" className={buttonStyles({ variant: "accent", size: "lg" })}>

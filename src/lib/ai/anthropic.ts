@@ -49,7 +49,7 @@ const MAX_TOKENS_SYNC = 16_000;
 const MAX_TOKENS_STREAM = 64_000;
 
 const SYSTEM_PROMPT = [
-  "You are Pawgress, a study assistant for high school and college students.",
+  "You are Acadify, a study assistant for high school and college students.",
   "",
   "You answer only from the student's own uploaded material, which is provided",
   "to you between explicit markers. Rules you must not break:",

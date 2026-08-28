@@ -103,7 +103,7 @@ export function NoteEditor({ subjectId, topics, note }: NoteEditorProps) {
       )}
 
       {/* Saved-and-reindexed is worth distinguishing from saved-title-only:
-          one means Pawgress has to read the note again, the other does not. */}
+          one means Acadify has to read the note again, the other does not. */}
       {state.status === "saved" && (
         <div
           role="status"
@@ -112,7 +112,7 @@ export function NoteEditor({ subjectId, topics, note }: NoteEditorProps) {
           <span className="font-medium">Saved.</span>
           <span className="text-ink-muted">
             {state.reindexed
-              ? "Pawgress will read the new version before using it in reviewers or quizzes."
+              ? "Acadify will read the new version before using it in reviewers or quizzes."
               : "Only the title or topic changed, so nothing needs re-reading."}
           </span>
           {isEdit && (
@@ -151,7 +151,7 @@ export function NoteEditor({ subjectId, topics, note }: NoteEditorProps) {
             label="Note"
             htmlFor={bodyId}
             error={state.fieldErrors?.body}
-            hint="Paste or type anything. Pawgress reads this the same way it reads an uploaded file."
+            hint="Paste or type anything. Acadify reads this the same way it reads an uploaded file."
           >
             <Textarea
               id={bodyId}

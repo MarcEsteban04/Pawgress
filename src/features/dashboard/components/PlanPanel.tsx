@@ -53,7 +53,7 @@ export function PlanPanel({
             title="No plan for today"
             description={
               hasSubjects
-                ? "Pawgress builds a plan from your upcoming exams, weak topics and quiz results."
+                ? "Acadify builds a plan from your upcoming exams, weak topics and quiz results."
                 : "Create a subject and upload something — a plan needs material to work from."
             }
             action={hasSubjects ? undefined : { href: "/subjects", label: "Create a subject" }}

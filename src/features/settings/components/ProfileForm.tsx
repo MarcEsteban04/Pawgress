@@ -83,7 +83,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         label="Display name"
         htmlFor={nameId}
         error={state.fieldErrors?.displayName}
-        hint="What Pawgress calls you. Only you see it."
+        hint="What Acadify calls you. Only you see it."
       >
         <Input
           id={nameId}
@@ -121,7 +121,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       <fieldset className="flex flex-col gap-2">
         <legend className="text-[0.9375rem] font-medium">Preferred study block</legend>
         <p className="text-sm text-ink-subtle">
-          How long a single block should be when Pawgress builds your plan.
+          How long a single block should be when Acadify builds your plan.
         </p>
         <input type="hidden" name="preferredSessionMinutes" value={minutes} />
         <div className="mt-1 flex flex-wrap gap-2">

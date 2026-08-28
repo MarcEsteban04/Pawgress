@@ -69,7 +69,7 @@ export function RenameMaterialDialog({
       <DialogContent>
         <DialogTitle>Rename file</DialogTitle>
         <DialogDescription>
-          This changes what the file is called in Pawgress. The original upload is untouched.
+          This changes what the file is called in Acadify. The original upload is untouched.
         </DialogDescription>
 
         <form action={formAction} className="mt-4 flex flex-col gap-4">

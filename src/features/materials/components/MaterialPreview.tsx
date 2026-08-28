@@ -142,7 +142,7 @@ export function MaterialPreview({
         <NoPreview
           Icon={ImageOff}
           title="Browsers cannot show HEIC"
-          description="Your iPhone saved this in Apple's format, which browsers do not display. Pawgress can still read it — text extraction works — but a preview needs a JPEG or PNG."
+          description="Your iPhone saved this in Apple's format, which browsers do not display. Acadify can still read it — text extraction works — but a preview needs a JPEG or PNG."
           material={material}
         />
       );
@@ -217,7 +217,7 @@ export function MaterialPreview({
     <NoPreview
       Icon={FileText}
       title={`${KIND_LABELS[material.kind]} files open on your device`}
-      description="Browsers cannot display Word or PowerPoint without converting them first. Pawgress reads the text inside for reviewers and quizzes — this button gets you the original."
+      description="Browsers cannot display Word or PowerPoint without converting them first. Acadify reads the text inside for reviewers and quizzes — this button gets you the original."
       material={material}
     />
   );

@@ -1,4 +1,4 @@
-# Pawgress — User Stories & Acceptance Criteria
+# Acadify — User Stories & Acceptance Criteria
 
 **Sprint 02 deliverable.** Every MVP requirement in [`requirements.md`](requirements.md) is covered
 by at least one story here. Acceptance criteria are written to be verifiable — a criterion that

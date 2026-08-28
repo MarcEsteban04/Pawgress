@@ -1,4 +1,4 @@
-# Pawgress — Development Backlog
+# Acadify — Development Backlog
 
 **Sprint 02 deliverable.** The ordered work queue derived from [`requirements.md`](requirements.md),
 [`mvp-scope.md`](mvp-scope.md), and [`user-stories.md`](user-stories.md).
@@ -255,7 +255,7 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | Offline-tolerant reading | Roadmap Sprint 79 |
 | Teacher and school accounts, shared reviewers | Spec-listed future features |
 | Notifications | Spec-listed future feature |
-| Native mobile clients | Not in this roadmap. Pawgress is a web app; Phases 16–18 are web work |
+| Native mobile clients | Not in this roadmap. Acadify is a web app; Phases 16–18 are web work |
 
 ---
 

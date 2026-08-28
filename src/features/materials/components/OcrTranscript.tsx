@@ -20,7 +20,7 @@ import { LOW_CONFIDENCE_THRESHOLD } from "@/features/materials/ocr";
  * What we read out of a photo, and the chance to fix it (US-C7).
  *
  * Shown for every OCR'd image, not only the shaky ones. A student cannot judge
- * whether a reviewer will be any good without seeing what Pawgress actually
+ * whether a reviewer will be any good without seeing what Acadify actually
  * read — and a transcription that is 95% right in a way they never see is the
  * one that produces a confidently wrong flashcard.
  *

@@ -3,7 +3,7 @@ import { type ZodType } from "zod";
 /**
  * The AI service contract.
  *
- * Every model call in Pawgress goes through this interface — the assistant, the
+ * Every model call in Acadify goes through this interface — the assistant, the
  * reviewer generator, the quiz generator, embeddings. Features depend on this
  * file and never on a provider SDK, so swapping a model is configuration and
  * swapping a provider is one new implementation (FR-P8).

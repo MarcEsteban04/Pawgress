@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * The page head: a quiet eyebrow line, a large display title, and the page's
  * own controls on the right — the reference's "Manage and track your projects /
- * Project Dashboard / [search]" block, in Pawgress's voice.
+ * Project Dashboard / [search]" block, in Acadify's voice.
  *
  * On a website the primary action belongs in the page header, not pinned to the
  * bottom of the window — that is native-app chrome. Below 768px everything

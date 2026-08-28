@@ -1,10 +1,10 @@
-# Pawgress — Project Development Roadmap
+# Acadify — Project Development Roadmap
 
 ## Goal
 
-Build **Pawgress** from initial project setup to a production-ready **Website**.
+Build **Acadify** from initial project setup to a production-ready **Website**.
 
-Pawgress is an AI-powered study companion for high school and college students. The core product is based on the provided specification:
+Acadify is an AI-powered study companion for high school and college students. The core product is based on the provided specification:
 
 - Upload and organize study materials
 - AI study assistant
@@ -26,7 +26,7 @@ The original specification defines:
 - **Deployment:** Vercel + Supabase
 - **Future mobile app:** Android/iOS
 
-Pawgress is a **responsive web application** — it runs in a browser on desktops, laptops, tablets and
+Acadify is a **responsive web application** — it runs in a browser on desktops, laptops, tablets and
 phones. There is no native app and no app store: the final deliverable is a production website.
 Native mobile clients stay a post-V1 possibility, outside this roadmap.
 
@@ -70,7 +70,7 @@ Each sprint should represent one focused development milestone. A sprint can be 
 ## Sprint 01 — Project Initialization
 
 ### Goals
-- Define the Pawgress project structure.
+- Define the Acadify project structure.
 - Initialize Git repository.
 - Create development branches.
 - Configure environment variables.
@@ -91,7 +91,7 @@ Each sprint should represent one focused development milestone. A sprint can be 
 ## Sprint 02 — Product Requirements
 
 ### Goals
-- Convert the Pawgress specification into development requirements.
+- Convert the Acadify specification into development requirements.
 - Define MVP versus future functionality.
 - Identify all primary user flows.
 
@@ -172,13 +172,13 @@ Improve
 
 # Phase 2 — Design System & Architecture
 
-## Sprint 05 — Pawgress Branding
+## Sprint 05 — Acadify Branding
 
 ### Goals
 Create the visual identity.
 
 ### Deliverables
-- Pawgress logo
+- Acadify logo
 - Animal mascot direction
 - Typography
 - Brand colors
@@ -205,14 +205,14 @@ Create the visual identity.
 - Skeleton loaders
 
 ### Deliverables
-- Pawgress design tokens (light and dark)
+- Acadify design tokens (light and dark)
 - Component standards
 - Primitive set built on Radix + cva, in the shadcn/ui architecture
 
 > The specification names shadcn/ui. We use its architecture — Radix primitives, `cva` variants,
 > `tailwind-merge` — but author the components in-repo rather than pulling them from the registry.
 > Reason: registry components ship their own token vocabulary (`--background`, `--foreground`), which
-> would fight the Pawgress brand tokens. See `docs/design-system.md` §7.
+> would fight the Acadify brand tokens. See `docs/design-system.md` §7.
 
 ---
 
@@ -1106,7 +1106,7 @@ Future specification includes achievements and streaks.
 
 ### Goals
 
-Let a student install Pawgress from the browser onto a phone home screen or a desktop — no app
+Let a student install Acadify from the browser onto a phone home screen or a desktop — no app
 store, no download, the same website running in a standalone window.
 
 ### Deliverables
@@ -1252,7 +1252,7 @@ over-quota, offline.
 
 # Definition of Done
 
-Pawgress is considered **v1 complete** when a student can:
+Acadify is considered **v1 complete** when a student can:
 
 1. Create an account.
 2. Log in.
@@ -1277,8 +1277,8 @@ Pawgress is considered **v1 complete** when a student can:
 21. Complete study sessions.
 22. View overall progress.
 23. Use the main dashboard to understand what to study next.
-24. Use Pawgress on a laptop and a phone browser with the same account.
-25. Install Pawgress from the browser to their home screen or desktop.
+24. Use Acadify on a laptop and a phone browser with the same account.
+25. Install Acadify from the browser to their home screen or desktop.
 
 ---
 
@@ -1368,7 +1368,7 @@ Quiz Generator
 Basic Progress
 ```
 
-After this point, the product already demonstrates the primary Pawgress learning loop.
+After this point, the product already demonstrates the primary Acadify learning loop.
 
 ---
 
@@ -1433,7 +1433,7 @@ Native Mobile Apps
 
 # Final Product Vision
 
-Pawgress should feel like a **personal academic assistant** that knows:
+Acadify should feel like a **personal academic assistant** that knows:
 
 - What the student is studying
 - What the student understands
@@ -1447,7 +1447,7 @@ The ultimate experience should be:
 ```text
 "I upload my schoolwork."
           ↓
-"Pawgress understands it."
+"Acadify understands it."
           ↓
 "It teaches me."
           ↓
@@ -1464,6 +1464,6 @@ The ultimate experience should be:
 "I improve."
 ```
 
-## Pawgress
+## Acadify
 
 > **Don't just study more. Study what matters.**

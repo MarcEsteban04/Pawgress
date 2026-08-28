@@ -1,4 +1,4 @@
-# Pawgress — Navigation & Screen Inventory
+# Acadify — Navigation & Screen Inventory
 
 **Sprint 03 deliverable.** The information architecture: how a student moves through the app, the
 route tree that implements it, and every screen that has to exist.
@@ -16,7 +16,7 @@ Companion documents: [`user-flows.md`](user-flows.md) · [`states.md`](states.md
 
 ## 1. Navigation model
 
-Pawgress is a **website**, so it navigates like one: a persistent sidebar, real URLs, a working back
+Acadify is a **website**, so it navigates like one: a persistent sidebar, real URLs, a working back
 button, and no imitation of native app chrome.
 
 Three shells, chosen by what the student is doing.

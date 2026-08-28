@@ -11,7 +11,7 @@
  * sensitive in "is the sidebar open"; the cost of it being readable is zero.
  */
 
-export const SIDEBAR_COOKIE = "pawgress-sidebar";
+export const SIDEBAR_COOKIE = "acadify-sidebar";
 
 /** A year: this is a preference, not a session. */
 const MAX_AGE = 60 * 60 * 24 * 365;

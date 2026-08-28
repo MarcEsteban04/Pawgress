@@ -10,7 +10,7 @@ Shared authoring notes for the `.dc.html` artboards in this folder. Not an artbo
 | Desktop | 1280 × 800 | The primary design target — a laptop browser window |
 | Narrow | 360 × 840 | A phone browser, the adaptation |
 
-Pawgress is a responsive **web app**. Desktop artboards carry a persistent 240 px sidebar and a
+Acadify is a responsive **web app**. Desktop artboards carry a persistent 240 px sidebar and a
 56 px top bar. Narrow artboards carry a 52 px top bar with a `☰` drawer trigger and **no bottom tab
 bar** — bottom tabs are native-app chrome.
 
@@ -42,8 +42,8 @@ Both widths use the same names so the two layouts read as one system:
 ```bash
 node <design-skill>/seed-canvas.mjs \
   --template <design-skill>/payload.template.html \
-  --out pawgress-mvp-wireframes.html \
-  --title "Pawgress MVP Wireframes" \
+  --out acadify-mvp-wireframes.html \
+  --title "Acadify MVP Wireframes" \
   --artboard Main.dc.html --artboard Subjects.dc.html --artboard SubjectHub.dc.html \
   --artboard Materials.dc.html --artboard Reviewer.dc.html --artboard Results.dc.html \
   --artboard QuizAttempt.dc.html --artboard Flashcards.dc.html --artboard QuizSetup.dc.html \

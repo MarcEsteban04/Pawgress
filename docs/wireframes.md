@@ -1,6 +1,6 @@
-# Pawgress — UX Wireframes
+# Acadify — UX Wireframes
 
-**Sprint 04 deliverable.** Low-fidelity layouts for the MVP screens of the Pawgress **web app** —
+**Sprint 04 deliverable.** Low-fidelity layouts for the MVP screens of the Acadify **web app** —
 desktop-led, adapted down to a phone browser — plus the responsive plan and the layout primitives
 that Sprint 06 turns into components.
 
@@ -16,7 +16,7 @@ proportion and rhythm; this document is the source of truth for structure.
 
 ## 1. How to read these
 
-Pawgress is a **responsive web app**: one website, from a 1920 px monitor down to a 360 px phone
+Acadify is a **responsive web app**: one website, from a 1920 px monitor down to a 360 px phone
 browser. It is not a mobile app and it does not imitate one — no bottom tab bar, no fake native
 chrome. See [`navigation.md` §1](navigation.md#1-navigation-model).
 
@@ -46,7 +46,7 @@ are not stale before they are built.
 
 ```text
 ┌────────────┬────────────────────────────────────────────────────────────────────┐
-│  Pawgress  │  Subjects / Biology / Genetics    🔍 Search        (A) Ana ▾       │
+│  Acadify  │  Subjects / Biology / Genetics    🔍 Search        (A) Ana ▾       │
 │            ├────────────────────────────────────────────────────────────────────┤
 │  ▸ Home    │                                                                    │
 │  ▸ Subjects│                                                                    │
@@ -113,13 +113,13 @@ One screenful that explains the loop. No feature grid, no testimonials, no prici
 
 ```text
 ┌────────────────────────────────────────────┐
-│ Pawgress                    [ Sign in ]    │
+│ Acadify                    [ Sign in ]    │
 ├────────────────────────────────────────────┤
 │                                            │
 │         Don't just study more.             │
 │         Study what matters.                │
 │                                            │
-│   Upload your schoolwork. Pawgress turns   │
+│   Upload your schoolwork. Acadify turns   │
 │   it into reviewers, flashcards and        │
 │   quizzes, then tells you what to study    │
 │   next.                                    │
@@ -145,7 +145,7 @@ real objection ("will it read my teacher's file?"). Desktop: same content, two c
 
 ```text
 ┌────────────────────────────────────────────┐
-│              Pawgress                      │
+│              Acadify                      │
 │                                            │
 │         Create your account                │
 │                                            │
@@ -180,7 +180,7 @@ error above the form — never "wrong password" (US-A2).
 
 ```text
 ┌────────────────────────────────────────────┐
-│              Pawgress                      │
+│              Acadify                      │
 │                                            │
 │          Check your email                  │
 │                                            │
@@ -192,10 +192,10 @@ error above the form — never "wrong password" (US-A2).
 │   Wrong address? Change it                 │
 │                                            │
 │   ──────────────────────────────────────   │
-│   You can start using Pawgress now —       │
+│   You can start using Acadify now —       │
 │   we'll keep reminding you.                │
 │                                            │
-│   [ Continue to Pawgress              ]    │
+│   [ Continue to Acadify              ]    │
 │                                            │
 └────────────────────────────────────────────┘
 ```
@@ -211,10 +211,10 @@ an email. Resend has a visible cooldown so it cannot be hammered.
 
 ```text
 ┌────────────────────────────────────────────┐
-│ ☰  Pawgress                    🔍    (A)   │
+│ ☰  Acadify                    🔍    (A)   │
 ├────────────────────────────────────────────┤
 │                                            │
-│  Welcome to Pawgress 🐾                    │
+│  Welcome to Acadify 🐾                    │
 │                                            │
 │  Three steps to your first quiz:           │
 │                                            │
@@ -275,7 +275,7 @@ student the app is empty and useless. Three steps, one action, current step mark
 
 ```text
 ┌────────────┬────────────────────────────────────────────────────────────────────┐
-│  Pawgress  │  Home                             🔍 Search       (A) Ana ▾       │
+│  Acadify  │  Home                             🔍 Search       (A) Ana ▾       │
 │            ├────────────────────────────────────────────────────────────────────┤
 │  ▸ Home  ■ │  Good morning, Ana                                                 │
 │  ▸ Subjects│                                                                    │
@@ -437,7 +437,7 @@ file gets a fix action, not just an error.
 
 ```text
 ┌────────────┬────────────────────────────────────────────────────────────────────┐
-│  Pawgress  │  Subjects / Biology               🔍 Search       (A) Ana ▾       │
+│  Acadify  │  Subjects / Biology               🔍 Search       (A) Ana ▾       │
 │            ├────────────────────────────────────────────────────────────────────┤
 │  ▸ Home    │  🧬 Biology                                    [ + Upload ]  ⋯    │
 │  ▸ Subjects│  ─────────────────────────────────────────────────────────────     │
@@ -597,7 +597,7 @@ The layout that only a browser window can give you: read the reviewer and interr
 
 ```text
 ┌────────────┬──────────────────────────────────────────┬─────────────────────────┐
-│  Pawgress  │ Biology / Reviewers / Genetics    (A) ▾  │  Ask                 ✕  │
+│  Acadify  │ Biology / Reviewers / Genetics    (A) ▾  │  Ask                 ✕  │
 │            ├──────────────────────────────────────────┼─────────────────────────┤
 │  ▸ Home    │ From Lecture 4.pdf · today               │ Asking about            │
 │  ▸ Subjects│ ✨ AI-generated — check what matters      │ ( Genetics reviewer ▾ ) │
@@ -916,7 +916,7 @@ can read and ask at once. Same components, different container.
 │                                            │
 │  [ Sign out ]                              │
 │                                            │
-│  Pawgress v0.1 · Terms · Privacy           │
+│  Acadify v0.1 · Terms · Privacy           │
 └────────────────────────────────────────────┘
 ```
 
@@ -1020,7 +1020,7 @@ What the wireframes above actually need built. This is the shopping list for the
 
 Deliberately left open here — these are brand and system decisions, not layout ones.
 
-1. **Mascot role.** Celebration and empty states only, per [`states.md` §5](states.md#5-copy-rules). Where exactly it appears, and how often, is Sprint 05.
+1. ~~**Mascot role.**~~ **Resolved:** there is no mascot. The animal direction was dropped with the "Pawgress" name — celebration is copy, motion and the accent, per [`states.md` §5](states.md#5-copy-rules).
 2. **Type scale and font.** Must survive 16 px body on a 360 px screen with long Filipino and English words.
 3. **Colour system.** Subject colours must be distinguishable from status colours, or a red subject reads as a failed one.
 4. **Mastery bar palette.** Needs to read at a glance without implying pass/fail — students are sensitive about this, and colour alone is out (NFR-A3).

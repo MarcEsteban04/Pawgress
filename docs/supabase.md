@@ -1,4 +1,4 @@
-# Pawgress — Supabase
+# Acadify — Supabase
 
 **Sprint 09 deliverable.** How the database, auth and storage are wired, how to run the stack
 locally, and the two steps that need a human with a Supabase account.
@@ -104,7 +104,7 @@ hands out a session without Supabase saying so. Landing on `/dashboard` redirect
 These two steps cannot be done from the repository. They need someone signed in to Supabase.
 
 1. **Create the project.** <https://supabase.com/dashboard> → New project.
-   - Name `pawgress`, region closest to your students (`Southeast Asia (Singapore)` for the
+   - Name `acadify`, region closest to your students (`Southeast Asia (Singapore)` for the
      Philippines).
    - Save the database password in a password manager — Supabase shows it once.
 2. **Link and configure.**
@@ -218,7 +218,7 @@ To use Gmail:
 1. **2-Step Verification must be on** for the account — Google will not issue an App Password
    without it.
 2. Create one at <https://myaccount.google.com/apppasswords>, named something like
-   `Pawgress Supabase`. Copy the 16 characters and **remove the spaces**.
+   `Acadify Supabase`. Copy the 16 characters and **remove the spaces**.
 3. Put the values in `.env.local` (see `.env.example`), where `SMTP_USER` and `SMTP_SENDER_EMAIL`
    are both the Gmail address — Gmail rewrites the `From` header to the authenticated account, so a
    different sender address is silently ignored.
@@ -291,7 +291,7 @@ should follow rather than the other way round:
   them, which can consume a one-time reset token before the student ever clicks it. The failure looks
   exactly like "the link is broken".
 
-It also keeps one pattern across the product: every code Pawgress emails is six digits, entered on a
+It also keeps one pattern across the product: every code Acadify emails is six digits, entered on a
 screen that looks the same.
 
 The flow is `/forgot-password` → `/reset-password` (code + new password on ONE screen) →

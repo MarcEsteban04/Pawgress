@@ -1,4 +1,4 @@
-# Pawgress — Application Architecture
+# Acadify — Application Architecture
 
 **Sprint 07 deliverable.** The boundaries: routing, data access, auth, storage, the AI service, and
 how work that outlives a request gets done.
@@ -218,7 +218,7 @@ create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
 select cron.schedule(
-  'pawgress-jobs-sweeper',
+  'acadify-jobs-sweeper',
   '* * * * *',
   $
   select net.http_post(

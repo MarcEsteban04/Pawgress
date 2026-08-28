@@ -86,7 +86,7 @@ const smtp = {
   user: process.env.SMTP_USER,
   pass: process.env.SMTP_PASS,
   senderEmail: process.env.SMTP_SENDER_EMAIL,
-  senderName: process.env.SMTP_SENDER_NAME ?? "Pawgress",
+  senderName: process.env.SMTP_SENDER_NAME ?? "Acadify",
 };
 
 const smtpProvided = Boolean(smtp.host && smtp.port && smtp.user && smtp.pass && smtp.senderEmail);
@@ -180,14 +180,14 @@ const TEMPLATES = [
     file: "supabase/templates/confirm-signup.html",
     subjectField: "mailer_subjects_confirmation",
     contentField: "mailer_templates_confirmation_content",
-    subject: "Your Pawgress confirmation code",
+    subject: "Your Acadify confirmation code",
   },
   {
     label: "Reset password",
     file: "supabase/templates/reset-password.html",
     subjectField: "mailer_subjects_recovery",
     contentField: "mailer_templates_recovery_content",
-    subject: "Your Pawgress password reset code",
+    subject: "Your Acadify password reset code",
   },
 ];
 

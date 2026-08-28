@@ -26,8 +26,8 @@ export const initialAuthState: AuthFormState = { status: "idle" };
 /** How long a student must wait between verification emails (US-A1). */
 export const RESEND_COOLDOWN_SECONDS = 60;
 
-export const PENDING_EMAIL_COOKIE = "pawgress-pending-email";
-export const LAST_SENT_COOKIE = "pawgress-verification-sent-at";
+export const PENDING_EMAIL_COOKIE = "acadify-pending-email";
+export const LAST_SENT_COOKIE = "acadify-verification-sent-at";
 
 /** Long enough to finish the flow, short enough not to linger. */
 export const PENDING_MAX_AGE_SECONDS = 60 * 30;
@@ -39,5 +39,5 @@ export const PENDING_MAX_AGE_SECONDS = 60 * 30;
  * a new account can still ask to reset a password on an older one — and one
  * shared "pending email" slot would silently overwrite whichever came first.
  */
-export const RECOVERY_EMAIL_COOKIE = "pawgress-recovery-email";
-export const RECOVERY_SENT_COOKIE = "pawgress-recovery-sent-at";
+export const RECOVERY_EMAIL_COOKIE = "acadify-recovery-email";
+export const RECOVERY_SENT_COOKIE = "acadify-recovery-sent-at";

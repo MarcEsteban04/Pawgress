@@ -1,5 +1,5 @@
 /**
- * Barrel for the Pawgress primitive set.
+ * Barrel for the Acadify primitive set.
  *
  * These are the components every feature builds on. Restyle them through the
  * design tokens in `app/globals.css` rather than forking their APIs — see

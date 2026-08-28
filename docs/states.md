@@ -1,4 +1,4 @@
-# Pawgress — State Inventory
+# Acadify — State Inventory
 
 **Sprint 03 deliverable.** Every screen's empty, loading, partial, and error states, so NFR-A4 is a
 checklist rather than an aspiration.
@@ -186,7 +186,7 @@ The state work here matters most — this is where a student loses effort.
 
 | State | Treatment |
 |---|---|
-| Empty — planner | "Add your exams so Pawgress can plan around them" |
+| Empty — planner | "Add your exams so Acadify can plan around them" |
 | Empty — plan, no data | What to do to get a plan: add an exam or take a quiz. Never invent plan items |
 | Empty — plan, all done | Completion state + an optional extra suggestion |
 | Loading | Calendar grid / plan item skeletons |
@@ -258,8 +258,9 @@ an error page.
 | "Not enough quiz data yet to find weak topics." | Showing a fabricated weakest topic |
 | "Based on 3 questions" | "100% mastery" |
 
-Voice: plain, second person, no blame, no exclamation marks, no cute error mascots on failures. The
-mascot celebrates progress; it does not apologise for bugs.
+Voice: plain, second person, no blame, no exclamation marks, nothing cute on a failure.
+Celebration is carried by copy, motion and the accent — there is no character to do it, and
+nothing in the product apologises for a bug in a friendly voice.
 
 ---
 

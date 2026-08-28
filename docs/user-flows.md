@@ -1,4 +1,4 @@
-# Pawgress — User Flows
+# Acadify — User Flows
 
 **Sprint 03 deliverable.** Maps the primary student journey and every branch that can go wrong.
 Requirement and story ids refer to [`requirements.md`](requirements.md) and
@@ -14,7 +14,7 @@ branches. Diagrams render on GitHub.
 
 ## F0 — The full journey
 
-The spine from [`pawgress.md`](pawgress.md), with the real-world branches drawn in.
+The spine from [`acadify.md`](acadify.md), with the real-world branches drawn in.
 
 ```mermaid
 flowchart TD

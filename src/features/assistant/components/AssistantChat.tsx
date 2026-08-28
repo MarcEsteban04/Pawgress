@@ -166,7 +166,7 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
           <EmptyState
             Icon={MessageSquare}
             title="Ask about your own material"
-            description="Every answer comes from the files and notes you uploaded, with the sources shown so you can check them. If your material does not cover something, Pawgress will say so rather than guess."
+            description="Every answer comes from the files and notes you uploaded, with the sources shown so you can check them. If your material does not cover something, Acadify will say so rather than guess."
           />
         ) : (
           messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)

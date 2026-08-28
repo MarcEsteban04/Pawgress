@@ -1,8 +1,8 @@
-# Pawgress 🐾
+# Acadify 🐾
 
 > An AI-powered study companion that helps students organize, understand, and master their schoolwork.
 
-Pawgress lets high school and college students upload their school materials, then turns those
+Acadify lets high school and college students upload their school materials, then turns those
 materials into reviewers, flashcards, and quizzes — and tracks what they actually understand, so the
 app can tell them what to study next.
 
@@ -12,8 +12,8 @@ mobile browsers are fully supported down to a 360 px viewport.
 
 | Document | What it is |
 |---|---|
-| [`docs/pawgress.md`](docs/pawgress.md) | Product specification |
-| [`docs/pawgress_development_roadmap.md`](docs/pawgress_development_roadmap.md) | Roadmap (84 sprints) |
+| [`docs/acadify.md`](docs/acadify.md) | Product specification |
+| [`docs/acadify_development_roadmap.md`](docs/acadify_development_roadmap.md) | Roadmap (84 sprints) |
 | [`docs/requirements.md`](docs/requirements.md) | Product requirements — scope contract, FR/NFR ids, open decisions |
 | [`docs/mvp-scope.md`](docs/mvp-scope.md) | What ships in v0.1, and what is deliberately deferred |
 | [`docs/user-stories.md`](docs/user-stories.md) | User stories with acceptance criteria |
@@ -21,7 +21,7 @@ mobile browsers are fully supported down to a 360 px viewport.
 | [`docs/navigation.md`](docs/navigation.md) | Navigation model, route tree, screen inventory |
 | [`docs/states.md`](docs/states.md) | Empty / loading / error state inventory and copy rules |
 | [`docs/wireframes.md`](docs/wireframes.md) | Low-fidelity screen layouts, mobile constraints, responsive plan |
-| [`docs/branding.md`](docs/branding.md) | Brand spec — palette, type ramp, logo, mascot, icon rules |
+| [`docs/branding.md`](docs/branding.md) | Brand spec — palette, type ramp, logo, icon rules |
 | [`docs/design-system.md`](docs/design-system.md) | Primitive set, token vocabulary, component standards |
 | [`docs/architecture.md`](docs/architecture.md) | Routing, auth layers, data access, background jobs, errors |
 | [`docs/supabase.md`](docs/supabase.md) | Supabase runbook — local stack, hosted project, the three auth layers |

@@ -1,4 +1,4 @@
--- Pawgress — local seed data.
+-- Acadify — local seed data.
 --
 -- Runs automatically after migrations on `npm run db:reset`. It exists so a
 -- developer gets a usable local stack in one command rather than clicking

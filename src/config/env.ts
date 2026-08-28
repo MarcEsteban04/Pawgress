@@ -1,5 +1,5 @@
 /**
- * Environment access for Pawgress.
+ * Environment access for Acadify.
  *
  * Read every environment variable through this module instead of touching
  * `process.env` directly, so a missing value fails loudly at the boundary
@@ -41,7 +41,7 @@ const supabaseAnonKey =
 /** Values safe to reference in client components. */
 export const publicEnv = {
   appUrl: optional(process.env.NEXT_PUBLIC_APP_URL, "http://localhost:3000"),
-  appName: optional(process.env.NEXT_PUBLIC_APP_NAME, "Pawgress"),
+  appName: optional(process.env.NEXT_PUBLIC_APP_NAME, "Acadify"),
 
   /** Undefined until a Supabase project is wired up — see `supabaseConfigured`. */
   supabaseUrl,

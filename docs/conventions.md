@@ -1,4 +1,4 @@
-# Pawgress — Coding Conventions
+# Acadify — Coding Conventions
 
 Established in Sprint 01. These are the defaults; deviate only with a reason worth writing down.
 

@@ -1,4 +1,4 @@
-# Pawgress — MVP Scope
+# Acadify — MVP Scope
 
 **Sprint 02 deliverable.** Defines the first release a real student could use, and — more
 importantly — what is deliberately *not* in it. Requirement IDs refer to
@@ -63,7 +63,7 @@ MVP is **Roadmap Sprints 01–59**, minus the deferrals listed below. Target mil
 
 ## Out of scope (post-V1)
 
-- Native mobile app or APK of any kind — Pawgress is a website; roadmap Phases 16–18 are installable
+- Native mobile app or APK of any kind — Acadify is a website; roadmap Phases 16–18 are installable
   web app, offline tolerance, cross-browser QA and launch
 - Installable web app (manifest, standalone window) and offline reading — Sprints 78–79, after V1
 - Achievements, streaks, celebrations — FR-D4

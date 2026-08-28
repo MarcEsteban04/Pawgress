@@ -1,10 +1,10 @@
-# Pawgress
+# Acadify
 
 > **An AI-powered study companion web app that helps students organize, understand, and master their schoolwork.**
 
 ## Overview
 
-Pawgress is a **responsive web app** designed for **high school and college students**. Students can upload their school materials, activities, notes, and files, then use AI to turn them into useful study resources.
+Acadify is a **responsive web app** designed for **high school and college students**. Students can upload their school materials, activities, notes, and files, then use AI to turn them into useful study resources.
 
 Instead of using multiple apps for files, reviewers, quizzes, schedules, and progress tracking, everything is managed in one place.
 
@@ -196,6 +196,6 @@ Future Features
 📴 Offline study mode
 Product Vision
 
-Pawgress should feel like a personal academic assistant that knows what the student is studying, what they understand, what they struggle with, and what they should study next.
+Acadify should feel like a personal academic assistant that knows what the student is studying, what they understand, what they struggle with, and what they should study next.
 
 Don't just study more. Study what matters.

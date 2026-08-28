@@ -39,7 +39,7 @@ export function AuthShell({ children, aside }: { children: ReactNode; aside?: Re
         {/* The mark stays pinned to the corner. It is chrome, not part of the
             composition — centring it with everything else reads as a splash
             screen rather than a page. */}
-        <Link href="/" aria-label="Pawgress home" className="w-fit shrink-0">
+        <Link href="/" aria-label="Acadify home" className="w-fit shrink-0">
           <Logo />
         </Link>
 
@@ -63,7 +63,7 @@ export function AuthShell({ children, aside }: { children: ReactNode; aside?: Re
       <main className="flex flex-1 flex-col">
         {/* The brand only appears here below `lg`, where the aside is gone. */}
         <div className="flex h-16 items-center px-5 sm:px-8 lg:hidden">
-          <Link href="/" aria-label="Pawgress home">
+          <Link href="/" aria-label="Acadify home">
             <Logo />
           </Link>
         </div>

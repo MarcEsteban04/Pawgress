@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "pawgress"
+project_id = "acadify"
 
 [api]
 enabled = true
@@ -250,11 +250,11 @@ otp_expiry = 3600
 # is the switch. The hosted project needs the same change in the dashboard:
 # Authentication -> Email Templates -> Confirm signup. See docs/supabase.md §6.
 [auth.email.template.confirmation]
-subject = "Your Pawgress confirmation code"
+subject = "Your Acadify confirmation code"
 content_path = "./supabase/templates/confirm-signup.html"
 
 [auth.email.template.recovery]
-subject = "Your Pawgress password reset code"
+subject = "Your Acadify password reset code"
 content_path = "./supabase/templates/reset-password.html"
 
 # Uncomment to customize email template

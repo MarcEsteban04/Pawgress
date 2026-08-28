@@ -89,7 +89,7 @@ async function MaterialList({
       <EmptyState
         Icon={Upload}
         title="No files yet"
-        description="Lecture slides, past papers and your own typed notes all go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
+        description="Lecture slides, past papers and your own typed notes all go here. Everything Acadify generates — reviewers, flashcards, quizzes — is built from them."
         action={
           <div className="flex flex-wrap justify-center gap-2">
             <UploadDialog subjectId={subjectId} topics={topics} />

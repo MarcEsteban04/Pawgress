@@ -23,7 +23,7 @@ import { isTerminalStatus } from "@/types";
  * pointing at a page (docs/navigation.md §1).
  *
  * The job this screen actually does is trust. Before a student relies on a
- * generated reviewer, they need to be able to check that Pawgress read the file
+ * generated reviewer, they need to be able to check that Acadify read the file
  * they think it read. That is why the preview gets the width and the metadata
  * sits beside it rather than above it.
  */
@@ -88,7 +88,7 @@ export default async function Page({
 
   /* An OCR'd photo carries its transcription into the page too. A student
      cannot judge whether a reviewer will be any good without seeing what
-     Pawgress actually read (US-C7). */
+     Acadify actually read (US-C7). */
   const isOcrImage = material.kind === "image" && material.status === "ready";
   const transcript = isOcrImage ? await getMaterialText(materialId) : null;
 
@@ -190,7 +190,7 @@ export default async function Page({
                   leaving a student wondering what is missing. */}
               {!isTerminalStatus(material.status) && (
                 <p className="mt-3 text-xs leading-relaxed text-ink-subtle">
-                  Pawgress is still reading this. The file itself is ready to view — reviewers and
+                  Acadify is still reading this. The file itself is ready to view — reviewers and
                   quizzes become available once it finishes.
                 </p>
               )}
@@ -237,7 +237,7 @@ export default async function Page({
               <p className="mt-1 text-xs leading-relaxed text-ink-subtle">
                 {isNote
                   ? "Renaming changes the title only — use Edit note to change what it says. Deleting is permanent."
-                  : "Renaming changes the name in Pawgress only. Deleting removes the stored file, and there is no copy."}
+                  : "Renaming changes the name in Acadify only. Deleting removes the stored file, and there is no copy."}
               </p>
             </CardBody>
           </Card>

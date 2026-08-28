@@ -71,7 +71,7 @@ async function Topics({ subjectId }: { subjectId: string }) {
       <EmptyState
         Icon={ListTree}
         title="No topics yet"
-        description="Topics are the chapters or units inside this subject. Filing files under one is what lets Pawgress tell you which parts you are weak on, rather than judging the whole class at once."
+        description="Topics are the chapters or units inside this subject. Filing files under one is what lets Acadify tell you which parts you are weak on, rather than judging the whole class at once."
         action={<TopicDialog subjectId={subjectId} />}
       />
     );

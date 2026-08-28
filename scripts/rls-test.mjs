@@ -97,7 +97,7 @@ async function admin(pathname, { method = "GET", body } = {}) {
 
 /** Fixture accounts. Confirmed on creation so they can sign in immediately. */
 async function createUser(label) {
-  const email = `rls-test-${label}-${Date.now()}@pawgress.test`;
+  const email = `rls-test-${label}-${Date.now()}@acadify.test`;
   const password = `rls-test-${Math.random().toString(36).slice(2)}-Aa1!`;
 
   const created = await admin("admin/users", {

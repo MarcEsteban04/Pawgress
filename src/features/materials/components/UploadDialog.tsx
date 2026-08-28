@@ -329,7 +329,7 @@ export function UploadDialog({
           {fixedTopic ? "Upload to " + fixedTopic.name : "Upload to this subject"}
         </DialogTitle>
         <DialogDescription>
-          PDF, Word, PowerPoint or photos, up to {limitMb} MB each. Everything Pawgress generates is
+          PDF, Word, PowerPoint or photos, up to {limitMb} MB each. Everything Acadify generates is
           built from these.
         </DialogDescription>
 

@@ -56,8 +56,8 @@ export function DeleteAccountDialog() {
       <DialogContent>
         <DialogTitle>Delete your account?</DialogTitle>
         <DialogDescription>
-          This removes your uploads, the text extracted from them, everything Pawgress generated,
-          and every quiz result and mastery score. It cannot be undone, and there is no copy.
+          This removes your uploads, the text extracted from them, everything Acadify generated, and
+          every quiz result and mastery score. It cannot be undone, and there is no copy.
         </DialogDescription>
 
         <form action={formAction} className="mt-4 flex flex-col gap-4">

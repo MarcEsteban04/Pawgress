@@ -25,7 +25,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
         }}
       >
         <div style={{ maxWidth: "32rem" }}>
-          <h1 style={{ fontSize: "1.5rem", margin: "0 0 0.75rem" }}>Pawgress could not start</h1>
+          <h1 style={{ fontSize: "1.5rem", margin: "0 0 0.75rem" }}>Acadify could not start</h1>
           <p style={{ lineHeight: 1.6, color: "#656c7a", margin: "0 0 1.5rem" }}>
             Something failed before the page could load. Nothing you have uploaded is affected.
             Reloading usually fixes it.
@@ -58,7 +58,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
               cursor: "pointer",
             }}
           >
-            Reload Pawgress
+            Reload Acadify
           </button>
         </div>
       </body>

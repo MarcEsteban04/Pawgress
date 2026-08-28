@@ -3,7 +3,7 @@
  *
  * Defined once because it had drifted: the same Programming/Recursion example
  * was hardcoded into four separate components, so every public surface led with
- * computer science. Pawgress is for high school and college students across all
+ * computer science. Acadify is for high school and college students across all
  * their subjects, and a visitor who only sees code examples reasonably concludes
  * it is not for them.
  *

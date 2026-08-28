@@ -204,7 +204,7 @@ export function MaterialsPanel({
             Icon={Upload}
             title="No files yet"
             control={action}
-            description="Lecture slides, notes and past papers go here. Everything Pawgress generates — reviewers, flashcards, quizzes — is built from them."
+            description="Lecture slides, notes and past papers go here. Everything Acadify generates — reviewers, flashcards, quizzes — is built from them."
           />
         ) : (
           <>
