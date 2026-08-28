@@ -1,18 +1,29 @@
 "use client";
 
 import { ArrowUp, Sparkles, Square, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { Button, Select, SourceChip } from "@/components/ui";
 import { Markdown } from "@/features/assistant/markdown";
+import { ConversationRail } from "@/features/assistant/components/ConversationRail";
+import {
+  appendTurnAction,
+  createConversationAction,
+} from "@/features/assistant/server/conversations";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
+import { type ConversationSummary, type StoredMessage } from "@/server/conversations/queries";
 
 /**
  * The assistant conversation (FR-C1, FR-C3, US-E1).
  *
- * **History lives in this component, not in the database.** Saving, renaming and
- * resuming conversations is Sprint 40; until then a reload starts fresh, which
- * is honest — a half-built persistence layer that loses messages on a refresh
- * would be worse than one that never claimed to keep them.
+ * **History is saved, and saved AFTER the answer has streamed.** Writing it
+ * inside the streaming route sounds tidier and is worse: the route would have
+ * to hold the row open across a stream the browser may abandon, and a student
+ * who pressed stop would still have the half they stopped saved as though they
+ * had read it. Appending afterwards means what is stored is what was shown.
+ *
+ * The cost is honest: a browser that dies mid-answer loses that turn. Losing an
+ * answer nobody read beats keeping one nobody saw.
  *
  * The subject selector is here because retrieval already takes a scope and an
  * assistant that searches everything is a worse product than one that does not.
@@ -26,12 +37,114 @@ function nextId(): string {
   return `m${messageCounter}`;
 }
 
-export function AssistantChat({ subjects }: { subjects: { id: string; name: string }[] }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+/**
+ * Stored rows back into the shapes the transcript renders.
+ *
+ * A saved thread has no `streaming`, no `noMaterial` and no `error` — those
+ * are states a turn passes through, not facts about it. Reconstructing them
+ * would be inventing a history that did not happen.
+ */
+function hydrate(stored: StoredMessage[]): ChatMessage[] {
+  return stored.map((message) =>
+    message.role === "user"
+      ? { id: message.id, role: "user" as const, text: message.content }
+      : {
+          id: message.id,
+          role: "assistant" as const,
+          question: "",
+          text: message.content,
+          citations: message.citations,
+          /* Finished by definition — a saved turn is one that completed. */
+          streaming: false,
+          ungrounded: message.ungrounded,
+        },
+  );
+}
+
+export function AssistantChat({
+  subjects,
+  conversations,
+  initial,
+}: {
+  subjects: { id: string; name: string }[];
+  conversations: ConversationSummary[];
+  /** The thread the URL asked for, already loaded on the server. */
+  initial: { id: string; subjectId: string | null; messages: StoredMessage[] } | null;
+}) {
+  const router = useRouter();
+  const [messages, setMessages] = useState<ChatMessage[]>(() => hydrate(initial?.messages ?? []));
   const [question, setQuestion] = useState("");
-  const [subjectId, setSubjectId] = useState("");
+  const [subjectId, setSubjectId] = useState(initial?.subjectId ?? "");
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  /* The thread being written to. A ref rather than state because `ask` needs
+     the value it had when the answer finished, not the value of a render that
+     may have happened since — and because changing it must not re-render the
+     transcript mid-stream. */
+  const conversationRef = useRef<string | null>(initial?.id ?? null);
+  const [activeId, setActiveId] = useState<string | null>(initial?.id ?? null);
+
+  /**
+   * Save a finished turn, creating the thread if this was the first one.
+   *
+   * Failures are swallowed on purpose. The answer is on screen and the student
+   * is reading it; interrupting that to report that a database write failed
+   * would be telling them about our problem in the middle of their work. The
+   * action logs it, and the next turn tries again.
+   */
+  const persist = useCallback(
+    async (
+      askedQuestion: string,
+      answer: string,
+      citations: AssistantCitation[],
+      ungrounded: boolean,
+    ) => {
+      let id = conversationRef.current;
+
+      if (!id) {
+        const created = await createConversationAction({
+          firstQuestion: askedQuestion,
+          subjectId: subjectId || null,
+        });
+        if (created.status === "error") return;
+        id = created.conversationId;
+        conversationRef.current = id;
+        setActiveId(id);
+      }
+
+      await appendTurnAction({
+        conversationId: id,
+        question: askedQuestion,
+        answer,
+        citations,
+        ungrounded,
+      });
+
+      /* Refresh the server component so the rail shows the new thread and its
+         new position, without a full navigation that would unmount the
+         transcript the student is reading. */
+      router.refresh();
+    },
+    [router, subjectId],
+  );
+
+  function startNew() {
+    abortRef.current?.abort();
+    conversationRef.current = null;
+    setActiveId(null);
+    setMessages([]);
+    setQuestion("");
+    router.push("/assistant");
+  }
+
+  function openConversation(id: string) {
+    abortRef.current?.abort();
+    /* Navigating rather than fetching here: the thread is a URL, so it can be
+       linked, reloaded and reached with the back button — and the server
+       already knows how to load one. */
+    router.push(`/assistant?c=${id}`);
+  }
 
   const ask = useCallback(
     async (text: string, allowUngrounded: boolean, replaceId?: string) => {
@@ -84,6 +197,7 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
         if (!response.body) throw new Error("no body");
 
         let streamed = "";
+        let latestCitations: AssistantCitation[] = [];
         for await (const chunkFrame of readFrames(response.body)) {
           switch (chunkFrame.type) {
             case "text":
@@ -91,7 +205,8 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
               patch({ text: streamed });
               break;
             case "citations":
-              patch({ citations: chunkFrame.value as AssistantCitation[] });
+              latestCitations = chunkFrame.value as AssistantCitation[];
+              patch({ citations: latestCitations });
               break;
             case "no_material":
               patch({ noMaterial: true, streaming: false });
@@ -105,6 +220,13 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
           }
         }
         patch({ streaming: false });
+
+        /* Saved once, with the finished answer. An empty one is not saved at
+           all: a failed or refused turn is not history, and a list full of
+           threads containing a single error is a list nobody opens. */
+        if (streamed.trim().length > 0) {
+          void persist(text, streamed, latestCitations, allowUngrounded);
+        }
       } catch (thrown) {
         /* An abort is the student pressing stop, not a failure. Whatever had
            already streamed stays on screen — half an answer they asked to stop
@@ -125,7 +247,7 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
         setBusy(false);
       }
     },
-    [subjectId],
+    [persist, subjectId],
   );
 
   function submit(event: React.FormEvent) {
@@ -140,137 +262,150 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
     subjects.find((subject) => subject.id === subjectId)?.name ?? "all your subjects";
 
   return (
-    /* One surface for the whole conversation, filling the column. The header,
-       the transcript and the composer are parts of a single object rather than
-       three things stacked with gaps between them — which is what a chat IS,
-       and what the previous layout of a page header floating above a narrow
-       strip failed to say. */
-    <div className="flex min-h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
-      <header className="relative flex flex-col gap-4 border-b border-rule px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
-        {/* A wash behind the header only. The transcript below stays plain
+    /* The rail sits OUTSIDE the conversation surface, not inside it. It is a
+       list of other conversations — putting it within the panel that shows
+       one would say it belongs to that one. Below lg it moves above the chat
+       rather than collapsing into a menu: on a narrow screen a student is
+       picking a thread before they start reading, not while. */
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+      <ConversationRail
+        conversations={conversations}
+        activeId={activeId}
+        onSelect={openConversation}
+        onNew={startNew}
+      />
+      {/* One surface for the whole conversation, filling the column. The
+          header, the transcript and the composer are parts of a single object
+          rather than three things stacked with gaps between them — which is
+          what a chat IS, and what a page header floating above a narrow strip
+          failed to say. */}
+      <div className="flex min-h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
+        <header className="relative flex flex-col gap-4 border-b border-rule px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+          {/* A wash behind the header only. The transcript below stays plain
             paper, because tinted ground under a long answer is the fastest way
             to make it harder to read. */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(80% 160% at 0% 0%, var(--accent-soft) 0%, transparent 62%)",
-          }}
-        />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(80% 160% at 0% 0%, var(--accent-soft) 0%, transparent 62%)",
+            }}
+          />
 
-        <div className="relative flex items-start gap-3.5">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent-soft text-accent">
-            <Sparkles className="size-5" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <h1 className="font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
-              Ask
-            </h1>
-            <p className="mt-1 text-sm text-ink-muted">
-              Answers come from what you uploaded, with the sources shown so you can check them.
-            </p>
+          <div className="relative flex items-start gap-3.5">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent-soft text-accent">
+              <Sparkles className="size-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
+                Ask
+              </h1>
+              <p className="mt-1 text-sm text-ink-muted">
+                Answers come from what you uploaded, with the sources shown so you can check them.
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Scope is always visible: a student has to know what "my materials"
+          {/* Scope is always visible: a student has to know what "my materials"
             means right now before they can trust an answer (US-E3). */}
-        <div className="relative flex shrink-0 items-center gap-2">
-          <label htmlFor="assistant-scope" className="text-sm whitespace-nowrap text-ink-muted">
-            Asking about
-          </label>
-          <Select
-            id="assistant-scope"
-            value={subjectId}
-            onChange={(event) => setSubjectId(event.target.value)}
-            className="h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm"
-          >
-            <option value="">All your subjects</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </header>
+          <div className="relative flex shrink-0 items-center gap-2">
+            <label htmlFor="assistant-scope" className="text-sm whitespace-nowrap text-ink-muted">
+              Asking about
+            </label>
+            <Select
+              id="assistant-scope"
+              value={subjectId}
+              onChange={(event) => setSubjectId(event.target.value)}
+              className="h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm"
+            >
+              <option value="">All your subjects</option>
+              {subjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </header>
 
-      {/* Full-width surface, READING-WIDTH transcript. Prose set across 1900px
+        {/* Full-width surface, READING-WIDTH transcript. Prose set across 1900px
           is not a wider page, it is an unreadable one — the eye loses the line
           it is returning to. The panel takes the space; the text keeps the
           measure. */}
-      <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
-        <div className="mx-auto flex w-full max-w-[52rem] flex-1 flex-col gap-6">
-          {messages.length === 0 ? (
-            <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text, false)} />
-          ) : (
-            messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)
-          )}
-        </div>
-      </div>
-
-      {/* Pinned to the bottom of the surface rather than floating over the
-          transcript. The send control lives INSIDE the field: a button beside a
-          text box is two objects, and a composer is one. */}
-      <form
-        onSubmit={submit}
-        className="sticky bottom-0 border-t border-rule bg-surface px-5 py-4 sm:px-7"
-      >
-        <div className="mx-auto w-full max-w-[52rem]">
-          <div className="flex items-end gap-2 rounded-[var(--radius-card)] border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong">
-            <label htmlFor="assistant-question" className="sr-only">
-              Ask about {scopeLabel}
-            </label>
-            <textarea
-              id="assistant-question"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              onKeyDown={(event) => {
-                /* Enter sends, Shift+Enter breaks the line. A question is
-                   usually one line, and reaching for a button after every one
-                   is friction a student feels twenty times a session. */
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  submit(event);
-                }
-              }}
-              rows={1}
-              placeholder={`Ask about ${scopeLabel}…`}
-              className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
-            />
-
-            {busy ? (
-              <Button
-                type="button"
-                variant="subtle"
-                size="sm"
-                aria-label="Stop generating"
-                onClick={() => abortRef.current?.abort()}
-              >
-                <Square aria-hidden />
-                Stop
-              </Button>
+        <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
+          <div className="mx-auto flex w-full max-w-[52rem] flex-1 flex-col gap-6">
+            {messages.length === 0 ? (
+              <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text, false)} />
             ) : (
-              <Button
-                type="submit"
-                variant="accent"
-                aria-label="Send"
-                disabled={!question.trim()}
-                className="size-9 shrink-0 rounded-full p-0"
-              >
-                <ArrowUp aria-hidden />
-              </Button>
+              messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)
             )}
           </div>
+        </div>
 
-          {/* Stated once, quietly. A student who has just discovered that
+        {/* Pinned to the bottom of the surface rather than floating over the
+          transcript. The send control lives INSIDE the field: a button beside a
+          text box is two objects, and a composer is one. */}
+        <form
+          onSubmit={submit}
+          className="sticky bottom-0 border-t border-rule bg-surface px-5 py-4 sm:px-7"
+        >
+          <div className="mx-auto w-full max-w-[52rem]">
+            <div className="flex items-end gap-2 rounded-[var(--radius-card)] border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong">
+              <label htmlFor="assistant-question" className="sr-only">
+                Ask about {scopeLabel}
+              </label>
+              <textarea
+                id="assistant-question"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  /* Enter sends, Shift+Enter breaks the line. A question is
+                   usually one line, and reaching for a button after every one
+                   is friction a student feels twenty times a session. */
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    submit(event);
+                  }
+                }}
+                rows={1}
+                placeholder={`Ask about ${scopeLabel}…`}
+                className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
+              />
+
+              {busy ? (
+                <Button
+                  type="button"
+                  variant="subtle"
+                  size="sm"
+                  aria-label="Stop generating"
+                  onClick={() => abortRef.current?.abort()}
+                >
+                  <Square aria-hidden />
+                  Stop
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  variant="accent"
+                  aria-label="Send"
+                  disabled={!question.trim()}
+                  className="size-9 shrink-0 rounded-full p-0"
+                >
+                  <ArrowUp aria-hidden />
+                </Button>
+              )}
+            </div>
+
+            {/* Stated once, quietly. A student who has just discovered that
               Enter sends does not need telling again on every render, but a
               student who has not needs telling once. */}
-          <p className="mt-2 text-xs text-ink-subtle">
-            Enter to send · Shift + Enter for a new line
-          </p>
-        </div>
-      </form>
+            <p className="mt-2 text-xs text-ink-subtle">
+              Enter to send · Shift + Enter for a new line
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
