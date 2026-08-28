@@ -45,7 +45,7 @@ function frame(data: Frame): Uint8Array {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { question?: unknown; subjectId?: unknown };
+  let body: { question?: unknown; subjectId?: unknown; useMaterial?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
     const result = await answerQuestion({
       question,
       scope: { subjectId },
+      /* Defaults to ON. A missing field means an older client, and the safe
+         reading of "unspecified" is the product's own default rather than the
+         cheaper path. */
+      useMaterial: body.useMaterial !== false,
     });
 
     if (!result.grounded) {

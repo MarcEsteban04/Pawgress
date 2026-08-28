@@ -38,9 +38,14 @@ export type AnswerRequest = {
   question: string;
   scope?: RetrievalScope;
   /**
-   * Set only when the student has explicitly asked for an answer that is not
-   * from their material, having been told that is what they are getting.
+   * Whether to search the student's files at all.
+   *
+   * False is not a weaker version of true — it skips retrieval entirely, so
+   * there is no embedding call, no vector search, and a first token that
+   * arrives as fast as the provider can produce one. A student who wants to
+   * talk should not pay for a search they switched off, in latency or tokens.
    */
+  useMaterial?: boolean;
 };
 
 export type AnswerResult =
@@ -84,6 +89,27 @@ const GROUNDED_PROMPT = [
  * study question their files do not cover. Classifying them first would mean a
  * second model call to decide whether to make the first one.
  */
+/**
+ * The student turned material off. This is a conversation, not a search.
+ *
+ * Separate from GENERAL_PROMPT because the two situations are different: one
+ * looked and found nothing, the other never looked. Telling someone "none of
+ * your material matched" when nothing was searched would be a lie about work
+ * that was never done.
+ */
+const CONVERSATION_PROMPT = [
+  "The student has turned OFF searching their uploaded material for this",
+  "conversation. Nothing was searched, so do not say anything about what their",
+  "material does or does not contain.",
+  "",
+  "- Answer normally and helpfully, from general knowledge.",
+  "- You still have the library summary above, so questions about their account",
+  "  — how many subjects, what they have uploaded — are answerable from it.",
+  "- If they ask about the CONTENT of their files, say plainly that searching",
+  "  their material is switched off for this conversation, and that turning it",
+  "  back on will let you answer from it.",
+].join("\n");
+
 const GENERAL_PROMPT = [
   "None of the student's uploaded material matched this question.",
   "",
@@ -110,13 +136,25 @@ export async function answerQuestion(request: AnswerRequest): Promise<AnswerResu
   const question = request.question.trim();
   if (question.length === 0) return { grounded: false, reason: "empty_question" };
 
+  /* Retrieval is skipped, not merely ignored, when material is off. The
+     embedding call it starts with is the slowest thing in the path and it is
+     billed — running it to throw the result away would be paying for a search
+     the student switched off. */
+  const useMaterial = request.useMaterial !== false;
+
   const [retrieval, libraryFacts] = await Promise.all([
-    retrieveForQuestion(question, request.scope),
+    useMaterial
+      ? retrieveForQuestion(question, request.scope)
+      : Promise.resolve({ chunks: [], empty: true as const, matched: 0 }),
     buildLibraryFacts(),
   ]);
 
   const service = getAiService();
-  const instruction = retrieval.empty ? GENERAL_PROMPT : GROUNDED_PROMPT;
+  const instruction = !useMaterial
+    ? CONVERSATION_PROMPT
+    : retrieval.empty
+      ? GENERAL_PROMPT
+      : GROUNDED_PROMPT;
 
   const { textStream, done } = await service.stream(
     {

@@ -52,6 +52,7 @@ function titleFrom(question: string): string {
 export async function createConversationAction(input: {
   firstQuestion: string;
   subjectId: string | null;
+  useMaterial: boolean;
 }): Promise<ConversationResult> {
   const session = await requireSession();
   const supabase = await createSupabaseServerClient();
@@ -63,6 +64,10 @@ export async function createConversationAction(input: {
       /* An empty select posts "", which is not a uuid. Null means "all my
          subjects", which is a legitimate scope rather than a missing one. */
       subject_id: input.subjectId || null,
+      /* Remembered on the thread, like the scope. Without it, resuming a
+         conversation a student had deliberately made general would silently
+         switch their files back on and start citing them. */
+      use_material: input.useMaterial,
       title: titleFrom(input.firstQuestion),
     })
     .select("id")

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Sparkles, Square, TriangleAlert } from "lucide-react";
+import { ArrowUp, FileSearch, Sparkles, Square, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { AcadifyMark } from "@/components/shared/Logo";
@@ -12,6 +12,7 @@ import {
   createConversationAction,
 } from "@/features/assistant/server/conversations";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
+import { cn } from "@/lib/utils";
 import { type ConversationSummary, type StoredMessage } from "@/server/conversations/queries";
 
 /**
@@ -72,12 +73,22 @@ export function AssistantChat({
   subjects: { id: string; name: string }[];
   conversations: ConversationSummary[];
   /** The thread the URL asked for, already loaded on the server. */
-  initial: { id: string; subjectId: string | null; messages: StoredMessage[] } | null;
+  initial: {
+    id: string;
+    subjectId: string | null;
+    useMaterial: boolean;
+    messages: StoredMessage[];
+  } | null;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(() => hydrate(initial?.messages ?? []));
   const [question, setQuestion] = useState("");
   const [subjectId, setSubjectId] = useState(initial?.subjectId ?? "");
+  /* On by default — grounding in the student's own material is what the
+     product is for, so turning it off is the deliberate act. Restored from the
+     thread when one is resumed, so a conversation kept as a general chat stays
+     one. */
+  const [useMaterial, setUseMaterial] = useState(initial?.useMaterial ?? true);
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -109,6 +120,7 @@ export function AssistantChat({
         const created = await createConversationAction({
           firstQuestion: askedQuestion,
           subjectId: subjectId || null,
+          useMaterial,
         });
         if (created.status === "error") return;
         id = created.conversationId;
@@ -129,7 +141,7 @@ export function AssistantChat({
          transcript the student is reading. */
       router.refresh();
     },
-    [router, subjectId],
+    [router, subjectId, useMaterial],
   );
 
   function startNew() {
@@ -195,6 +207,7 @@ export function AssistantChat({
           body: JSON.stringify({
             question: text,
             subjectId: subjectId || null,
+            useMaterial,
           }),
           signal: controller.signal,
         });
@@ -261,7 +274,7 @@ export function AssistantChat({
         setBusy(false);
       }
     },
-    [persist, subjectId],
+    [persist, subjectId, useMaterial],
   );
 
   function submit(event: React.FormEvent) {
@@ -327,15 +340,48 @@ export function AssistantChat({
 
           {/* Scope is always visible: a student has to know what "my materials"
             means right now before they can trust an answer (US-E3). */}
-          <div className="relative flex shrink-0 items-center gap-2">
+          <div className="relative flex shrink-0 flex-wrap items-center gap-2">
+            {/* A switch, not a checkbox in a menu. It changes what the next
+                answer IS, so it belongs where the answer is about to appear and
+                its state has to be readable without opening anything. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={useMaterial}
+              onClick={() => setUseMaterial((on) => !on)}
+              title={
+                useMaterial
+                  ? "Aki searches your uploaded files and cites them"
+                  : "Aki answers from general knowledge; your files are not searched"
+              }
+              className={cn(
+                "inline-flex h-10 items-center gap-2 rounded-[var(--radius-pill)] border px-3 text-sm font-medium transition-colors",
+                useMaterial
+                  ? "border-accent/30 bg-accent-soft text-accent"
+                  : "border-rule bg-surface text-ink-muted hover:border-rule-strong",
+              )}
+            >
+              <FileSearch className="size-4" aria-hidden />
+              <span className="whitespace-nowrap">
+                {useMaterial ? "Using my material" : "Just chatting"}
+              </span>
+            </button>
+
             <label htmlFor="assistant-scope" className="text-sm whitespace-nowrap text-ink-muted">
               Asking about
             </label>
+            {/* Disabled rather than hidden when material is off: a control that
+                vanishes makes the row jump, and a student needs to see that the
+                scope still exists and will apply again when they switch back. */}
             <Select
               id="assistant-scope"
               value={subjectId}
+              disabled={!useMaterial}
               onChange={(event) => setSubjectId(event.target.value)}
-              className="h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm"
+              className={cn(
+                "h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm",
+                !useMaterial && "opacity-50",
+              )}
             >
               <option value="">All your subjects</option>
               {subjects.map((subject) => (
@@ -354,7 +400,11 @@ export function AssistantChat({
         <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
           <div className="mx-auto flex w-full max-w-[60rem] flex-1 flex-col gap-6">
             {messages.length === 0 ? (
-              <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text)} />
+              <EmptyConversation
+                scopeLabel={scopeLabel}
+                useMaterial={useMaterial}
+                onPick={(text) => void ask(text)}
+              />
             ) : (
               messages.map((message) => <Message key={message.id} message={message} />)
             )}
@@ -532,9 +582,11 @@ const STARTERS = [
 
 function EmptyConversation({
   scopeLabel,
+  useMaterial,
   onPick,
 }: {
   scopeLabel: string;
+  useMaterial: boolean;
   onPick: (text: string) => void;
 }) {
   return (
@@ -545,13 +597,12 @@ function EmptyConversation({
 
       <div className="max-w-[46ch]">
         <h2 className="font-display text-xl font-semibold tracking-[-0.02em]">
-          Ask Aki about {scopeLabel}
+          {useMaterial ? `Ask Aki about ${scopeLabel}` : "Chat with Aki"}
         </h2>
         <p className="mt-2 leading-relaxed text-ink-muted">
-          Answers about your material are built from the files and notes you uploaded, and show the
-          page they came from. Aki also knows your library itself — how many subjects you have, what
-          you have uploaded, what is still processing. If nothing covers a question, she says so
-          rather than guessing.
+          {useMaterial
+            ? "Answers are built from the files and notes you uploaded and show the page they came from. Aki also knows your library itself — how many subjects you have, what you have uploaded, what is still processing."
+            : "Your files are not being searched, so this is an ordinary conversation. Aki still knows your library — your subjects, topics and uploads. Switch “Just chatting” back to “Using my material” to ask about what is inside your files."}
         </p>
       </div>
 

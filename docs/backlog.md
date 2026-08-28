@@ -51,6 +51,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 36 | Retrieval — cosine vector search, relevance floor, per-material diversity, context assembly, the RAG loop | done | migration `20260831090000`. UI is Sprint 37; the relevance floor is uncalibrated until there is real usage |
 | 37 | Assistant chat — streaming answers, citations, stop, subject scope, the honest empty case | done | no migration. History is in-session only; persistence is Sprint 40 |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
+| — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
 
 ## Next three

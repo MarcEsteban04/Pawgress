@@ -63,6 +63,7 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
           ? {
               id: thread.conversation.id,
               subjectId: thread.conversation.subjectId,
+              useMaterial: thread.conversation.useMaterial,
               messages: thread.messages,
             }
           : null

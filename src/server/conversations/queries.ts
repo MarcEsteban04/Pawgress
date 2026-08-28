@@ -16,6 +16,8 @@ export type ConversationSummary = {
   title: string;
   subjectId: string | null;
   subjectName: string | null;
+  /** False when the student turned off searching their files for this thread. */
+  useMaterial: boolean;
   updatedAt: string;
 };
 
@@ -34,7 +36,7 @@ export const listConversations = cache(async (limit = 50): Promise<ConversationS
 
   const { data, error } = await supabase
     .from("conversations")
-    .select("id, title, subject_id, updated_at, subjects(name)")
+    .select("id, title, subject_id, use_material, updated_at, subjects(name)")
     .order("updated_at", { ascending: false })
     .limit(limit);
 
@@ -45,6 +47,7 @@ export const listConversations = cache(async (limit = 50): Promise<ConversationS
     title: row.title,
     subjectId: row.subject_id,
     subjectName: row.subjects?.name ?? null,
+    useMaterial: row.use_material,
     updatedAt: row.updated_at,
   }));
 });
@@ -64,7 +67,7 @@ export const getConversation = cache(
 
     const { data: row } = await supabase
       .from("conversations")
-      .select("id, title, subject_id, updated_at, subjects(name)")
+      .select("id, title, subject_id, use_material, updated_at, subjects(name)")
       .eq("id", id)
       .maybeSingle();
 
@@ -82,6 +85,7 @@ export const getConversation = cache(
         title: row.title,
         subjectId: row.subject_id,
         subjectName: row.subjects?.name ?? null,
+        useMaterial: row.use_material,
         updatedAt: row.updated_at,
       },
       messages: (messages ?? []).map((message) => ({

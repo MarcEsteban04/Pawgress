@@ -150,6 +150,7 @@ export type Database = {
           subject_id: string | null
           title: string
           updated_at: string
+          use_material: boolean
           user_id: string
         }
         Insert: {
@@ -158,6 +159,7 @@ export type Database = {
           subject_id?: string | null
           title: string
           updated_at?: string
+          use_material?: boolean
           user_id: string
         }
         Update: {
@@ -166,6 +168,7 @@ export type Database = {
           subject_id?: string | null
           title?: string
           updated_at?: string
+          use_material?: boolean
           user_id?: string
         }
         Relationships: [
