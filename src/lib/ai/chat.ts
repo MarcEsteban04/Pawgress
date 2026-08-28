@@ -51,16 +51,20 @@ import { checkQuota, claimCall, settleCall, type CallOutcome } from "./usage";
  */
 
 /**
- * Non-streaming ceiling.
+ * How many output tokens to ask a given provider for.
  *
- * Generous on purpose. `gpt-oss` spends output tokens on a reasoning pass
- * before it writes anything, so a tight budget returns an empty `content` with
- * a perfectly healthy 200 — a failure mode that looks like a bug in our parser
- * rather than a budget we set too low.
+ * The ceiling is the PROVIDER's, not ours, because on Groq the number itself
+ * is charged against a tokens-per-minute budget before generation starts — so
+ * a generous ask is refused outright rather than merely capped. A caller can
+ * ask for less; it can never raise a provider above its own limit.
+ *
+ * `gpt-oss` also spends output tokens on a reasoning pass before it writes, so
+ * the floor cannot be tiny either: too small a budget returns empty `content`
+ * with a perfectly healthy 200, which reads as a bug in our parser.
  */
-const MAX_TOKENS_SYNC = 16_000;
-/** Streaming ceiling. Timeouts stop mattering once bytes are arriving. */
-const MAX_TOKENS_STREAM = 32_000;
+function budgetFor(provider: ProviderSpec, requested: number | undefined): number {
+  return Math.min(requested ?? provider.maxOutputTokens, provider.maxOutputTokens);
+}
 
 const SYSTEM_PROMPT = [
   "You are Acadify, a study assistant for high school and college students.",
@@ -171,7 +175,12 @@ function isProviderUnavailable(thrown: unknown): boolean {
     if (status === undefined) return true; // Connection or timeout: no response at all.
     if (status === 401 || status === 403) return true; // Misconfigured key for THIS provider.
     if (status === 404) return true; // Model retired out from under us.
-    if (status === 408 || status === 429) return true;
+    /* 413 is Groq refusing a request whose prompt + max_tokens exceeds its
+       tokens-per-minute budget. It is a capacity refusal like 429, not a
+       malformed request — the next provider has its own budget and may well
+       take it. Leaving this out is what stopped the chain dead the first time
+       a real grounded question was asked. */
+    if (status === 408 || status === 413 || status === 429) return true;
     return status >= 500;
   }
   // AbortError from our own timeout, DNS failures, socket resets.
@@ -183,12 +192,13 @@ function mapError(thrown: unknown, provider: ProviderSpec): AppError {
   if (thrown instanceof AppError) return thrown;
 
   if (thrown instanceof APIError) {
-    if (thrown.status === 429) {
+    if (thrown.status === 429 || thrown.status === 413) {
       return new AppError({
         code: "rate_limited",
         message: "The AI service is busy.",
         nextStep: "Try again in a few seconds.",
         cause: thrown,
+        context: { provider: provider.id, status: thrown.status },
       });
     }
     if (thrown.status === 401 || thrown.status === 403) {
@@ -271,7 +281,7 @@ export function createChatService(): AiService {
           const completion = await client(provider).chat.completions.parse(
             {
               model,
-              max_tokens: options.maxOutputTokens ?? MAX_TOKENS_SYNC,
+              max_tokens: budgetFor(provider, options.maxOutputTokens),
               temperature: options.temperature,
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
@@ -414,7 +424,7 @@ export function createChatService(): AiService {
           const stream = await client(provider).chat.completions.create(
             {
               model,
-              max_tokens: options.maxOutputTokens ?? MAX_TOKENS_STREAM,
+              max_tokens: budgetFor(provider, options.maxOutputTokens),
               temperature: options.temperature,
               stream: true,
               stream_options: { include_usage: true },

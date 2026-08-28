@@ -12,6 +12,12 @@
  * provider retiring a model or changing what it accepts. Groq did exactly that
  * to llama-3.3-70b-versatile. A mocked test would have passed.
  *
+ * **The budgets here must match src/lib/ai/providers.ts.** The first version of
+ * this file asked for 4,000 output tokens while the app asked for 32,000, so it
+ * passed against a Groq free tier that refuses anything over 8,000 TPM — and
+ * the app 413'd on the first real question. A test that sends different
+ * parameters from the code it is testing is not testing that code.
+ *
  * It costs a few tenths of a cent per run and never prints a key.
  */
 import fs from "node:fs";
@@ -32,6 +38,7 @@ const PROVIDERS = [
     baseURL: "https://api.groq.com/openai/v1",
     model: "openai/gpt-oss-120b",
     timeoutMs: 30_000,
+    maxOutputTokens: 3_000,
   },
   {
     id: "gemini",
@@ -39,6 +46,7 @@ const PROVIDERS = [
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
     model: "gemini-2.5-flash",
     timeoutMs: 45_000,
+    maxOutputTokens: 32_000,
   },
   {
     id: "openai",
@@ -46,6 +54,7 @@ const PROVIDERS = [
     baseURL: undefined,
     model: "gpt-4o-mini",
     timeoutMs: 90_000,
+    maxOutputTokens: 16_000,
   },
 ];
 
@@ -67,7 +76,9 @@ function isProviderUnavailable(thrown) {
   if (thrown instanceof APIError) {
     const s = thrown.status;
     if (s === undefined) return true;
-    if (s === 401 || s === 403 || s === 404 || s === 408 || s === 429) return true;
+    if (s === 401 || s === 403 || s === 404) return true;
+    // 413 is a capacity refusal, like 429 — see chat.ts.
+    if (s === 408 || s === 413 || s === 429) return true;
     return s >= 500;
   }
   return true;
@@ -83,7 +94,7 @@ async function callOne(provider) {
 
   const completion = await client.chat.completions.parse({
     model: provider.model,
-    max_tokens: 4000,
+    max_tokens: provider.maxOutputTokens,
     messages: [
       {
         role: "system",
@@ -168,6 +179,45 @@ console.log("\n4. A timeout counts as unavailable\n");
   const result = await generate(chain);
   check("a 1ms timeout falls through", result.provider !== "groq", result.provider);
   check("timeout classified as unavailable", result.tried.length >= 1, result.tried.join(","));
+}
+
+console.log("\n5. Streaming — the path the assistant actually uses\n");
+{
+  for (const provider of PROVIDERS) {
+    const client = new OpenAI({
+      apiKey: provider.key,
+      baseURL: provider.baseURL,
+      timeout: provider.timeoutMs,
+      maxRetries: 0,
+    });
+
+    try {
+      const stream = await client.chat.completions.create({
+        model: provider.model,
+        max_tokens: provider.maxOutputTokens,
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: [
+          { role: "system", content: "You are a study assistant." },
+          { role: "user", content: "Say hello in one short sentence." },
+        ],
+      });
+
+      let text = "";
+      for await (const chunk of stream) text += chunk.choices[0]?.delta?.content ?? "";
+      check(
+        `${provider.id} streams with its own budget`,
+        text.trim().length > 0,
+        text.slice(0, 50),
+      );
+    } catch (thrown) {
+      check(
+        `${provider.id} streams with its own budget`,
+        false,
+        `${thrown.status ?? thrown.name}: ${String(thrown.message).slice(0, 120)}`,
+      );
+    }
+  }
 }
 
 console.log(failures === 0 ? "\nall passed\n" : `\n${failures} failed\n`);

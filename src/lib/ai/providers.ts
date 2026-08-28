@@ -53,6 +53,17 @@ export type ProviderSpec = {
   supportsJsonSchema: boolean;
   /** Whether the provider can read images, for OCR (Sprint 33). */
   supportsImages: boolean;
+  /**
+   * Ceiling on output tokens for this provider.
+   *
+   * Per-provider because a rate limit is per-provider, and Groq counts
+   * `max_tokens` toward its tokens-per-minute budget BEFORE generating
+   * anything — so asking for a large completion is itself the thing that gets
+   * refused. On the free tier that budget is 8,000 TPM shared with the prompt,
+   * which is smaller than one grounded RAG request. A single global ceiling
+   * cannot be right for both that and Gemini.
+   */
+  maxOutputTokens: number;
 };
 
 /**
@@ -80,6 +91,13 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     /* gpt-oss is text-only, so an OCR call must skip Groq rather than send it
        an image it will silently ignore (Sprint 33). */
     supportsImages: false,
+    /* Deliberately small. The free tier allows 8,000 tokens per minute across
+       prompt AND requested output, so a big ask is refused with a 413 before a
+       token is generated. 3,000 leaves room for a few thousand tokens of
+       grounding; a heavier question exceeds the budget, 413s in under half a
+       second, and falls through to Gemini — which is the chain doing its job,
+       not a failure. */
+    maxOutputTokens: 3_000,
   },
   gemini: {
     id: "gemini",
@@ -93,6 +111,7 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     timeoutMs: 45_000,
     supportsJsonSchema: true,
     supportsImages: true,
+    maxOutputTokens: 32_000,
   },
   openai: {
     id: "openai",
@@ -107,6 +126,7 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     timeoutMs: 90_000,
     supportsJsonSchema: true,
     supportsImages: true,
+    maxOutputTokens: 16_000,
   },
 };
 
