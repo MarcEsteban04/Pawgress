@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronUp, GripVertical, Pencil, Upload } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
-import { Button, Card, CardBody, MasteryBar, Tag } from "@/components/ui";
+import { Button, Card, CardBody, MasteryBar } from "@/components/ui";
 import { DeleteTopicDialog } from "./DeleteTopicDialog";
 import { TopicDialog } from "./TopicDialog";
 import { UploadDialog } from "@/features/materials/components/UploadDialog";
@@ -40,6 +40,15 @@ import { cn } from "@/lib/utils";
 type Props = { subjectId: string; topics: Topic[] };
 
 export function TopicList({ subjectId, topics }: Props) {
+  /**
+   * Has ANY topic here been measured?
+   *
+   * When none has, every row draws the same striped low-evidence bar, and a
+   * column of identical placeholders is not information — it is three copies
+   * of a sentence better said once, taking a third of the row width to say it.
+   * The bars come back the moment there is something to compare.
+   */
+  const anyMeasured = topics.some((topic) => topic.questionsAnswered > 0);
   const [isPending, startTransition] = useTransition();
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -110,7 +119,7 @@ export function TopicList({ subjectId, topics }: Props) {
                   setDropTarget(null);
                 }}
                 className={cn(
-                  "flex flex-col gap-3 p-4 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-5",
+                  "flex flex-col gap-2.5 px-4 py-2.5 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-5",
                   dragging === topic.id ? "opacity-40" : "hover:bg-surface-sunken",
                   dropTarget === index && dragging !== topic.id && "bg-accent-soft",
                 )}
@@ -124,23 +133,25 @@ export function TopicList({ subjectId, topics }: Props) {
                   aria-hidden
                 />
 
-                <div className="min-w-0 flex-1">
+                {/* Name and count on one line. A pill on its own row turned a
+                    single fact into a second line of chrome per topic. */}
+                <div className="flex min-w-0 flex-1 items-baseline gap-2.5">
                   <p className="truncate font-medium">{topic.name}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <Tag>
-                      {topic.materialCount} {topic.materialCount === 1 ? "file" : "files"}
-                    </Tag>
-                  </div>
+                  <span className="tabular shrink-0 text-xs text-ink-subtle">
+                    {topic.materialCount} {topic.materialCount === 1 ? "file" : "files"}
+                  </span>
                 </div>
 
-                <div className="w-full shrink-0 sm:w-48">
-                  <MasteryBar
-                    value={topic.mastery}
-                    questionCount={topic.questionsAnswered}
-                    dense
-                    hideEvidence
-                  />
-                </div>
+                {anyMeasured && (
+                  <div className="w-full shrink-0 sm:w-44">
+                    <MasteryBar
+                      value={topic.mastery}
+                      questionCount={topic.questionsAnswered}
+                      dense
+                      hideEvidence
+                    />
+                  </div>
+                )}
 
                 <div className="flex shrink-0 items-center gap-1">
                   <UploadDialog
@@ -201,6 +212,7 @@ export function TopicList({ subjectId, topics }: Props) {
       {ordered.length > 1 && (
         <p className="text-xs text-ink-subtle">
           Drag a row, or use the arrows, to put topics in the order you study them.
+          {!anyMeasured && " Mastery appears here once you have answered questions on a topic."}
         </p>
       )}
     </div>

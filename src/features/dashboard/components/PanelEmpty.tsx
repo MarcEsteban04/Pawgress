@@ -33,15 +33,20 @@ export function PanelEmpty({
   awaiting?: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-surface-sunken text-ink-subtle">
-        <Icon className="size-[1.125rem]" aria-hidden />
+    /* Left-aligned and tighter than it was.
+
+       Centred with a big circular icon, an empty panel reads as an EVENT — it
+       draws as much attention as a panel with data in it, and a page of four
+       says the product is mostly absent. These are captions explaining why a
+       box is quiet, so they sit at the top-left where a caption goes and take
+       the height a caption needs. */
+    <div className="flex flex-col items-start gap-2 py-1">
+      <span className="flex items-center gap-2 text-ink-subtle">
+        <Icon className="size-4 shrink-0" aria-hidden />
+        <span className="text-[0.9375rem] font-medium text-ink">{title}</span>
       </span>
       <div>
-        <p className="font-medium">{title}</p>
-        <p className="mx-auto mt-1 max-w-[34ch] text-sm leading-relaxed text-ink-muted">
-          {description}
-        </p>
+        <p className="max-w-[46ch] text-sm leading-relaxed text-ink-muted">{description}</p>
       </div>
       {action && (
         <Link href={action.href} className={buttonStyles({ variant: "subtle", size: "sm" })}>

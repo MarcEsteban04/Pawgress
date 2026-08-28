@@ -2,7 +2,6 @@ import { Archive, ArrowLeft, ListTree, Upload } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Button,
   Card,
@@ -204,35 +203,48 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
         </div>
       )}
 
-      <div className="flex items-start gap-4">
+      {/**
+       * One row: mark, name, and everything true about the subject on a single
+       * line beneath it.
+       *
+       * This was a `PageHeader` carrying an eyebrow, a display title and a
+       * description — three stacked lines plus a 48px tile, for a page whose
+       * content is a list. The year, the semester and the counts are all the
+       * same KIND of fact, so they read as one line rather than as a subtitle
+       * and a caption; and the title drops from display size to something
+       * proportionate to a page you open twenty times a day.
+       */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <span
           className={cn(
-            "flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-control)]",
+            "flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)]",
             tone.tint,
             tone.ink,
           )}
         >
-          <SubjectGlyph icon={subject.icon} className="size-6" />
+          <SubjectGlyph icon={subject.icon} className="size-5" />
         </span>
-        <PageHeader
-          className="flex-1"
-          eyebrow={
-            [
+
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-display text-2xl leading-tight font-semibold tracking-[-0.02em]">
+            {subject.name}
+          </h1>
+          <p className="mt-0.5 truncate text-sm text-ink-subtle">
+            {[
               subject.academicYear !== null ? formatAcademicYear(subject.academicYear) : null,
               subject.semester,
+              `${subject.materialCount} ${subject.materialCount === 1 ? "file" : "files"}`,
+              `${subject.topicCount} ${subject.topicCount === 1 ? "topic" : "topics"}`,
             ]
               .filter(Boolean)
-              .join(" · ") || "Subject"
-          }
-          title={subject.name}
-          description={`${subject.materialCount} ${subject.materialCount === 1 ? "file" : "files"} · ${subject.topicCount} ${subject.topicCount === 1 ? "topic" : "topics"}`}
-          action={
-            <div className="flex w-full gap-2">
-              <UploadDialog subjectId={subject.id} topics={headerTopics} />
-              <TopicDialog subjectId={subject.id} />
-            </div>
-          }
-        />
+              .join(" · ")}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 gap-2">
+          <UploadDialog subjectId={subject.id} topics={headerTopics} />
+          <TopicDialog subjectId={subject.id} />
+        </div>
       </div>
 
       {/**
