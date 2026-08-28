@@ -307,40 +307,54 @@ export function AssistantChat({
           what a chat IS, and what a page header floating above a narrow strip
           failed to say. */}
       <div className="flex min-h-[calc(100vh-11rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
-        <header className="relative flex flex-col gap-4 border-b border-rule px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+        {/**
+         * One row, one control group.
+         *
+         * This had grown into a strip: a title, two lines of description, a
+         * standalone switch, a floating "Asking about" label and a select — five
+         * objects at four weights, above a conversation that is the actual
+         * content. Chrome for a chat should be legible in a glance and then
+         * forgotten.
+         *
+         * The two controls are segments of a single bordered group divided by a
+         * hairline, the same language as the subject filter bar. A gap says
+         * "different object"; a rule says "same object, next control". The
+         * "Asking about" label is gone because the select already reads "All
+         * your subjects" — labelling a control that says what it is twice.
+         */}
+        <header className="relative flex flex-wrap items-center justify-between gap-3 border-b border-rule px-5 py-3.5 sm:px-7">
           {/* A wash behind the header only. The transcript below stays plain
-            paper, because tinted ground under a long answer is the fastest way
-            to make it harder to read. */}
+              paper, because tinted ground under a long answer is the fastest
+              way to make it harder to read. */}
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(80% 160% at 0% 0%, var(--accent-soft) 0%, transparent 62%)",
+                "radial-gradient(70% 150% at 0% 0%, var(--accent-soft) 0%, transparent 60%)",
             }}
           />
 
-          <div className="relative flex items-start gap-3.5">
+          <div className="relative flex min-w-0 items-center gap-3">
             {/* The product mark, not a generic sparkle. Aki is Acadify
                 speaking, so she wears its face rather than the icon every
                 assistant in the world already uses. */}
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-ink text-on-ink shadow-[var(--shadow-pill)]">
-              <AcadifyMark className="size-6" />
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-ink text-on-ink shadow-[var(--shadow-pill)]">
+              <AcadifyMark className="size-5" />
             </span>
             <div className="min-w-0">
-              <h1 className="font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
-                Aki
-              </h1>
-              <p className="mt-1 text-sm text-ink-muted">
-                Ask about your subjects, your files, or anything inside them. Answers show their
-                sources so you can check them.
+              <h1 className="font-display leading-tight font-semibold tracking-[-0.02em]">Aki</h1>
+              {/* One short line. The long version explained the product to
+                  someone reading it for the twentieth time. */}
+              <p className="truncate text-xs text-ink-subtle">
+                {useMaterial ? "Answers cite the page they came from" : "Not searching your files"}
               </p>
             </div>
           </div>
 
-          {/* Scope is always visible: a student has to know what "my materials"
-            means right now before they can trust an answer (US-E3). */}
-          <div className="relative flex shrink-0 flex-wrap items-center gap-2">
+          {/* Scope is always visible: a student has to know what "my material"
+              means right now before they can trust an answer (US-E3). */}
+          <div className="relative flex shrink-0 items-stretch overflow-hidden rounded-[var(--radius-pill)] border border-rule bg-surface shadow-[var(--shadow-pill)]">
             {/* A switch, not a checkbox in a menu. It changes what the next
                 answer IS, so it belongs where the answer is about to appear and
                 its state has to be readable without opening anything. */}
@@ -355,31 +369,31 @@ export function AssistantChat({
                   : "Aki answers from general knowledge; your files are not searched"
               }
               className={cn(
-                "inline-flex h-10 items-center gap-2 rounded-[var(--radius-pill)] border px-3 text-sm font-medium transition-colors",
+                "inline-flex h-10 items-center gap-2 px-3.5 text-sm font-medium transition-colors",
                 useMaterial
-                  ? "border-accent/30 bg-accent-soft text-accent"
-                  : "border-rule bg-surface text-ink-muted hover:border-rule-strong",
+                  ? "bg-accent-soft text-accent"
+                  : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
               )}
             >
-              <FileSearch className="size-4" aria-hidden />
-              <span className="whitespace-nowrap">
+              <FileSearch className="size-4 shrink-0" aria-hidden />
+              <span className="whitespace-nowrap max-sm:sr-only">
                 {useMaterial ? "Using my material" : "Just chatting"}
               </span>
             </button>
 
-            <label htmlFor="assistant-scope" className="text-sm whitespace-nowrap text-ink-muted">
+            <label htmlFor="assistant-scope" className="sr-only">
               Asking about
             </label>
             {/* Disabled rather than hidden when material is off: a control that
-                vanishes makes the row jump, and a student needs to see that the
-                scope still exists and will apply again when they switch back. */}
+                vanishes makes the row jump, and it needs to stay visible so a
+                student can see it will apply again when they switch back. */}
             <Select
               id="assistant-scope"
               value={subjectId}
               disabled={!useMaterial}
               onChange={(event) => setSubjectId(event.target.value)}
               className={cn(
-                "h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm",
+                "h-10 w-auto rounded-none border-0 border-l border-rule bg-transparent pr-8 pl-3.5 text-sm shadow-none",
                 !useMaterial && "opacity-50",
               )}
             >
@@ -397,7 +411,7 @@ export function AssistantChat({
           is not a wider page, it is an unreadable one — the eye loses the line
           it is returning to. The panel takes the space; the text keeps the
           measure. */}
-        <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
+        <div className="flex flex-1 flex-col gap-6 px-5 py-6 sm:px-7">
           <div className="mx-auto flex w-full max-w-[60rem] flex-1 flex-col gap-6">
             {messages.length === 0 ? (
               <EmptyConversation

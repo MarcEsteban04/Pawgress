@@ -60,7 +60,7 @@ export function ConversationRail({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
+    <aside className="flex w-full shrink-0 flex-col gap-2 lg:w-64">
       <Button variant="subtle" onClick={onNew} className="w-full justify-start">
         <Plus aria-hidden />
         New chat
@@ -110,17 +110,23 @@ export function ConversationRail({
                     </div>
                   </div>
                 ) : (
+                  /* An accent spine on the open thread, not just a grey fill.
+                     A fill alone is the same signal as hover, so at a glance the
+                     list has two rows that look selected — the one under the
+                     cursor and the one actually open. */
                   <div
                     className={cn(
-                      "group flex items-center gap-1 rounded-[var(--radius-control)] transition-colors",
-                      active ? "bg-surface-sunken" : "hover:bg-surface-sunken",
+                      "group relative flex items-center gap-1 rounded-[var(--radius-control)] transition-colors",
+                      active
+                        ? "bg-surface-sunken before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-accent before:content-['']"
+                        : "hover:bg-surface-sunken",
                     )}
                   >
                     <button
                       type="button"
                       onClick={() => onSelect(conversation.id)}
                       aria-current={active ? "true" : undefined}
-                      className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-1.5 text-left"
                     >
                       <MessageSquare
                         className={cn(
