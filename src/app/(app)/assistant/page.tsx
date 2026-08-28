@@ -33,6 +33,26 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
 
   return (
     <AssistantChat
+      /**
+       * Keyed on the thread, and that is load-bearing.
+       *
+       * The transcript, the scope and the active id are all `useState`
+       * initialisers, and an initialiser runs on MOUNT and never again.
+       * Navigating from one conversation to another re-rendered the same
+       * instance with new props, so the old messages stayed on screen and the
+       * new ones were never read — clicking a thread appeared to do nothing.
+       *
+       * A different conversation is a different thing, so it gets a different
+       * component. The key also drops any answer still streaming from the
+       * thread being left, which is the correct outcome rather than a side
+       * effect: that answer belongs to the conversation it was asked in.
+       *
+       * `"new"` for the unsaved case, and it stays `"new"` after the first
+       * turn creates a row — the URL is deliberately not rewritten there, so
+       * the key does not change and the transcript a student is reading is not
+       * torn down underneath them.
+       */
+      key={thread?.conversation.id ?? "new"}
       subjects={subjects.map((subject) => ({ id: subject.id, name: subject.name }))}
       conversations={conversations}
       /* An unknown or deleted id opens a new chat rather than erroring. A stale
