@@ -3,6 +3,7 @@
 import { ArrowUp, Sparkles, Square, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+import { AcadifyMark } from "@/components/shared/Logo";
 import { Button, Select, SourceChip } from "@/components/ui";
 import { Markdown } from "@/features/assistant/markdown";
 import { ConversationRail } from "@/features/assistant/components/ConversationRail";
@@ -294,15 +295,19 @@ export function AssistantChat({
           />
 
           <div className="relative flex items-start gap-3.5">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent-soft text-accent">
-              <Sparkles className="size-5" aria-hidden />
+            {/* The product mark, not a generic sparkle. Aki is Acadify
+                speaking, so she wears its face rather than the icon every
+                assistant in the world already uses. */}
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-ink text-on-ink shadow-[var(--shadow-pill)]">
+              <AcadifyMark className="size-6" />
             </span>
             <div className="min-w-0">
               <h1 className="font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
-                Ask
+                Aki
               </h1>
               <p className="mt-1 text-sm text-ink-muted">
-                Answers come from what you uploaded, with the sources shown so you can check them.
+                Ask about your subjects, your files, or anything inside them. Answers show their
+                sources so you can check them.
               </p>
             </div>
           </div>
@@ -369,7 +374,7 @@ export function AssistantChat({
                   }
                 }}
                 rows={1}
-                placeholder={`Ask about ${scopeLabel}…`}
+                placeholder={`Ask Aki about ${scopeLabel}…`}
                 className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
               />
 
@@ -430,8 +435,8 @@ function Message({
        own surface, and a card per turn would be a box inside a box — which is
        what made the old transcript read as a list of receipts. */
     <div className="flex gap-3.5">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-        <Sparkles className="size-4" aria-hidden />
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink">
+        <AcadifyMark className="size-4" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3 pb-1">
         {message.ungrounded && !message.noMaterial && (
@@ -535,9 +540,9 @@ function Message({
  * their quota spent on a suggestion they did not request.
  */
 const STARTERS = [
+  "What have I uploaded so far?",
   "Summarise the key points",
   "What are the most important terms to know?",
-  "Explain this in simpler words",
   "What should I revise first?",
 ];
 
@@ -550,17 +555,19 @@ function EmptyConversation({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 py-10 text-center">
-      <span className="flex size-14 items-center justify-center rounded-[var(--radius-tile)] bg-accent-soft text-accent">
-        <Sparkles className="size-6" aria-hidden />
+      <span className="flex size-14 items-center justify-center rounded-[var(--radius-tile)] bg-ink text-on-ink shadow-[var(--shadow-pill)]">
+        <AcadifyMark className="size-8" />
       </span>
 
       <div className="max-w-[46ch]">
         <h2 className="font-display text-xl font-semibold tracking-[-0.02em]">
-          Ask about {scopeLabel}
+          Ask Aki about {scopeLabel}
         </h2>
         <p className="mt-2 leading-relaxed text-ink-muted">
-          Every answer is built from the files and notes you uploaded, and shows the page it came
-          from. If your material does not cover something, Acadify says so rather than guessing.
+          Answers about your material are built from the files and notes you uploaded, and show the
+          page they came from. Aki also knows your library itself — how many subjects you have, what
+          you have uploaded, what is still processing. If nothing covers a question, she says so
+          rather than guessing.
         </p>
       </div>
 

@@ -51,7 +51,7 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
         href: "/assistant",
         label: "Ask",
         Icon: MessageSquare,
-        hint: "Questions about your material",
+        hint: "Aki answers from your library",
       },
       { href: "/progress", label: "Progress", Icon: BarChart3, hint: "Mastery and quiz history" },
     ],
