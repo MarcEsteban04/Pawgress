@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/layout/PageHeader";
 import { AssistantChat } from "@/features/assistant/components/AssistantChat";
 import { listSubjects } from "@/server/subjects/queries";
 
@@ -14,16 +13,11 @@ export const metadata = { title: "Ask" };
 export default async function Page() {
   const subjects = await listSubjects();
 
+  /* Full width, and no PageHeader. A conversation is not a document with a
+     masthead above it — the heading belonged inside the surface it describes,
+     which is where it is now. The chat owns the whole column so its composer
+     can sit on the page's own edge rather than floating in a narrow strip. */
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-      <PageHeader
-        eyebrow="Answers grounded in your own files"
-        title="Ask"
-        description="Every answer comes from what you uploaded, with the sources shown so you can check them."
-      />
-      <AssistantChat
-        subjects={subjects.map((subject) => ({ id: subject.id, name: subject.name }))}
-      />
-    </div>
+    <AssistantChat subjects={subjects.map((subject) => ({ id: subject.id, name: subject.name }))} />
   );
 }

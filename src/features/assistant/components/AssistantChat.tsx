@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowUp, MessageSquare, Sparkles, Square, TriangleAlert } from "lucide-react";
+import { ArrowUp, Sparkles, Square, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { Button, Card, CardBody, EmptyState, Select, SourceChip } from "@/components/ui";
+import { Button, Select, SourceChip } from "@/components/ui";
 import { Markdown } from "@/features/assistant/markdown";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
 
@@ -140,78 +140,135 @@ export function AssistantChat({ subjects }: { subjects: { id: string; name: stri
     subjects.find((subject) => subject.id === subjectId)?.name ?? "all your subjects";
 
   return (
-    <div className="flex min-h-[60vh] flex-col gap-4">
-      {/* Scope is always visible: a student has to know what "my materials"
-          means right now before they can trust an answer (US-E3). */}
-      <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="assistant-scope" className="text-sm text-ink-muted">
-          Asking about
-        </label>
-        <Select
-          id="assistant-scope"
-          value={subjectId}
-          onChange={(event) => setSubjectId(event.target.value)}
-          className="h-9 w-auto min-w-48 text-sm"
-        >
-          <option value="">All your subjects</option>
-          {subjects.map((subject) => (
-            <option key={subject.id} value={subject.id}>
-              {subject.name}
-            </option>
-          ))}
-        </Select>
-      </div>
+    /* One surface for the whole conversation, filling the column. The header,
+       the transcript and the composer are parts of a single object rather than
+       three things stacked with gaps between them — which is what a chat IS,
+       and what the previous layout of a page header floating above a narrow
+       strip failed to say. */
+    <div className="flex min-h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
+      <header className="relative flex flex-col gap-4 border-b border-rule px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+        {/* A wash behind the header only. The transcript below stays plain
+            paper, because tinted ground under a long answer is the fastest way
+            to make it harder to read. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(80% 160% at 0% 0%, var(--accent-soft) 0%, transparent 62%)",
+          }}
+        />
 
-      <div className="flex flex-1 flex-col gap-4">
-        {messages.length === 0 ? (
-          <EmptyState
-            Icon={MessageSquare}
-            title="Ask about your own material"
-            description="Every answer comes from the files and notes you uploaded, with the sources shown so you can check them. If your material does not cover something, Acadify will say so rather than guess."
-          />
-        ) : (
-          messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)
-        )}
-      </div>
+        <div className="relative flex items-start gap-3.5">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-accent-soft text-accent">
+            <Sparkles className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h1 className="font-display text-xl leading-tight font-semibold tracking-[-0.02em]">
+              Ask
+            </h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              Answers come from what you uploaded, with the sources shown so you can check them.
+            </p>
+          </div>
+        </div>
 
-      <form onSubmit={submit} className="sticky bottom-0 flex flex-col gap-2 bg-paper pt-2">
-        <div className="flex items-end gap-2">
-          <label htmlFor="assistant-question" className="sr-only">
-            Ask about {scopeLabel}
+        {/* Scope is always visible: a student has to know what "my materials"
+            means right now before they can trust an answer (US-E3). */}
+        <div className="relative flex shrink-0 items-center gap-2">
+          <label htmlFor="assistant-scope" className="text-sm whitespace-nowrap text-ink-muted">
+            Asking about
           </label>
-          <textarea
-            id="assistant-question"
-            value={question}
-            onChange={(event) => setQuestion(event.target.value)}
-            onKeyDown={(event) => {
-              /* Enter sends, Shift+Enter breaks the line. A question is usually
-                 one line, and reaching for a button after every one is friction
-                 a student feels twenty times a session. */
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                submit(event);
-              }
-            }}
-            rows={1}
-            placeholder={`Ask about ${scopeLabel}…`}
-            className="min-h-11 flex-1 resize-none rounded-[var(--radius-control)] border border-rule bg-surface px-3 py-2.5 text-base text-ink placeholder:text-ink-subtle"
-          />
+          <Select
+            id="assistant-scope"
+            value={subjectId}
+            onChange={(event) => setSubjectId(event.target.value)}
+            className="h-10 w-auto min-w-48 rounded-[var(--radius-pill)] text-sm"
+          >
+            <option value="">All your subjects</option>
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </header>
 
-          {busy ? (
-            <Button
-              type="button"
-              variant="subtle"
-              aria-label="Stop generating"
-              onClick={() => abortRef.current?.abort()}
-            >
-              <Square aria-hidden />
-              Stop
-            </Button>
+      {/* Full-width surface, READING-WIDTH transcript. Prose set across 1900px
+          is not a wider page, it is an unreadable one — the eye loses the line
+          it is returning to. The panel takes the space; the text keeps the
+          measure. */}
+      <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
+        <div className="mx-auto flex w-full max-w-[52rem] flex-1 flex-col gap-6">
+          {messages.length === 0 ? (
+            <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text, false)} />
           ) : (
-            <Button type="submit" variant="accent" aria-label="Send" disabled={!question.trim()}>
-              <ArrowUp aria-hidden />
-            </Button>
+            messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)
           )}
+        </div>
+      </div>
+
+      {/* Pinned to the bottom of the surface rather than floating over the
+          transcript. The send control lives INSIDE the field: a button beside a
+          text box is two objects, and a composer is one. */}
+      <form
+        onSubmit={submit}
+        className="sticky bottom-0 border-t border-rule bg-surface px-5 py-4 sm:px-7"
+      >
+        <div className="mx-auto w-full max-w-[52rem]">
+          <div className="flex items-end gap-2 rounded-[var(--radius-card)] border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong">
+            <label htmlFor="assistant-question" className="sr-only">
+              Ask about {scopeLabel}
+            </label>
+            <textarea
+              id="assistant-question"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                /* Enter sends, Shift+Enter breaks the line. A question is
+                   usually one line, and reaching for a button after every one
+                   is friction a student feels twenty times a session. */
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  submit(event);
+                }
+              }}
+              rows={1}
+              placeholder={`Ask about ${scopeLabel}…`}
+              className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
+            />
+
+            {busy ? (
+              <Button
+                type="button"
+                variant="subtle"
+                size="sm"
+                aria-label="Stop generating"
+                onClick={() => abortRef.current?.abort()}
+              >
+                <Square aria-hidden />
+                Stop
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                variant="accent"
+                aria-label="Send"
+                disabled={!question.trim()}
+                className="size-9 shrink-0 rounded-full p-0"
+              >
+                <ArrowUp aria-hidden />
+              </Button>
+            )}
+          </div>
+
+          {/* Stated once, quietly. A student who has just discovered that
+              Enter sends does not need telling again on every render, but a
+              student who has not needs telling once. */}
+          <p className="mt-2 text-xs text-ink-subtle">
+            Enter to send · Shift + Enter for a new line
+          </p>
         </div>
       </form>
     </div>
@@ -227,15 +284,21 @@ function Message({
 }) {
   if (message.role === "user") {
     return (
-      <p className="ml-auto max-w-[85%] rounded-[var(--radius-card)] bg-ink px-4 py-2.5 text-[0.9375rem] leading-relaxed text-on-ink">
+      <p className="ml-auto max-w-[85%] rounded-[var(--radius-card)] rounded-br-md bg-ink px-4 py-2.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-on-ink shadow-[var(--shadow-pill)]">
         {message.text}
       </p>
     );
   }
 
   return (
-    <Card className="max-w-[92%]">
-      <CardBody className="flex flex-col gap-3 p-4">
+    /* A mark and a column, not a card. The conversation already sits on its
+       own surface, and a card per turn would be a box inside a box — which is
+       what made the old transcript read as a list of receipts. */
+    <div className="flex gap-3.5">
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
+        <Sparkles className="size-4" aria-hidden />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-3 pb-1">
         {message.ungrounded && !message.noMaterial && (
           <p className="flex items-start gap-2 text-xs leading-relaxed text-warn">
             <Sparkles className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -305,7 +368,10 @@ function Message({
         )}
 
         {message.citations.length > 0 && (
-          <div className="flex flex-wrap gap-2 border-t border-rule pt-3">
+          <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-3">
+            <span className="text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
+              From
+            </span>
             {message.citations.map((citation) => (
               <SourceChip
                 key={`${citation.materialId}-${citation.page ?? "x"}`}
@@ -315,7 +381,66 @@ function Message({
             ))}
           </div>
         )}
-      </CardBody>
-    </Card>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The opening screen.
+ *
+ * Not an `EmptyState` with an icon and a sentence. An empty chat is the one
+ * moment a student has no idea what this thing will do with their files, and a
+ * centred "no messages yet" answers none of it. Three starters do — they are
+ * the fastest way to learn that answers come from uploaded material, because
+ * the first one returns a real citation.
+ *
+ * The prompts are generic on purpose. Generating them from the student's own
+ * topics would need a model call before they have asked anything, which is
+ * their quota spent on a suggestion they did not request.
+ */
+const STARTERS = [
+  "Summarise the key points",
+  "What are the most important terms to know?",
+  "Explain this in simpler words",
+  "What should I revise first?",
+];
+
+function EmptyConversation({
+  scopeLabel,
+  onPick,
+}: {
+  scopeLabel: string;
+  onPick: (text: string) => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-10 text-center">
+      <span className="flex size-14 items-center justify-center rounded-[var(--radius-tile)] bg-accent-soft text-accent">
+        <Sparkles className="size-6" aria-hidden />
+      </span>
+
+      <div className="max-w-[46ch]">
+        <h2 className="font-display text-xl font-semibold tracking-[-0.02em]">
+          Ask about {scopeLabel}
+        </h2>
+        <p className="mt-2 leading-relaxed text-ink-muted">
+          Every answer is built from the files and notes you uploaded, and shows the page it came
+          from. If your material does not cover something, Acadify says so rather than guessing.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        {STARTERS.map((starter) => (
+          <button
+            key={starter}
+            type="button"
+            onClick={() => onPick(starter)}
+            className="rounded-[var(--radius-pill)] border border-rule bg-surface px-3.5 py-2 text-sm font-medium shadow-[var(--shadow-pill)] transition-colors hover:border-rule-strong hover:bg-surface-sunken"
+          >
+            {starter}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
