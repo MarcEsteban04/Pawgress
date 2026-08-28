@@ -60,7 +60,10 @@ export function SubjectCard({ subject }: { subject: Subject }) {
         "transition-[transform,box-shadow,border-color] duration-200 ease-out",
         archived
           ? "hover:border-rule-strong"
-          : "hover:-translate-y-0.5 hover:border-rule-strong hover:shadow-pop",
+          : /* Two things move on hover and both are small: a 3px rise and the
+             shadow that explains it. Anything larger reads as the card
+             jumping away from the cursor rather than towards it. */
+            "hover:-translate-y-[3px] hover:border-rule-strong hover:shadow-float",
         /* Focus lands on the card, because the card is what the link covers.
            Same outline token and offset as the global `:focus-visible` rule in
            globals.css — the one focus treatment relocated, not a second one. */
@@ -71,13 +74,26 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           click meant for the link overlay, and no z-index: they sit after the
           card's background and before its content simply by document order. */}
       {!archived && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `radial-gradient(120% 88% at 100% 0%, ${tone.soft} 0%, transparent 68%)`,
-          }}
-        />
+        <>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 transition-opacity duration-300 group-hover:opacity-90"
+            style={{
+              background: `radial-gradient(115% 85% at 100% 0%, ${tone.soft} 0%, transparent 66%)`,
+            }}
+          />
+          {/* A one-pixel sheen along the top edge, in the subject own hue.
+              It is what makes the card read as a lit object rather than a
+              rectangle with a colour in it — the same trick as a bevel, at a
+              tenth the weight. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-40"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${tone.hue}, transparent)`,
+            }}
+          />
+        </>
       )}
 
       {/* The subject's icon at display size, bleeding off the corner. At 8%
@@ -99,8 +115,15 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           cannot separate them — so one saturated edge does the identifying. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-1"
-        style={{ backgroundColor: archived ? "var(--rule-strong)" : tone.hue }}
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 w-1 transition-[width] duration-200 ease-out",
+          !archived && "group-hover:w-1.5",
+        )}
+        style={{
+          background: archived
+            ? "var(--rule-strong)"
+            : `linear-gradient(180deg, ${tone.hue}, color-mix(in oklab, ${tone.hue} 55%, transparent))`,
+        }}
       />
 
       <CardBody className="relative flex flex-1 flex-col gap-5 pt-5">
@@ -126,20 +149,23 @@ export function SubjectCard({ subject }: { subject: Subject }) {
           </p>
         </div>
 
-        <dl className="flex gap-8">
-          <div>
-            <dd className="tabular font-display text-[1.75rem] leading-none font-semibold">
+        {/* Divided by a hairline rather than spaced apart. Two numbers side by
+            side with only whitespace between them read as one number that has
+            been split; a rule says they are separate measures. */}
+        <dl className="flex items-stretch">
+          <div className="pr-6">
+            <dd className="tabular font-display text-[1.875rem] leading-none font-semibold tracking-[-0.02em]">
               {subject.materialCount}
             </dd>
-            <dt className="mt-1.5 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
+            <dt className="mt-2 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
               {subject.materialCount === 1 ? "File" : "Files"}
             </dt>
           </div>
-          <div>
-            <dd className="tabular font-display text-[1.75rem] leading-none font-semibold">
+          <div className="border-l border-rule pl-6">
+            <dd className="tabular font-display text-[1.875rem] leading-none font-semibold tracking-[-0.02em]">
               {subject.topicCount}
             </dd>
-            <dt className="mt-1.5 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
+            <dt className="mt-2 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
               {subject.topicCount === 1 ? "Topic" : "Topics"}
             </dt>
           </div>

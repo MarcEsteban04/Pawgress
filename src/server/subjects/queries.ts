@@ -309,3 +309,40 @@ export const getSubject = cache(async (id: string): Promise<Subject | null> => {
     lastActivityAt: data.last_activity_at,
   };
 });
+
+/**
+ * The library at a glance, for the masthead (FR-S2).
+ *
+ * Three `head: true` counts rather than reading rows: the page needs three
+ * numbers, not the data behind them, and `select("id", { count: "exact", head:
+ * true })` returns the count in a header with no body at all.
+ *
+ * Scoped to ACTIVE subjects. An archived class is deliberately out of the way,
+ * and counting its files in "your library" would undo the archiving — the
+ * number would keep growing for classes a student has finished.
+ */
+export type LibraryTotals = { subjects: number; materials: number; topics: number };
+
+export const getLibraryTotals = cache(async (): Promise<LibraryTotals> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  /* The material and topic counts need the active subject ids, because their
+     own rows carry no archived flag — archiving a subject does not touch the
+     files inside it, which is exactly the promise archiving makes. */
+  const { data: active } = await supabase.from("subjects").select("id").is("archived_at", null);
+  const ids = (active ?? []).map((row) => row.id);
+
+  if (ids.length === 0) return { subjects: 0, materials: 0, topics: 0 };
+
+  const countIn = async (table: "materials" | "topics") => {
+    const { count } = await supabase
+      .from(table)
+      .select("id", { count: "exact", head: true })
+      .in("subject_id", ids);
+    return count ?? 0;
+  };
+
+  const [materials, topics] = await Promise.all([countIn("materials"), countIn("topics")]);
+  return { subjects: ids.length, materials, topics };
+});

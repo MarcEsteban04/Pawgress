@@ -27,7 +27,17 @@ import { cn } from "@/lib/utils";
  * Every control appears only when the data can answer it. A semester dropdown
  * over subjects that have no semester is a control that can only ever return
  * nothing.
+ *
+ * **One surface, not five.** These were a search pill and four separately
+ * bordered dropdowns floating side by side — five outlines competing at equal
+ * weight above a list that might hold one card. They are segments of a single
+ * bar now, divided by hairlines: the same controls, one object. Chrome should
+ * not out-weigh the content it filters.
  */
+
+/** A select that is a SEGMENT of the bar rather than a control sitting on it. */
+const SEGMENT =
+  "h-11 w-auto rounded-none border-0 bg-transparent pl-3.5 pr-8 text-sm shadow-none sm:h-12";
 export function SubjectFilters({
   semesters,
   years,
@@ -74,10 +84,10 @@ export function SubjectFilters({
 
   return (
     <div className={cn("flex flex-col gap-3", isPending && "opacity-70 transition-opacity")}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col overflow-hidden rounded-[var(--radius-tile)] border border-rule bg-surface shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong sm:flex-row sm:items-stretch">
         <label
           htmlFor={searchId}
-          className="group flex h-11 flex-1 items-center gap-2.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-4 transition-colors focus-within:border-rule-strong hover:border-rule-strong"
+          className="group flex h-11 flex-1 items-center gap-2.5 px-4 sm:h-12"
         >
           <Search className="size-[1.125rem] shrink-0 text-ink-subtle" aria-hidden />
           <span className="sr-only">Search subjects by name</span>
@@ -104,7 +114,9 @@ export function SubjectFilters({
           )}
         </label>
 
-        <div className="flex flex-wrap gap-3">
+        {/* Divided rather than spaced: a hairline says "same object, next
+            control", where a gap says "different object". */}
+        <div className="flex flex-wrap items-stretch divide-x divide-rule border-t border-rule sm:border-t-0 sm:border-l">
           {years.length > 0 && (
             <>
               <label htmlFor={yearId} className="sr-only">
@@ -114,7 +126,7 @@ export function SubjectFilters({
                 id={yearId}
                 value={params.get("year") ?? ""}
                 onChange={(event) => apply({ year: event.target.value || null })}
-                className="h-11 w-auto rounded-[var(--radius-pill)]"
+                className={SEGMENT}
               >
                 <option value="">All years</option>
                 {years.map((year) => (
@@ -135,7 +147,7 @@ export function SubjectFilters({
                 id={semesterId}
                 value={params.get("semester") ?? ""}
                 onChange={(event) => apply({ semester: event.target.value || null })}
-                className="h-11 w-auto rounded-[var(--radius-pill)]"
+                className={SEGMENT}
               >
                 <option value="">All semesters</option>
                 {semesters.map((semester) => (
@@ -156,7 +168,7 @@ export function SubjectFilters({
                 id={groupId}
                 value={params.get("group") ?? "none"}
                 onChange={(event) => apply({ group: event.target.value })}
-                className="h-11 w-auto rounded-[var(--radius-pill)]"
+                className={SEGMENT}
               >
                 {Object.entries(SUBJECT_GROUPS).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -174,7 +186,7 @@ export function SubjectFilters({
             id={sortId}
             value={params.get("sort") ?? "activity"}
             onChange={(event) => apply({ sort: event.target.value })}
-            className="h-11 w-auto rounded-[var(--radius-pill)]"
+            className={SEGMENT}
           >
             {Object.entries(SUBJECT_SORTS).map(([value, label]) => (
               <option key={value} value={value}>

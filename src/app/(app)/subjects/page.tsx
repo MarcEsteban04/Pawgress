@@ -1,15 +1,20 @@
 import { Archive, Layers, SearchX } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { buttonStyles, EmptyState, SectionLabel } from "@/components/ui";
 import { groupSubjects } from "@/features/subjects/grouping";
 import { isSubjectGroup, isSubjectSort } from "@/features/subjects/query";
 import { SubjectCard } from "@/features/subjects/components/SubjectCard";
 import { SubjectDialog } from "@/features/subjects/components/SubjectDialog";
 import { SubjectFilters } from "@/features/subjects/components/SubjectFilters";
+import { SubjectsMasthead } from "@/features/subjects/components/SubjectsMasthead";
 import { SubjectListSkeleton } from "@/features/subjects/components/SubjectListSkeleton";
-import { countArchivedSubjects, listSubjectFacets, listSubjects } from "@/server/subjects/queries";
+import {
+  countArchivedSubjects,
+  getLibraryTotals,
+  listSubjectFacets,
+  listSubjects,
+} from "@/server/subjects/queries";
 
 export const metadata = { title: "Subjects" };
 
@@ -120,7 +125,7 @@ async function SubjectList({ search, sort, group, semester, year, archived }: Qu
               </div>
             )}
 
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {section.subjects.map((subject) => (
                 <li key={subject.id}>
                   <SubjectCard subject={subject} />
@@ -152,23 +157,29 @@ export default async function Page({ searchParams }: PageProps<"/subjects">) {
 
   /* Facets describe the view being shown; the archived count describes the
      other one, which is what decides whether the door to it is offered. */
-  const [facets, archivedCount] = await Promise.all([
+  const [facets, archivedCount, totals] = await Promise.all([
     listSubjectFacets(query.archived),
     countArchivedSubjects(),
+    getLibraryTotals(),
   ]);
 
   const hasFilters = Boolean(query.search || query.semester || query.year);
 
   return (
-    <div className="flex flex-col gap-5">
-      <PageHeader
+    <div className="flex flex-col gap-6">
+      <SubjectsMasthead
         eyebrow={query.archived ? "Kept, but out of the way" : "One place per class"}
         title={query.archived ? "Archived subjects" : "Subjects"}
         description={
           query.archived
             ? "Everything inside these is intact and still readable. Restore one to bring it back to your list."
-            : "Your files, topics and quizzes live inside a subject."
+            : "Every file, topic and quiz lives inside a subject. This is all of them."
         }
+        /* No figures in the archive: "your library" is the wrong frame for a
+           shelf of finished classes, and the counts there would be the ones
+           archiving exists to stop showing. */
+        totals={query.archived ? undefined : totals}
+        tone={query.archived ? "quiet" : "accent"}
         action={query.archived ? undefined : <SubjectDialog />}
       />
 
