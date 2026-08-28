@@ -279,7 +279,7 @@ export function AssistantChat({
           rather than three things stacked with gaps between them — which is
           what a chat IS, and what a page header floating above a narrow strip
           failed to say. */}
-      <div className="flex min-h-[calc(100vh-11rem)] flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
+      <div className="flex min-h-[calc(100vh-11rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface shadow-[var(--shadow-card)]">
         <header className="relative flex flex-col gap-4 border-b border-rule px-5 py-5 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
           {/* A wash behind the header only. The transcript below stays plain
             paper, because tinted ground under a long answer is the fastest way
@@ -334,7 +334,7 @@ export function AssistantChat({
           it is returning to. The panel takes the space; the text keeps the
           measure. */}
         <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
-          <div className="mx-auto flex w-full max-w-[52rem] flex-1 flex-col gap-6">
+          <div className="mx-auto flex w-full max-w-[60rem] flex-1 flex-col gap-6">
             {messages.length === 0 ? (
               <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text, false)} />
             ) : (
@@ -350,7 +350,7 @@ export function AssistantChat({
           onSubmit={submit}
           className="sticky bottom-0 border-t border-rule bg-surface px-5 py-4 sm:px-7"
         >
-          <div className="mx-auto w-full max-w-[52rem]">
+          <div className="mx-auto w-full max-w-[60rem]">
             <div className="flex items-end gap-2 rounded-[var(--radius-card)] border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong">
               <label htmlFor="assistant-question" className="sr-only">
                 Ask about {scopeLabel}
