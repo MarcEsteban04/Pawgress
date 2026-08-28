@@ -123,8 +123,12 @@ export async function retrieveForQuestion(
     query_embedding: `[${queryVector.join(",")}]`,
     match_count: matchCount,
     min_similarity: MIN_SIMILARITY,
-    p_subject_id: scope.subjectId ?? null,
-    p_topic_id: scope.topicId ?? null,
+    /* `undefined`, not `null`. The generated Args type marks defaulted
+       parameters optional rather than nullable, so omitting them is how the
+       SQL default is requested — and both default to null, which is what the
+       function's `p_subject_id is null or …` guard reads as "no filter". */
+    p_subject_id: scope.subjectId ?? undefined,
+    p_topic_id: scope.topicId ?? undefined,
   });
 
   if (error) {

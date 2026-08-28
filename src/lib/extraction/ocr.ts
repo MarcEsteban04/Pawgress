@@ -36,10 +36,11 @@ import { AppError } from "@/lib/errors";
  * that is the right trade; if OCR ever needs to be free, this file is the only
  * one that changes.
  *
- * Transcription is not reasoning, so `AI_OCR_MODEL` exists to run it on a
- * cheaper model than the default. It is left as configuration rather than
- * chosen here — trading model quality is a product decision, not a default to
- * slide in.
+ * Transcription is not reasoning, so it does not need the strongest model.
+ * Which model runs it is per-provider configuration; what this call guarantees
+ * is that it reaches a provider that can SEE. Passing `images` filters the
+ * chain to vision-capable providers, so Groq — whose default is text-only — is
+ * skipped rather than handed a photo it would quietly ignore.
  */
 
 export { MAX_OCR_BYTES, ocrMediaTypeFor };
@@ -122,7 +123,6 @@ export async function ocrImage(input: {
     {
       context: [],
       images: [{ mediaType: input.mediaType, base64: Buffer.from(input.bytes).toString("base64") }],
-      model: process.env.AI_OCR_MODEL,
       /* A page of dense handwriting is a few thousand tokens of output; this is
          a runaway guard, not a target. */
       maxOutputTokens: 8_000,

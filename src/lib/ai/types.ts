@@ -91,14 +91,15 @@ export type GenerateOptions = {
    * guidance recommends: the instruction should follow the thing it refers to.
    */
   images?: ImageInput[];
-  /**
-   * A model for this call only, overriding the configured default.
-   *
-   * Exists for tasks where the default is the wrong shape rather than too
-   * expensive — transcription is not reasoning. Left to configuration rather
-   * than chosen here, because trading model quality is a product decision.
-   */
-  model?: string;
+  /* No per-call model. It made sense against a single provider; against a
+     chain of three it is ambiguous — a name valid for Gemini is a 404 at Groq,
+     and one string cannot name a model for all of them. Model choice is
+     per-provider configuration now (GROQ_AI_MODEL, GEMINI_AI_MODEL,
+     OPENAI_AI_MODEL), which is the only place that can be right for each.
+
+     A caller needing a CAPABILITY rather than a model says so through the
+     request itself: passing images restricts the chain to providers that can
+     read them, which is what the OCR path actually wanted. */
   /** Hard cap so one request cannot run away with the budget. */
   maxOutputTokens?: number;
   temperature?: number;
@@ -146,12 +147,16 @@ export interface AiService {
     done: Promise<{ citations: Citation[]; usage: AiUsage }>;
   }>;
 
-  /* No `embed()`. Anthropic publishes no embeddings endpoint, so embeddings are
-     a separate provider with its own key, limits and pricing — see
-     `lib/ai/embeddings.ts`. Sprint 07 assumed one provider would serve every
-     model call; it was wrong, and a method that always throws is worse than no
-     method, because it invites a caller to handle a failure that is really a
-     design gap. */
+  /* No `embed()`. Embeddings are a separate service with their own key,
+     limits and pricing — see `lib/ai/embeddings.ts`. That was true when chat
+     ran on Anthropic, which published no embeddings endpoint, and it stays
+     true now that chat runs across three providers: Groq offers no embeddings
+     at all, and the vector width is fixed at 1536 by the schema, so the
+     embedding model cannot follow whichever provider happened to answer.
+
+     Sprint 07 assumed one provider would serve every model call. It was wrong
+     twice over, and a method that always throws is worse than no method — it
+     invites a caller to handle a failure that is really a design gap. */
 }
 
 /**

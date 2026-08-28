@@ -16,23 +16,38 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-/*
- * NOTE — `ai_calls`, `jobs`, `ai_task_kind`, `job_kind`, `claim_jobs` and
- * `materials.page_offsets`, `material_chunks.subject_id` and `match_chunks` were added by hand in
- * Sprints 31–36, matching the
- * shape the generator produces. The
- * migration that creates them is
- * `20260829090000_ai_calls_and_jobs.sql`; run `npm run db:types:remote` after
- * applying it and this note can go.
- */
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          code: string
+          earned_at: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          code: string
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          code?: string
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_calls: {
         Row: {
           cache_read_tokens: number
@@ -83,89 +98,6 @@ export type Database = {
           outcome?: string
           output_tokens?: number
           task?: Database["public"]["Enums"]["ai_task_kind"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      jobs: {
-        Row: {
-          attempts: number
-          created_at: string
-          failure_message: string | null
-          failure_next_step: string | null
-          id: string
-          kind: Database["public"]["Enums"]["job_kind"]
-          leased_until: string | null
-          slice_cursor: number | null
-          status: Database["public"]["Enums"]["job_status"]
-          subject_id: string | null
-          target_id: string
-          total_slices: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string
-          failure_message?: string | null
-          failure_next_step?: string | null
-          id?: string
-          kind: Database["public"]["Enums"]["job_kind"]
-          leased_until?: string | null
-          slice_cursor?: number | null
-          status?: Database["public"]["Enums"]["job_status"]
-          subject_id?: string | null
-          target_id: string
-          total_slices?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          attempts?: number
-          created_at?: string
-          failure_message?: string | null
-          failure_next_step?: string | null
-          id?: string
-          kind?: Database["public"]["Enums"]["job_kind"]
-          leased_until?: string | null
-          slice_cursor?: number | null
-          status?: Database["public"]["Enums"]["job_status"]
-          subject_id?: string | null
-          target_id?: string
-          total_slices?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "jobs_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      achievements: {
-        Row: {
-          code: string
-          earned_at: string
-          id: string
-          metadata: Json
-          user_id: string
-        }
-        Insert: {
-          code: string
-          earned_at?: string
-          id?: string
-          metadata?: Json
-          user_id: string
-        }
-        Update: {
-          code?: string
-          earned_at?: string
-          id?: string
-          metadata?: Json
           user_id?: string
         }
         Relationships: []
@@ -250,9 +182,67 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          failure_message: string | null
+          failure_next_step: string | null
+          id: string
+          kind: Database["public"]["Enums"]["job_kind"]
+          leased_until: string | null
+          slice_cursor: number | null
+          status: Database["public"]["Enums"]["job_status"]
+          subject_id: string | null
+          target_id: string
+          total_slices: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          failure_message?: string | null
+          failure_next_step?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["job_kind"]
+          leased_until?: string | null
+          slice_cursor?: number | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subject_id?: string | null
+          target_id: string
+          total_slices?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          failure_message?: string | null
+          failure_next_step?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["job_kind"]
+          leased_until?: string | null
+          slice_cursor?: number | null
+          status?: Database["public"]["Enums"]["job_status"]
+          subject_id?: string | null
+          target_id?: string
+          total_slices?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       material_chunks: {
         Row: {
-          subject_id: string
           chunk_index: number
           content: string
           created_at: string
@@ -261,11 +251,11 @@ export type Database = {
           material_id: string
           page_from: number | null
           page_to: number | null
+          subject_id: string
           token_count: number | null
           user_id: string
         }
         Insert: {
-          subject_id: string
           chunk_index: number
           content: string
           created_at?: string
@@ -274,11 +264,11 @@ export type Database = {
           material_id: string
           page_from?: number | null
           page_to?: number | null
+          subject_id: string
           token_count?: number | null
           user_id: string
         }
         Update: {
-          subject_id?: string
           chunk_index?: number
           content?: string
           created_at?: string
@@ -287,6 +277,7 @@ export type Database = {
           material_id?: string
           page_from?: number | null
           page_to?: number | null
+          subject_id?: string
           token_count?: number | null
           user_id?: string
         }
@@ -298,12 +289,17 @@ export type Database = {
             referencedRelation: "materials"
             referencedColumns: ["id", "user_id"]
           },
+          {
+            foreignKeyName: "material_chunks_subject_fkey"
+            columns: ["subject_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id", "user_id"]
+          },
         ]
       }
       materials: {
         Row: {
-          ocr_confidence: number | null
-          page_offsets: Json | null
           byte_size: number | null
           content_hash: string | null
           created_at: string
@@ -312,7 +308,9 @@ export type Database = {
           failure_next_step: string | null
           id: string
           kind: Database["public"]["Enums"]["material_kind"]
+          ocr_confidence: number | null
           page_count: number | null
+          page_offsets: Json | null
           processed_at: string | null
           status: Database["public"]["Enums"]["job_status"]
           storage_path: string | null
@@ -323,8 +321,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          ocr_confidence?: number | null
-          page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
           created_at?: string
@@ -333,7 +329,9 @@ export type Database = {
           failure_next_step?: string | null
           id?: string
           kind: Database["public"]["Enums"]["material_kind"]
+          ocr_confidence?: number | null
           page_count?: number | null
+          page_offsets?: Json | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           storage_path?: string | null
@@ -344,8 +342,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          ocr_confidence?: number | null
-          page_offsets?: Json | null
           byte_size?: number | null
           content_hash?: string | null
           created_at?: string
@@ -354,7 +350,9 @@ export type Database = {
           failure_next_step?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["material_kind"]
+          ocr_confidence?: number | null
           page_count?: number | null
+          page_offsets?: Json | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           storage_path?: string | null
@@ -1034,27 +1032,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_jobs: {
+        Args: { lease_seconds?: number; max_jobs?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          failure_message: string | null
+          failure_next_step: string | null
+          id: string
+          kind: Database["public"]["Enums"]["job_kind"]
+          leased_until: string | null
+          slice_cursor: number | null
+          status: Database["public"]["Enums"]["job_status"]
+          subject_id: string | null
+          target_id: string
+          total_slices: number | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       match_chunks: {
         Args: {
-          query_embedding: string
           match_count?: number
           min_similarity?: number
-          p_subject_id?: string | null
-          p_topic_id?: string | null
+          p_subject_id?: string
+          p_topic_id?: string
+          query_embedding: string
         }
         Returns: {
           chunk_id: string
+          content: string
           material_id: string
           material_title: string
-          page_from: number | null
-          page_to: number | null
-          content: string
+          page_from: number
+          page_to: number
           similarity: number
         }[]
-      }
-      claim_jobs: {
-        Args: { lease_seconds?: number; max_jobs?: number }
-        Returns: Database["public"]["Tables"]["jobs"]["Row"][]
       }
       move_topic: {
         Args: { p_to_index: number; p_topic_id: string }
@@ -1069,8 +1088,8 @@ export type Database = {
         | "practice_questions"
         | "quiz"
         | "short_answer_grade"
-        | "ocr"
         | "embedding"
+        | "ocr"
       job_kind:
         | "extract_text"
         | "chunk_text"
@@ -1227,6 +1246,24 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_task_kind: [
+        "assistant",
+        "reviewer",
+        "flashcards",
+        "practice_questions",
+        "quiz",
+        "short_answer_grade",
+        "embedding",
+        "ocr",
+      ],
+      job_kind: [
+        "extract_text",
+        "chunk_text",
+        "embed_chunks",
+        "ocr_image",
+        "generate_reviewer",
+        "generate_quiz",
+      ],
       job_status: [
         "queued",
         "uploading",

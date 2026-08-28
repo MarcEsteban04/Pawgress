@@ -84,8 +84,23 @@ export const serverEnv = {
       present(process.env.SUPABASE_SECRET_KEY) ?? present(process.env.SUPABASE_SERVICE_ROLE_KEY);
     return required(key, "SUPABASE_SECRET_KEY");
   },
-  get anthropicApiKey() {
-    return required(process.env.ANTHROPIC_API_KEY, "ANTHROPIC_API_KEY");
+  /**
+   * Chat provider keys, tried in the order Groq → Gemini → OpenAI.
+   *
+   * Deliberately NOT `required()`. The chain in `lib/ai/providers.ts` skips a
+   * provider whose key is absent, so one key is enough to run and a second is a
+   * fallback rather than a prerequisite. Throwing here would turn "I have only
+   * configured Groq so far" into a dead app.
+   */
+  get groqApiKey() {
+    return present(process.env.GROQ_AI_API_KEY);
+  },
+  get geminiApiKey() {
+    return present(process.env.GEMINI_AI_API_KEY);
+  },
+  /** Also the embeddings key, unless `EMBEDDINGS_API_KEY` overrides it. */
+  get openaiApiKey() {
+    return present(process.env.OPENAI_API_KEY);
   },
 } as const;
 

@@ -13,11 +13,14 @@ import { checkQuota, claimCall, settleCall } from "./usage";
  * **A second provider, and a correction to the Sprint 07 interface.**
  *
  * `AiService` carried an `embed()` method on the assumption that one provider
- * would serve every model call. Anthropic publishes no embeddings endpoint, so
- * that assumption was wrong: embeddings are a genuinely different vendor with a
- * different key, different limits and different pricing. Keeping them behind one
- * interface would mean an interface whose methods talk to two companies — the
- * kind of tidiness that hides the thing you most need to see when a key expires.
+ * would serve every model call. That assumption was wrong then and is wronger
+ * now: chat runs across Groq, Gemini and OpenAI, Groq publishes no embeddings
+ * endpoint at all, and the vector width is fixed at 1536 by the schema — so the
+ * embedding model cannot simply follow whichever chat provider answered.
+ *
+ * Keeping them behind one interface would mean an interface whose methods talk
+ * to different vendors under different rules — the kind of tidiness that hides
+ * the thing you most need to see when a key expires.
  *
  * So this is its own service. `AiService.embed()` is gone rather than left
  * throwing, because a method that always fails is worse than no method: it
@@ -26,7 +29,8 @@ import { checkQuota, claimCall, settleCall } from "./usage";
  * The provider is OpenAI's `text-embedding-3-small`, chosen by the product owner
  * over Voyage and a self-hosted model. It is 1536-dimensional, which is what the
  * Sprint 13 schema already fixed — so no migration, and no re-embedding of
- * anything already indexed.
+ * anything already indexed. It reads `OPENAI_API_KEY`, the same key the chat
+ * fallback uses, unless `EMBEDDINGS_API_KEY` names a separate account.
  */
 
 export type EmbeddingBatchResult = {
@@ -48,13 +52,17 @@ export const MAX_TOKENS_PER_REQUEST = 100_000;
 export const MAX_TOKENS_PER_INPUT = 8_000;
 
 function client(): OpenAI {
-  const apiKey = process.env.EMBEDDINGS_API_KEY;
+  /* `OPENAI_API_KEY` is the same key the chat fallback uses, so one variable
+     covers both rather than making somebody set the same secret twice under
+     two names. `EMBEDDINGS_API_KEY` still wins when present, for the case
+     where embeddings should be billed to a separate account. */
+  const apiKey = process.env.EMBEDDINGS_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     throw new AppError({
       code: "provider_unavailable",
       message: "Search indexing is not switched on yet.",
       nextStep: "Reviewers and quizzes still work from your material directly.",
-      context: { reason: "EMBEDDINGS_API_KEY is not set" },
+      context: { reason: "neither EMBEDDINGS_API_KEY nor OPENAI_API_KEY is set" },
     });
   }
   return new OpenAI({ apiKey });
