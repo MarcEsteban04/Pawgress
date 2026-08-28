@@ -41,9 +41,11 @@ function nextId(): string {
 /**
  * Stored rows back into the shapes the transcript renders.
  *
- * A saved thread has no `streaming`, no `noMaterial` and no `error` — those
- * are states a turn passes through, not facts about it. Reconstructing them
- * would be inventing a history that did not happen.
+ * A saved thread has no `streaming` and no `error` — those are states a turn
+ * passes through, not facts about it. Reconstructing them would be inventing a
+ * history that did not happen. `ungrounded` IS a fact about the answer rather
+ * than a phase of it, so it is stored and restored — an answer that carried the
+ * "not from your material" label live must still carry it tomorrow.
  */
 function hydrate(stored: StoredMessage[]): ChatMessage[] {
   return stored.map((message) =>
@@ -148,7 +150,7 @@ export function AssistantChat({
   }
 
   const ask = useCallback(
-    async (text: string, allowUngrounded: boolean, replaceId?: string) => {
+    async (text: string, replaceId?: string) => {
       const controller = new AbortController();
       abortRef.current = controller;
       setBusy(true);
@@ -169,7 +171,10 @@ export function AssistantChat({
           text: "",
           citations: [],
           streaming: true,
-          ungrounded: allowUngrounded,
+          /* Assumed grounded until the server says otherwise. The label arrives
+             as a frame rather than being predicted here — guessing it would
+             mean the badge flickering off once the truth arrived. */
+          ungrounded: false,
         });
         return next;
       });
@@ -190,7 +195,6 @@ export function AssistantChat({
           body: JSON.stringify({
             question: text,
             subjectId: subjectId || null,
-            allowUngrounded,
           }),
           signal: controller.signal,
         });
@@ -199,6 +203,10 @@ export function AssistantChat({
 
         let streamed = "";
         let latestCitations: AssistantCitation[] = [];
+        /* What the server actually said about this answer, not what the request
+           hoped for. Saved with the turn so a resumed conversation carries the
+           same label it showed live. */
+        let wasUngrounded = false;
         for await (const chunkFrame of readFrames(response.body)) {
           switch (chunkFrame.type) {
             case "text":
@@ -209,8 +217,13 @@ export function AssistantChat({
               latestCitations = chunkFrame.value as AssistantCitation[];
               patch({ citations: latestCitations });
               break;
-            case "no_material":
-              patch({ noMaterial: true, streaming: false });
+            case "ungrounded":
+              wasUngrounded = true;
+              /* Set from a frame the server sends before the first token, not
+                 inferred from the answer's wording. A model asked to disclose
+                 its own sourcing will sometimes forget; the empty chunk list
+                 the server checked cannot. */
+              patch({ ungrounded: true });
               break;
             case "error":
               patch({
@@ -226,7 +239,7 @@ export function AssistantChat({
            all: a failed or refused turn is not history, and a list full of
            threads containing a single error is a list nobody opens. */
         if (streamed.trim().length > 0) {
-          void persist(text, streamed, latestCitations, allowUngrounded);
+          void persist(text, streamed, latestCitations, wasUngrounded);
         }
       } catch (thrown) {
         /* An abort is the student pressing stop, not a failure. Whatever had
@@ -256,7 +269,7 @@ export function AssistantChat({
     const text = question.trim();
     if (text.length === 0 || busy) return;
     setQuestion("");
-    void ask(text, false);
+    void ask(text);
   }
 
   const scopeLabel =
@@ -341,9 +354,9 @@ export function AssistantChat({
         <div className="flex flex-1 flex-col gap-6 px-5 py-7 sm:px-7">
           <div className="mx-auto flex w-full max-w-[60rem] flex-1 flex-col gap-6">
             {messages.length === 0 ? (
-              <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text, false)} />
+              <EmptyConversation scopeLabel={scopeLabel} onPick={(text) => void ask(text)} />
             ) : (
-              messages.map((message) => <Message key={message.id} message={message} onAsk={ask} />)
+              messages.map((message) => <Message key={message.id} message={message} />)
             )}
           </div>
         </div>
@@ -415,13 +428,7 @@ export function AssistantChat({
   );
 }
 
-function Message({
-  message,
-  onAsk,
-}: {
-  message: ChatMessage;
-  onAsk: (text: string, allowUngrounded: boolean, replaceId?: string) => Promise<void>;
-}) {
+function Message({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
       <p className="ml-auto max-w-[85%] rounded-[var(--radius-card)] rounded-br-md bg-ink px-4 py-2.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-on-ink shadow-[var(--shadow-pill)]">
@@ -439,7 +446,7 @@ function Message({
         <AcadifyMark className="size-4" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-3 pb-1">
-        {message.ungrounded && !message.noMaterial && (
+        {message.ungrounded && (
           <p className="flex items-start gap-2 text-xs leading-relaxed text-warn">
             <Sparkles className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             <span>Not from your material — this is general knowledge.</span>
@@ -473,29 +480,6 @@ function Message({
             <span className="size-1.5 animate-pulse rounded-full bg-ink-muted" aria-hidden />
             Reading your material…
           </p>
-        )}
-
-        {/* The honest empty case, and the explicit opt-in (FR-C3). Never
-            answered from general knowledge without the student choosing it. */}
-        {message.noMaterial && (
-          <div className="flex flex-col gap-3">
-            <p className="flex items-start gap-2 text-[0.9375rem] leading-relaxed">
-              <TriangleAlert className="mt-1 size-4 shrink-0 text-warn" aria-hidden />
-              <span>
-                Your material does not cover this. Nothing you have uploaded is close enough to
-                answer from.
-              </span>
-            </p>
-            <div>
-              <Button
-                variant="subtle"
-                size="sm"
-                onClick={() => void onAsk(message.question, true, message.id)}
-              >
-                Answer without my material
-              </Button>
-            </div>
-          </div>
         )}
 
         {message.error && (

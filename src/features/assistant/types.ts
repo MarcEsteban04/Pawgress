@@ -29,12 +29,6 @@ export type ChatMessage =
       citations: AssistantCitation[];
       /** True while tokens are still arriving. */
       streaming: boolean;
-      /**
-       * Set when retrieval found nothing and no general answer was asked for.
-       * The UI turns this into an explicit opt-in rather than answering anyway
-       * (FR-C3).
-       */
-      noMaterial?: boolean;
       /** True when this answer was NOT grounded in the student's material. */
       ungrounded?: boolean;
       error?: { message: string; nextStep: string };
@@ -44,7 +38,7 @@ export type ChatMessage =
 export type StreamFrame =
   | { type: "text"; value: string }
   | { type: "citations"; value: AssistantCitation[] }
-  | { type: "no_material" }
+  | { type: "ungrounded" }
   | { type: "error"; message: string; nextStep: string };
 
 /**

@@ -18,16 +18,21 @@ import { retrieveForQuestion, type RetrievalScope } from "./search";
  *
  * **The empty case is the interesting one.** When retrieval finds nothing above
  * the relevance floor, this does NOT quietly ask the model anyway. It returns
- * `grounded: false` with no answer, and the caller decides what to offer — which
- * per FR-C3 is an explicit, labelled choice to answer from general knowledge.
- * Making that decision here would take it away from the student.
+ * **Aki answers. She does not refuse.** Until now an empty retrieval returned
+ * nothing and asked the student to opt in to a general answer — which was the
+ * right instinct applied too widely: it meant "Hello" was met with "your
+ * material does not cover this".
+ *
+ * The value in the grounding rule was never the refusal. It was that a student
+ * must never mistake general knowledge for their syllabus. That is a question
+ * of ATTRIBUTION, and attribution is preserved exactly: an answer built from
+ * their material carries its citations, and an answer that is not gets labelled
+ * as general knowledge before its first sentence and in the UI (FR-C3). What
+ * changes is that she stops being useless in between.
  */
 
 /** How the library summary is introduced to the model. */
 const LIBRARY_HEADING = "The student's library (their own account data, not file contents):";
-
-/** What the model emits when the library summary cannot answer either. */
-const SENTINEL = "NO_MATERIAL";
 
 export type AnswerRequest = {
   question: string;
@@ -36,20 +41,26 @@ export type AnswerRequest = {
    * Set only when the student has explicitly asked for an answer that is not
    * from their material, having been told that is what they are getting.
    */
-  allowUngrounded?: boolean;
 };
 
 export type AnswerResult =
   | {
       grounded: true;
+      /**
+       * True when the answer does NOT come from the student's uploaded files.
+       *
+       * The single most important flag in the product. It drives the label the
+       * student sees, and it is set by what retrieval actually returned rather
+       * than by what the model says about itself.
+       */
+      ungrounded: boolean;
       /** Streams to the caller; the citations resolve when it finishes. */
       textStream: AsyncIterable<string>;
       done: Promise<{ citations: Citation[] }>;
     }
   | {
-      /** Retrieval found nothing relevant, and no ungrounded answer was asked for. */
       grounded: false;
-      reason: "no_material" | "empty_question";
+      reason: "empty_question";
     };
 
 const GROUNDED_PROMPT = [
@@ -66,38 +77,24 @@ const GROUNDED_PROMPT = [
 ].join("\n");
 
 /**
- * When retrieval found nothing, but the library summary might still answer.
+ * When no uploaded material matched.
  *
- * "How many subjects do I have?" is not written in any passage — it is a fact
- * about the account, and vector search will never find it. So an empty
- * retrieval is no longer automatically "your material does not cover this": the
- * question gets one pass against the library summary first.
- *
- * The sentinel is how the model declines. Asking it to answer "if it can" and
- * inferring the rest from the prose would mean parsing an apology; a fixed
- * token it either emits or does not is unambiguous, and the caller turns it
- * back into the honest no-material outcome with its opt-in (FR-C3).
+ * Covers three different things at once, and deliberately does not try to tell
+ * them apart before answering: a greeting, a question about the library, and a
+ * study question their files do not cover. Classifying them first would mean a
+ * second model call to decide whether to make the first one.
  */
-const LIBRARY_PROMPT = [
-  "None of the student's uploaded material matched this question, but you have",
-  "a summary of their library above — their subjects, topics, and files.",
+const GENERAL_PROMPT = [
+  "None of the student's uploaded material matched this question.",
   "",
-  "- If the question is about their library itself (how many subjects they have,",
-  "  what they have uploaded, what a subject contains, what is still",
-  "  processing), answer it from that summary. This is their own data, so",
-  "  answering is correct and needs no disclaimer.",
-  "- If the question is about the CONTENT of study material instead, you cannot",
-  "  answer it: reply with exactly NO_MATERIAL and nothing else.",
-  "- Never answer a content question from general knowledge here.",
-].join("\n");
-
-const UNGROUNDED_PROMPT = [
-  "The student's own material does not cover this question, and they have asked",
-  "for a general answer anyway.",
-  "",
-  "- Answer from general knowledge, accurately and briefly.",
-  "- Open by making clear this is not from their material.",
-  "- Do not claim their material says anything.",
+  "- If it is conversational — a greeting, a thank you, asking what you can do —",
+  "  just reply naturally. No disclaimer; there is nothing to attribute.",
+  "- If it is about their library (how many subjects, what they have uploaded,",
+  "  what is still processing), answer from the library summary above. That is",
+  "  their own data, so no disclaimer either.",
+  "- Otherwise answer from general knowledge, accurately and briefly, and open",
+  "  by saying plainly that this is not from their material.",
+  "- Never claim their material says anything.",
 ].join("\n");
 
 /**
@@ -119,17 +116,7 @@ export async function answerQuestion(request: AnswerRequest): Promise<AnswerResu
   ]);
 
   const service = getAiService();
-
-  /* Three modes, and the middle one is new. A student's own library is not
-     general knowledge, so a question about it does not need the opt-in that a
-     general answer does — but a question about MATERIAL that was not retrieved
-     still does. */
-  const libraryOnly = retrieval.empty && !request.allowUngrounded;
-  const instruction = libraryOnly
-    ? LIBRARY_PROMPT
-    : retrieval.empty
-      ? UNGROUNDED_PROMPT
-      : GROUNDED_PROMPT;
+  const instruction = retrieval.empty ? GENERAL_PROMPT : GROUNDED_PROMPT;
 
   const { textStream, done } = await service.stream(
     {
@@ -145,42 +132,12 @@ export async function answerQuestion(request: AnswerRequest): Promise<AnswerResu
     { context: retrieval.chunks },
   );
 
-  /* On the library-only path the first tokens decide whether this is an answer
-     or a decline, so they are read before returning. It costs one round trip on
-     a path that had none, and buys the difference between "you have one
-     subject" and a shrug. */
-  if (libraryOnly) {
-    const iterator = textStream[Symbol.asyncIterator]();
-    let head = "";
-    while (head.length < SENTINEL.length + 4) {
-      const next = await iterator.next();
-      if (next.done) break;
-      head += next.value;
-    }
-
-    if (head.trimStart().toUpperCase().startsWith(SENTINEL)) {
-      return { grounded: false, reason: "no_material" };
-    }
-
-    return {
-      grounded: true,
-      textStream: (async function* () {
-        if (head) yield head;
-        while (true) {
-          const next = await iterator.next();
-          if (next.done) break;
-          yield next.value;
-        }
-      })(),
-      /* No citations: an answer about the library is grounded in the account,
-         not in a page of a file, and inventing a source for it would be the
-         one thing this product must never do. */
-      done: done.then(() => ({ citations: [] })),
-    };
-  }
-
   return {
     grounded: true,
+    /* Set from what retrieval RETURNED, never from what the answer claims about
+       itself. A model asked to disclose its own sourcing will sometimes forget;
+       the empty chunk list cannot. */
+    ungrounded: retrieval.empty,
     textStream,
     /* Citations come from what retrieval actually returned, so they cannot
        disagree with what the model was shown. An ungrounded answer has none,

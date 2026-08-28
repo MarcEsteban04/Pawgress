@@ -30,8 +30,8 @@ export const maxDuration = 60;
 type Frame =
   | { type: "text"; value: string }
   | { type: "citations"; value: unknown[] }
-  /** Retrieval found nothing; the client offers the general-knowledge choice. */
-  | { type: "no_material" }
+  /** The answer is not from the student's files, so the UI must label it. */
+  | { type: "ungrounded" }
   | { type: "error"; message: string; nextStep: string };
 
 /** One NDJSON line, for the single-frame responses that carry no stream. */
@@ -45,7 +45,7 @@ function frame(data: Frame): Uint8Array {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { question?: unknown; subjectId?: unknown; allowUngrounded?: unknown };
+  let body: { question?: unknown; subjectId?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -54,28 +54,39 @@ export async function POST(request: NextRequest) {
 
   const question = typeof body.question === "string" ? body.question : "";
   const subjectId = typeof body.subjectId === "string" && body.subjectId ? body.subjectId : null;
-  const allowUngrounded = body.allowUngrounded === true;
 
   try {
     const result = await answerQuestion({
       question,
       scope: { subjectId },
-      allowUngrounded,
     });
 
     if (!result.grounded) {
-      /* 200, not an error status. "Your material does not cover this" is an
-         answer, and dressing it as a failure would make the client treat a
-         correct outcome as something to retry. */
-      return new NextResponse(line({ type: "no_material" }), {
-        status: 200,
-        headers: streamHeaders(),
-      });
+      /* Only reachable for an empty question, which the composer already
+         blocks. 200 rather than an error status: nothing failed. */
+      return new NextResponse(
+        line({
+          type: "error",
+          message: "Ask something first.",
+          nextStep: "Type a question and press Enter.",
+        }),
+        {
+          status: 200,
+          headers: streamHeaders(),
+        },
+      );
     }
+
+    const ungrounded = result.ungrounded;
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
+          /* Sent BEFORE the first token, so the label is on screen while the
+             answer is still being written rather than appearing after a
+             student has read it as though it came from their files. */
+          if (ungrounded) controller.enqueue(frame({ type: "ungrounded" }));
+
           for await (const delta of result.textStream) {
             controller.enqueue(frame({ type: "text", value: delta }));
           }
