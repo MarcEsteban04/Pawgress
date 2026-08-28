@@ -25,7 +25,8 @@
     "db:push:remote": "node scripts/db-push.mjs",
     "db:test:rls": "node scripts/rls-test.mjs",
     "db:test:reorder": "node scripts/reorder-test.mjs",
-    "ai:test": "node scripts/ai-test.mjs"
+    "ai:test": "node scripts/ai-test.mjs",
+    "md:test": "node scripts/markdown-test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

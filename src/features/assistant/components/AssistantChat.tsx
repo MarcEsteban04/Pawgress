@@ -3,6 +3,7 @@
 import { ArrowUp, MessageSquare, Sparkles, Square, TriangleAlert } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Button, Card, CardBody, EmptyState, Select, SourceChip } from "@/components/ui";
+import { Markdown } from "@/features/assistant/markdown";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
 
 /**
@@ -242,16 +243,25 @@ function Message({
           </p>
         )}
 
+        {/* Rendered as Markdown rather than printed raw. A model writes
+            `**bold**` and fenced code because that is how it has been trained
+            to structure an explanation — showing the asterisks means showing
+            the student the scaffolding instead of the answer.
+
+            The caret is passed IN rather than placed after, so it sits at the
+            end of the sentence being written instead of on a line below it. */}
         {message.text.length > 0 && (
-          <div className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
-            {message.text}
-            {message.streaming && (
-              <span
-                className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-ink-muted"
-                aria-hidden
-              />
-            )}
-          </div>
+          <Markdown
+            text={message.text}
+            trailing={
+              message.streaming ? (
+                <span
+                  className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-ink-muted align-middle"
+                  aria-hidden
+                />
+              ) : null
+            }
+          />
         )}
 
         {/* Waiting, with nothing to show yet. Distinct from an empty answer. */}
