@@ -119,19 +119,32 @@ export function TopicList({ subjectId, topics }: Props) {
                   setDropTarget(null);
                 }}
                 className={cn(
-                  "flex flex-col gap-2.5 px-4 py-2.5 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-5",
+                  "group/row flex flex-col gap-2.5 px-4 py-2.5 transition-colors sm:flex-row sm:items-center sm:gap-3 sm:px-4",
                   dragging === topic.id ? "opacity-40" : "hover:bg-surface-sunken",
                   dropTarget === index && dragging !== topic.id && "bg-accent-soft",
                 )}
               >
-                {/* The handle is decorative — the whole row is draggable, and a
+                {/* Handle and position, as one unit.
+
+                    The number is the point of this list: a syllabus runs in an
+                    order, and a row that shows its place says so far better
+                    than a hint underneath. It also gives the left edge
+                    something to hold, which is what the row was missing when
+                    the mastery column went away.
+
+                    The handle is decorative — the whole row is draggable, and a
                     handle that were the only drag target would make the row
                     harder to grab, not easier. Hidden from assistive tech
-                    because the buttons beside it are the real control. */}
-                <GripVertical
-                  className="hidden size-4 shrink-0 cursor-grab text-ink-subtle active:cursor-grabbing sm:block"
-                  aria-hidden
-                />
+                    because the buttons at the end are the real control. */}
+                <span className="flex shrink-0 items-center gap-2">
+                  <GripVertical
+                    className="hidden size-4 cursor-grab text-ink-subtle opacity-0 transition-opacity group-hover/row:opacity-100 active:cursor-grabbing sm:block"
+                    aria-hidden
+                  />
+                  <span className="tabular w-4 text-right text-xs text-ink-subtle" aria-hidden>
+                    {index + 1}
+                  </span>
+                </span>
 
                 {/* Name and count on one line. A pill on its own row turned a
                     single fact into a second line of chrome per topic. */}
@@ -153,7 +166,13 @@ export function TopicList({ subjectId, topics }: Props) {
                   </div>
                 )}
 
-                <div className="flex shrink-0 items-center gap-1">
+                {/* Reorder first, then the rest, with a rule between them.
+                    Five identical icon buttons in a row read as one undivided
+                    toolbar, and the two that change the ORDER are the ones this
+                    list exists for. The edit and delete pair stays quiet until
+                    the row is hovered or focused, so a page of topics is a list
+                    of names rather than a wall of controls. */}
+                <div className="flex shrink-0 items-center gap-0.5">
                   <UploadDialog
                     subjectId={subjectId}
                     topics={ordered}
@@ -192,16 +211,20 @@ export function TopicList({ subjectId, topics }: Props) {
                     <ChevronDown aria-hidden />
                   </Button>
 
-                  <TopicDialog
-                    subjectId={subjectId}
-                    topic={topic}
-                    trigger={
-                      <Button variant="ghost" size="sm" aria-label={`Rename ${topic.name}`}>
-                        <Pencil aria-hidden />
-                      </Button>
-                    }
-                  />
-                  <DeleteTopicDialog topicId={topic.id} topicName={topic.name} />
+                  <span className="mx-1 h-5 w-px bg-rule" aria-hidden />
+
+                  <span className="flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-focus-within/row:opacity-100 lg:group-hover/row:opacity-100">
+                    <TopicDialog
+                      subjectId={subjectId}
+                      topic={topic}
+                      trigger={
+                        <Button variant="ghost" size="sm" aria-label={`Rename ${topic.name}`}>
+                          <Pencil aria-hidden />
+                        </Button>
+                      }
+                    />
+                    <DeleteTopicDialog topicId={topic.id} topicName={topic.name} />
+                  </span>
                 </div>
               </li>
             ))}
@@ -210,9 +233,14 @@ export function TopicList({ subjectId, topics }: Props) {
       </Card>
 
       {ordered.length > 1 && (
-        <p className="text-xs text-ink-subtle">
+        <p className="text-xs leading-relaxed text-ink-subtle">
           Drag a row, or use the arrows, to put topics in the order you study them.
-          {!anyMeasured && " Mastery appears here once you have answered questions on a topic."}
+          {!anyMeasured && (
+            <>
+              <br />
+              Mastery appears beside each one once you have answered questions on it.
+            </>
+          )}
         </p>
       )}
     </div>
