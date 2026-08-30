@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
-import { type ReviewerContent } from "@/features/reviewers/schema";
+import { type ReviewerDocument } from "@/features/reviewers/schema";
 import { type JobStatus } from "@/types";
 
 /** Reviewers (FR-R1, US-F1). RLS scopes every statement to the caller. */
@@ -20,7 +20,7 @@ export type ReviewerSummary = {
 
 export type Reviewer = ReviewerSummary & {
   /** Null until the job finishes, and null if it produced nothing usable. */
-  content: ReviewerContent | null;
+  content: ReviewerDocument | null;
   failureMessage: string | null;
 };
 
@@ -30,10 +30,10 @@ const SELECT =
 /* `content` is jsonb, so it arrives as `unknown`. Narrowed at the edge rather
    than trusted deeper in: the shape was written by us through a Zod schema, but
    a column that can hold anything should be checked where it is read. */
-function readContent(value: unknown): ReviewerContent | null {
+function readContent(value: unknown): ReviewerDocument | null {
   if (!value || typeof value !== "object") return null;
-  const candidate = value as Partial<ReviewerContent>;
-  return typeof candidate.summary === "string" ? (candidate as ReviewerContent) : null;
+  const candidate = value as Partial<ReviewerDocument>;
+  return typeof candidate.summary === "string" ? (candidate as ReviewerDocument) : null;
 }
 
 export const listReviewers = cache(async (subjectId: string): Promise<ReviewerSummary[]> => {

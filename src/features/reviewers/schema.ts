@@ -61,6 +61,91 @@ export const reviewerSchema = z.object({
 
 export type ReviewerContent = z.infer<typeof reviewerSchema>;
 
+/**
+ * What is actually STORED in `reviewers.content` (Sprint 46).
+ *
+ * Deliberately not the same object as `reviewerSchema`. That one is the
+ * generation contract: it is converted to a strict JSON schema and handed to
+ * the provider, where every property is required and an extra one is something
+ * the model will dutifully invent. These three are ours — written by the
+ * student or by the editor — and a model asked to produce `editedAt` would.
+ *
+ * They live in the jsonb rather than in columns because the whole document is
+ * always read and written as a unit: one write updates the content and its
+ * provenance together, with no window in which the two disagree. It also means
+ * the editor needed no migration.
+ */
+export const reviewerDocumentSchema = reviewerSchema.extend({
+  /**
+   * The student's own additions.
+   *
+   * Kept separate from everything generated, and labelled as theirs on screen.
+   * Merging a student's note into the summary would destroy the one distinction
+   * this product cannot afford to lose: which words came from their material
+   * and which came from them.
+   */
+  notes: z.array(z.string().min(1).max(2000)).max(20).optional(),
+
+  /**
+   * When a human last changed this, if ever.
+   *
+   * Its presence is what retires the "Written by Aki from N files" line. Once a
+   * student has edited a reviewer that sentence is false, and a footer that
+   * keeps claiming it is the product lying about its own provenance.
+   */
+  editedAt: z.string().optional(),
+
+  /**
+   * The section a regeneration job is currently rewriting.
+   *
+   * The jobs table has no payload column, so the request rides with the
+   * document it is about. Cleared by the handler when it finishes, which also
+   * makes it self-healing: a job that dies leaves a flag the next successful
+   * run overwrites.
+   */
+  pendingSection: z.enum(["summary", "concepts", "terms", "focus"]).optional(),
+});
+
+export type ReviewerDocument = z.infer<typeof reviewerDocumentSchema>;
+
+/** The sections a student can regenerate or clear, in the order they appear. */
+export const REVIEWER_SECTIONS = ["summary", "focus", "concepts", "terms"] as const;
+export type ReviewerSection = (typeof REVIEWER_SECTIONS)[number];
+
+/**
+ * One section at a time, validated against the SAME bounds as a full
+ * generation.
+ *
+ * Derived from `reviewerSchema.shape` rather than restated: a regenerated
+ * concepts list that could hold forty entries because someone edited one file
+ * and not the other is exactly the drift these bounds exist to prevent.
+ */
+export const SECTION_SCHEMAS = {
+  summary: z.object({ summary: reviewerSchema.shape.summary }),
+  concepts: z.object({ concepts: reviewerSchema.shape.concepts }),
+  terms: z.object({ terms: reviewerSchema.shape.terms }),
+  focus: z.object({ focus: reviewerSchema.shape.focus }),
+} as const;
+
+export const SECTION_LABELS: Record<ReviewerSection, string> = {
+  summary: "Summary",
+  focus: "Revise first",
+  concepts: "Key concepts",
+  terms: "Key terms",
+};
+
+/** What to ask for when only one section is being rewritten. */
+export const SECTION_PROMPTS: Record<ReviewerSection, string> = {
+  summary:
+    "Rewrite ONLY the summary: the whole subject in a breath, for a student with two minutes. Do not summarise the sections below it — summarise the material.",
+  concepts:
+    "Rewrite ONLY the key concepts: three to six things the material is actually about, each explained in two or three sentences.",
+  terms:
+    "Rewrite ONLY the key terms: vocabulary a student would lose marks for not knowing, defined as the material defines it.",
+  focus:
+    "Rewrite ONLY the advice on what to revise first: up to four lines, each saying what to start with and why.",
+};
+
 /** The instruction. Kept beside the schema so the two are read together. */
 export const REVIEWER_PROMPT = [
   "Write a revision aid from the student's material above.",

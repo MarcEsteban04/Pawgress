@@ -2,9 +2,11 @@ import { ArrowLeft, Layers, ListChecks, Sparkles, TriangleAlert } from "lucide-r
 import { type ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardBody, SectionLabel, StatusBadge } from "@/components/ui";
+import { Card, CardBody, StatusBadge } from "@/components/ui";
 import { GenerateFlashcardsButton } from "@/features/flashcards/components/GenerateFlashcardsButton";
 import { GenerateQuestionsButton } from "@/features/practice/components/GenerateQuestionsButton";
+import { ReviewerDocumentView } from "@/features/reviewers/components/ReviewerDocumentView";
+import { ReviewerTitle } from "@/features/reviewers/components/ReviewerTitle";
 import { countFlashcards } from "@/server/flashcards/queries";
 import { countPracticeQuestions } from "@/server/practice/queries";
 import { getReviewer } from "@/server/reviewers/queries";
@@ -66,9 +68,7 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
               .filter(Boolean)
               .join(" · ")}
           </p>
-          <h1 className="mt-1 font-display text-2xl leading-tight font-semibold tracking-[-0.02em]">
-            {reviewer.title}
-          </h1>
+          <ReviewerTitle reviewerId={reviewerId} title={reviewer.title} />
         </div>
         <StatusBadge status={reviewer.status} />
       </div>
@@ -133,77 +133,11 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
       )}
 
       {content && (
-        <div className="flex flex-col gap-5">
-          <Card>
-            <CardBody className="py-5">
-              <p className="leading-relaxed">{content.summary}</p>
-            </CardBody>
-          </Card>
-
-          {content.focus.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <SectionLabel>Revise first</SectionLabel>
-              <Card>
-                <CardBody className="py-4">
-                  <ol className="flex list-outside list-decimal flex-col gap-2 pl-5 marker:text-ink-subtle">
-                    {content.focus.map((item) => (
-                      <li key={item} className="leading-relaxed">
-                        {item}
-                      </li>
-                    ))}
-                  </ol>
-                </CardBody>
-              </Card>
-            </section>
-          )}
-
-          <section className="flex flex-col gap-3">
-            <SectionLabel>Key concepts</SectionLabel>
-            <div className="grid gap-3 md:grid-cols-2">
-              {content.concepts.map((concept) => (
-                <Card key={concept.name}>
-                  <CardBody className="py-4">
-                    <h2 className="font-display font-semibold">{concept.name}</h2>
-                    <p className="mt-1.5 text-[0.9375rem] leading-relaxed text-ink-muted">
-                      {concept.explanation}
-                    </p>
-                  </CardBody>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          {content.terms.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <SectionLabel>Key terms</SectionLabel>
-              <Card>
-                <CardBody className="p-0">
-                  <dl className="divide-y divide-rule">
-                    {content.terms.map((term) => (
-                      <div
-                        key={term.term}
-                        className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:gap-5"
-                      >
-                        <dt className="font-medium sm:w-48 sm:shrink-0">{term.term}</dt>
-                        <dd className="text-[0.9375rem] leading-relaxed text-ink-muted">
-                          {term.definition}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </CardBody>
-              </Card>
-            </section>
-          )}
-
-          {/* Said once, at the end, where a student has finished reading and is
-              deciding whether to trust it. */}
-          <p className="text-xs leading-relaxed text-ink-subtle">
-            Written by Aki from {reviewer.sourceCount} of your{" "}
-            {reviewer.sourceCount === 1 ? "file" : "files"}. Check it against your material before
-            relying on it for an exam.
-          </p>
-        </div>
+        <ReviewerDocumentView
+          reviewerId={reviewerId}
+          document={content}
+          sourceCount={reviewer.sourceCount}
+        />
       )}
     </div>
   );

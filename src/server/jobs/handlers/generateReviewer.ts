@@ -2,7 +2,14 @@ import "server-only";
 
 import { getAiService } from "@/lib/ai";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { REVIEWER_PROMPT, reviewerSchema } from "@/features/reviewers/schema";
+import {
+  REVIEWER_PROMPT,
+  SECTION_PROMPTS,
+  SECTION_SCHEMAS,
+  reviewerSchema,
+  type ReviewerDocument,
+  type ReviewerSection,
+} from "@/features/reviewers/schema";
 import { type Job, type JobSliceResult } from "../types";
 
 /**
@@ -34,7 +41,7 @@ export async function generateReviewerHandler(job: Job): Promise<JobSliceResult>
 
   const { data: reviewer } = await supabase
     .from("reviewers")
-    .select("id, user_id, subject_id, topic_id")
+    .select("id, user_id, subject_id, topic_id, content")
     .eq("id", job.targetId)
     .maybeSingle();
 
@@ -46,6 +53,16 @@ export async function generateReviewerHandler(job: Job): Promise<JobSliceResult>
       retryable: false,
     };
   }
+
+  /**
+   * Whole document, or one section?
+   *
+   * The request rides in the content jsonb because the jobs table has no
+   * payload column — see `reviewerDocumentSchema`. Read once, here, so the rest
+   * of the handler differs only where it has to.
+   */
+  const existing = (reviewer.content ?? null) as ReviewerDocument | null;
+  const section = existing?.pendingSection as ReviewerSection | undefined;
 
   /* Scoped exactly as the student asked. A reviewer for one topic built from
      the whole subject would be a reviewer for the wrong thing, and they would
@@ -90,6 +107,71 @@ export async function generateReviewerHandler(job: Job): Promise<JobSliceResult>
   const truncated = used.length < usable.length;
 
   try {
+    if (section && existing) {
+      /* **Regenerating one section keeps the rest verbatim**, including the
+         student's own edits and notes. A rewrite that quietly replaced the
+         whole document because they asked for better key terms would throw
+         away work they did by hand, which is the worst thing an editor can
+         do. */
+      const meta = {
+        userId: reviewer.user_id,
+        task: "reviewer" as const,
+        /* Keyed on the section AND the moment, so pressing regenerate twice
+           produces two different attempts rather than replaying the first from
+           the idempotency cache — a student pressing it again is asking for a
+           different answer, not the same one. */
+        idempotencyKey: `reviewer:${reviewer.id}:${section}:${Date.now()}`,
+      };
+
+      const prompt = [
+        sections.join("\n\n---\n\n"),
+        "",
+        "The student already has this revision aid, which you wrote:",
+        JSON.stringify(
+          { summary: existing.summary, concepts: existing.concepts, terms: existing.terms },
+          null,
+          1,
+        ).slice(0, 6_000),
+        "",
+        SECTION_PROMPTS[section],
+        "Do not repeat what the other sections already say.",
+      ].join("\n");
+
+      /* Switched rather than indexed. `SECTION_SCHEMAS[section]` is a UNION of
+         four Zod types, and a generic that has to satisfy all of them collapses
+         to the first — so the call would not type-check and, if forced, would
+         return the wrong shape. Four branches is the price of the result being
+         typed at all. */
+      const data = await (async () => {
+        const ai = getAiService();
+        switch (section) {
+          case "summary":
+            return (await ai.generate(meta, prompt, SECTION_SCHEMAS.summary, { context: [] })).data;
+          case "concepts":
+            return (await ai.generate(meta, prompt, SECTION_SCHEMAS.concepts, { context: [] }))
+              .data;
+          case "terms":
+            return (await ai.generate(meta, prompt, SECTION_SCHEMAS.terms, { context: [] })).data;
+          case "focus":
+            return (await ai.generate(meta, prompt, SECTION_SCHEMAS.focus, { context: [] })).data;
+        }
+      })();
+
+      /* `editedAt` is deliberately left alone. It records that a HUMAN has
+         touched this document, and the other sections may still be their words
+         — clearing it because one section was rewritten would put our name back
+         on their work. */
+      const merged: ReviewerDocument = { ...existing, ...data };
+      delete merged.pendingSection;
+
+      await supabase
+        .from("reviewers")
+        .update({ content: merged, status: "ready" })
+        .eq("id", reviewer.id);
+
+      return { kind: "done" };
+    }
+
     const { data } = await getAiService().generate(
       {
         userId: reviewer.user_id,
@@ -117,7 +199,9 @@ export async function generateReviewerHandler(job: Job): Promise<JobSliceResult>
       .from("reviewers")
       .update({
         title: data.title,
-        content: data,
+        /* Notes survive a full regeneration. They are the student's, and the
+           thing they asked to rewrite was ours. */
+        content: existing?.notes?.length ? { ...data, notes: existing.notes } : data,
         source_material_ids: used,
         status: "ready",
       })
