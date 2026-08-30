@@ -185,7 +185,10 @@ for (const testCase of CASES) {
       messages,
     });
     text = completion.choices[0]?.message?.content ?? "";
-  } catch (thrown) {
+  } catch {
+    /* The first failure is not reported: it is almost always Groq's rate
+       limit, and the fallback below is the designed response to it. Only a
+       second failure means the chain could not answer at all. */
     try {
       const completion = await fallback.chat.completions.create({
         model: FALLBACK_MODEL,
