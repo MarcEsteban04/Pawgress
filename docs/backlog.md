@@ -52,6 +52,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 37 | Assistant chat — streaming answers, citations, stop, subject scope, the honest empty case | done | no migration. History is in-session only; persistence is Sprint 40 |
 | 38 | Material-aware questions — explain, simplify, hint as task-shaped prompts; Ask-Aki from a topic row | done | **"why is my answer wrong" deferred**: there are no quiz answers to be wrong until Sprint 52 |
 | 39 | Subject context — topic scope, inherited from the page, remembered on the thread | done | migration `20260829200000`. Retrieval had accepted a topic since Sprint 36 and nothing ever passed one |
+| 41 | Study modes — explain, tutor, hint, summarise, quiz me | done | no migration. Mode is per-MESSAGE, not stored on the thread; quiz-me states it does not count toward progress |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
 | — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
@@ -60,9 +61,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 41 | Study modes | 39 |
 | 42 | AI safety and quality | 41 |
 | 43 | Reviewer generator | 42 |
+| 44 | Flashcards | 43 |
 
 ---
 
