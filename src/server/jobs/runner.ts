@@ -8,6 +8,7 @@ import { type Database } from "@/types/database";
 import { chunkTextHandler } from "./handlers/chunkText";
 import { embedChunksHandler } from "./handlers/embedChunks";
 import { extractTextHandler } from "./handlers/extractText";
+import { generateReviewerHandler } from "./handlers/generateReviewer";
 import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
 
@@ -37,6 +38,7 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   ocr_image: ocrImageHandler,
   chunk_text: chunkTextHandler,
   embed_chunks: embedChunksHandler,
+  generate_reviewer: generateReviewerHandler,
 };
 
 /**
@@ -226,17 +228,36 @@ function statusWhileRunning(kind: JobKind): JobStatus {
 }
 
 /**
- * Job status and material status move together.
+ * Which table a job's target lives in.
+ *
+ * Every job before Sprint 43 targeted a material, so the status write was
+ * hardcoded to that table. A reviewer job targets a REVIEWER, and the old write
+ * matched no rows — silently, because updating zero rows is not an error. The
+ * student would have watched a reviewer sit at queued while it generated.
+ */
+function targetTable(kind: JobKind): "materials" | "reviewers" | "quizzes" {
+  switch (kind) {
+    case "generate_reviewer":
+      return "reviewers";
+    case "generate_quiz":
+      return "quizzes";
+    default:
+      return "materials";
+  }
+}
+
+/**
+ * Job status and target status move together.
  *
  * Two writes rather than one transaction, because the REST client has no
  * transaction. The order is chosen so the worse failure is the harmless one: if
- * the material update fails after the job update, a sweeper re-runs the job and
+ * the target update fails after the job update, a sweeper re-runs the job and
  * an idempotent handler produces the same result.
  */
 async function setJobStatus(job: Job, status: JobStatus): Promise<void> {
   const supabase = createSupabaseAdminClient();
   await supabase.from("jobs").update({ status }).eq("id", job.id);
-  await supabase.from("materials").update({ status }).eq("id", job.targetId);
+  await supabase.from(targetTable(job.kind)).update({ status }).eq("id", job.targetId);
 }
 
 async function finishJob(job: Job): Promise<void> {

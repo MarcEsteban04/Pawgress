@@ -32,6 +32,8 @@ import {
   listSubjectUpcoming,
   listSubjectWeakTopics,
 } from "@/server/subjects/detail";
+import { ReviewersPanel } from "@/features/reviewers/components/ReviewersPanel";
+import { listReviewers } from "@/server/reviewers/queries";
 import { getSubject } from "@/server/subjects/queries";
 import { formatAcademicYear } from "@/lib/validation/subject";
 import { listTopics } from "@/server/topics/queries";
@@ -116,6 +118,11 @@ async function WeakTopics({ subjectId }: { subjectId: string }) {
  * one as it is uploaded (FR-U1). `listTopics` is `cache()`d and the topic
  * section already asked for it, so this is the same query, not a second one.
  */
+async function Reviewers({ subjectId }: { subjectId: string }) {
+  const reviewers = await listReviewers(subjectId);
+  return <ReviewersPanel subjectId={subjectId} reviewers={reviewers} />;
+}
+
 async function Materials({ subjectId, totalCount }: { subjectId: string; totalCount: number }) {
   const [materials, topics] = await Promise.all([
     listSubjectMaterials(subjectId),
@@ -288,6 +295,14 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
           <PanelBoundary title="Materials">
             <Suspense fallback={<PanelSkeleton title="Materials" />}>
               <Materials subjectId={subject.id} totalCount={subject.materialCount} />
+            </Suspense>
+          </PanelBoundary>
+
+          {/* Beneath the files, because a reviewer is made FROM them and the
+              order says so. */}
+          <PanelBoundary title="Reviewers">
+            <Suspense fallback={<PanelSkeleton title="Reviewers" />}>
+              <Reviewers subjectId={subject.id} />
             </Suspense>
           </PanelBoundary>
         </section>
