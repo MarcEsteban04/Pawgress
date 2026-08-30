@@ -1,9 +1,12 @@
-import { ArrowLeft, Layers, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Layers, ListChecks, Sparkles, TriangleAlert } from "lucide-react";
+import { type ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardBody, SectionLabel, StatusBadge } from "@/components/ui";
 import { GenerateFlashcardsButton } from "@/features/flashcards/components/GenerateFlashcardsButton";
+import { GenerateQuestionsButton } from "@/features/practice/components/GenerateQuestionsButton";
 import { countFlashcards } from "@/server/flashcards/queries";
+import { countPracticeQuestions } from "@/server/practice/queries";
 import { getReviewer } from "@/server/reviewers/queries";
 import { getSubject } from "@/server/subjects/queries";
 
@@ -32,10 +35,11 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps<"/subjects/[id]/reviewers/[reviewerId]">) {
   const { id, reviewerId } = await params;
-  const [subject, reviewer, cardCount] = await Promise.all([
+  const [subject, reviewer, cardCount, questionCount] = await Promise.all([
     getSubject(id),
     getReviewer(reviewerId),
     countFlashcards(reviewerId),
+    countPracticeQuestions(reviewerId),
   ]);
 
   if (!subject || !reviewer) notFound();
@@ -66,26 +70,37 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
             {reviewer.title}
           </h1>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Offered only once there is something to make cards FROM. A button
-              on a reviewer that is still being written can only fail, and a
-              button whose whole job is to explain why it will not work is a
-              worse answer than not being there. */}
-          {reviewer.status === "ready" &&
-            (cardCount > 0 ? (
-              <Link
-                href={`/subjects/${id}/reviewers/${reviewerId}/flashcards`}
-                className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-3.5 py-2 text-sm font-medium transition-colors hover:border-rule-strong hover:bg-surface-sunken"
-              >
-                <Layers className="size-4" aria-hidden />
-                Study {cardCount} cards
-              </Link>
-            ) : (
-              <GenerateFlashcardsButton subjectId={id} reviewerId={reviewerId} size="sm" />
-            ))}
-          <StatusBadge status={reviewer.status} />
-        </div>
+        <StatusBadge status={reviewer.status} />
       </div>
+
+      {/* The two things a student does WITH a reviewer, on one row under the
+          title rather than crowded into the header beside the status. Offered
+          only once there is something to build from: a button on a reviewer
+          that is still being written can only fail, and a button whose whole
+          job is to explain why it will not work is worse than no button. */}
+      {reviewer.status === "ready" && (
+        <div className="flex flex-wrap items-center gap-2">
+          {cardCount > 0 ? (
+            <StudyLink
+              href={`/subjects/${id}/reviewers/${reviewerId}/flashcards`}
+              icon={<Layers className="size-4" aria-hidden />}
+              label={`Study ${cardCount} cards`}
+            />
+          ) : (
+            <GenerateFlashcardsButton subjectId={id} reviewerId={reviewerId} size="sm" />
+          )}
+
+          {questionCount > 0 ? (
+            <StudyLink
+              href={`/subjects/${id}/reviewers/${reviewerId}/practice`}
+              icon={<ListChecks className="size-4" aria-hidden />}
+              label={`Practise ${questionCount} questions`}
+            />
+          ) : (
+            <GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} size="sm" />
+          )}
+        </div>
+      )}
 
       {/* Three states, and they are genuinely different. Still working is not a
           failure; failed is not empty; and a reviewer with no content but a
@@ -191,5 +206,24 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * A link that reads as a study action.
+ *
+ * Shaped like the generate buttons beside it rather than like body text: the
+ * two sit on the same row and do the same kind of thing, and a link that looked
+ * like a link would read as a footnote next to a button.
+ */
+function StudyLink({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-3.5 text-sm font-medium transition-colors hover:border-rule-strong hover:bg-surface-sunken"
+    >
+      {icon}
+      {label}
+    </Link>
   );
 }

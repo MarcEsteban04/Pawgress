@@ -56,6 +56,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 42 | AI safety and quality — guardrail evals, answer feedback | done | migration `20260829220000`. `npm run ai:eval` runs the real chain against the real prompt; 5 cases pass |
 | 43 | Reviewer generator — summary, key concepts, key terms, what to revise first | done | no migration; the Sprint 13 table was waiting. Generates from `extracted_text`, not retrieval |
 | 44 | Flashcards — generate from a reviewer, flip, known/unknown, review session | done | one migration for the `generate_flashcards` job kind; cards come from the reviewer, not the raw material |
+| 45 | Practice questions — MCQ, true/false, identification, short answer, with explanations | done | one migration linking `quizzes` to a reviewer; practice is session-local, no attempt recorded until Sprint 49 |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
 | — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
@@ -64,9 +65,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 45 | Practice questions | 44 |
 | 46 | Reviewer editor | 43 |
 | 47 | Reviewer library | 43 |
+| 48 | Duplicate filtering, difficulty | 45 |
 
 ---
 

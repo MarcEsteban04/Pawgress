@@ -822,6 +822,7 @@ export type Database = {
           id: string
           is_mock_exam: boolean
           question_count: number
+          reviewer_id: string | null
           source_material_ids: string[]
           status: Database["public"]["Enums"]["job_status"]
           subject_id: string
@@ -837,6 +838,7 @@ export type Database = {
           id?: string
           is_mock_exam?: boolean
           question_count?: number
+          reviewer_id?: string | null
           source_material_ids?: string[]
           status?: Database["public"]["Enums"]["job_status"]
           subject_id: string
@@ -852,6 +854,7 @@ export type Database = {
           id?: string
           is_mock_exam?: boolean
           question_count?: number
+          reviewer_id?: string | null
           source_material_ids?: string[]
           status?: Database["public"]["Enums"]["job_status"]
           subject_id?: string
@@ -862,6 +865,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "quizzes_reviewer_fkey"
+            columns: ["reviewer_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "reviewers"
+            referencedColumns: ["id", "user_id"]
+          },
           {
             foreignKeyName: "quizzes_subject_fkey"
             columns: ["subject_id", "user_id"]

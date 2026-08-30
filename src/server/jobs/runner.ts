@@ -9,6 +9,7 @@ import { chunkTextHandler } from "./handlers/chunkText";
 import { embedChunksHandler } from "./handlers/embedChunks";
 import { extractTextHandler } from "./handlers/extractText";
 import { generateFlashcardsHandler } from "./handlers/generateFlashcards";
+import { generateQuestionsHandler } from "./handlers/generateQuestions";
 import { generateReviewerHandler } from "./handlers/generateReviewer";
 import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
@@ -41,6 +42,7 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   embed_chunks: embedChunksHandler,
   generate_reviewer: generateReviewerHandler,
   generate_flashcards: generateFlashcardsHandler,
+  generate_quiz: generateQuestionsHandler,
 };
 
 /**
