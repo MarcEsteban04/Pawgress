@@ -149,6 +149,7 @@ export type Database = {
           id: string
           subject_id: string | null
           title: string
+          topic_id: string | null
           updated_at: string
           use_material: boolean
           user_id: string
@@ -158,6 +159,7 @@ export type Database = {
           id?: string
           subject_id?: string | null
           title: string
+          topic_id?: string | null
           updated_at?: string
           use_material?: boolean
           user_id: string
@@ -167,6 +169,7 @@ export type Database = {
           id?: string
           subject_id?: string | null
           title?: string
+          topic_id?: string | null
           updated_at?: string
           use_material?: boolean
           user_id?: string
@@ -177,6 +180,13 @@ export type Database = {
             columns: ["subject_id", "user_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "conversations_topic_fkey"
+            columns: ["topic_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id", "user_id"]
           },
         ]

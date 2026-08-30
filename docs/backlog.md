@@ -51,6 +51,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 36 | Retrieval — cosine vector search, relevance floor, per-material diversity, context assembly, the RAG loop | done | migration `20260831090000`. UI is Sprint 37; the relevance floor is uncalibrated until there is real usage |
 | 37 | Assistant chat — streaming answers, citations, stop, subject scope, the honest empty case | done | no migration. History is in-session only; persistence is Sprint 40 |
 | 38 | Material-aware questions — explain, simplify, hint as task-shaped prompts; Ask-Aki from a topic row | done | **"why is my answer wrong" deferred**: there are no quiz answers to be wrong until Sprint 52 |
+| 39 | Subject context — topic scope, inherited from the page, remembered on the thread | done | migration `20260829200000`. Retrieval had accepted a topic since Sprint 36 and nothing ever passed one |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
 | — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
@@ -59,9 +60,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 39 | Subject context — scope inherited from the page, topic scoping | 38 |
 | 41 | Study modes | 39 |
 | 42 | AI safety and quality | 41 |
+| 43 | Reviewer generator | 42 |
 
 ---
 

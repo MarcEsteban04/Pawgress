@@ -28,10 +28,14 @@ import { type ConversationSummary, type StoredMessage } from "@/server/conversat
  * The cost is honest: a browser that dies mid-answer loses that turn. Losing an
  * answer nobody read beats keeping one nobody saw.
  *
- * The subject selector is here because retrieval already takes a scope and an
- * assistant that searches everything is a worse product than one that does not.
- * Making it CONTEXTUAL — inheriting the subject from the page a student is on,
- * scoping to a topic, remembering the choice — is Sprint 39.
+ * **Scope is subject AND topic, and it is inherited.** Retrieval has accepted
+ * a topic since Sprint 36 and nothing ever passed one, so a student revising a
+ * single chapter had every other chapter of the same class competing for the
+ * eight chunks a question gets.
+ *
+ * Opening Ask from a subject or a topic carries that scope in the URL, and the
+ * conversation remembers it. Arriving at "all your subjects" from a page that
+ * knew better asks a student to answer a question the app had already answered.
  */
 
 let messageCounter = 0;
@@ -72,24 +76,28 @@ export function AssistantChat({
   initial,
   prefill = "",
   prefillSubjectId = "",
+  prefillTopicId = "",
 }: {
-  subjects: { id: string; name: string }[];
+  subjects: { id: string; name: string; topics: { id: string; name: string }[] }[];
   conversations: ConversationSummary[];
   /** The thread the URL asked for, already loaded on the server. */
   initial: {
     id: string;
     subjectId: string | null;
+    topicId: string | null;
     useMaterial: boolean;
     messages: StoredMessage[];
   } | null;
   /** A question written for the student elsewhere in the app, not yet sent. */
   prefill?: string;
   prefillSubjectId?: string;
+  prefillTopicId?: string;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(() => hydrate(initial?.messages ?? []));
   const [question, setQuestion] = useState(prefill);
   const [subjectId, setSubjectId] = useState(initial?.subjectId ?? prefillSubjectId);
+  const [topicId, setTopicId] = useState(initial?.topicId ?? prefillTopicId);
   /* On by default — grounding in the student's own material is what the
      product is for, so turning it off is the deliberate act. Restored from the
      thread when one is resumed, so a conversation kept as a general chat stays
@@ -126,6 +134,7 @@ export function AssistantChat({
         const created = await createConversationAction({
           firstQuestion: askedQuestion,
           subjectId: subjectId || null,
+          topicId: topicId || null,
           useMaterial,
         });
         if (created.status === "error") return;
@@ -147,7 +156,7 @@ export function AssistantChat({
          transcript the student is reading. */
       router.refresh();
     },
-    [router, subjectId, useMaterial],
+    [router, subjectId, topicId, useMaterial],
   );
 
   function startNew() {
@@ -213,6 +222,7 @@ export function AssistantChat({
           body: JSON.stringify({
             question: text,
             subjectId: subjectId || null,
+            topicId: topicId || null,
             useMaterial,
             task,
           }),
@@ -281,7 +291,7 @@ export function AssistantChat({
         setBusy(false);
       }
     },
-    [persist, subjectId, useMaterial],
+    [persist, subjectId, topicId, useMaterial],
   );
 
   function submit(event: React.FormEvent) {
@@ -292,8 +302,14 @@ export function AssistantChat({
     void ask(text);
   }
 
-  const scopeLabel =
-    subjects.find((subject) => subject.id === subjectId)?.name ?? "all your subjects";
+  const subject = subjects.find((entry) => entry.id === subjectId);
+  const topics = subject?.topics ?? [];
+  const topic = topics.find((entry) => entry.id === topicId);
+
+  /* The NARROWEST scope in force, because that is what a student needs to know
+     before trusting an answer (US-E3). Naming the subject while a topic filter
+     is quietly applied would be the same as not saying. */
+  const scopeLabel = topic?.name ?? subject?.name ?? "all your subjects";
 
   return (
     /* The rail sits OUTSIDE the conversation surface, not inside it. It is a
@@ -398,19 +414,50 @@ export function AssistantChat({
               id="assistant-scope"
               value={subjectId}
               disabled={!useMaterial}
-              onChange={(event) => setSubjectId(event.target.value)}
+              onChange={(event) => {
+                setSubjectId(event.target.value);
+                /* The topic belonged to the old subject. Keeping it would
+                   filter to a topic that is not in the subject being searched,
+                   which matches nothing and looks like a broken assistant. */
+                setTopicId("");
+              }}
               className={cn(
                 "h-10 w-auto rounded-none border-0 border-l border-rule bg-transparent pr-8 pl-3.5 text-sm shadow-none",
                 !useMaterial && "opacity-50",
               )}
             >
               <option value="">All your subjects</option>
-              {subjects.map((subject) => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.name}
+              {subjects.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.name}
                 </option>
               ))}
             </Select>
+
+            {/* Appears only once a subject is chosen AND that subject has
+                topics. A topic filter over "all your subjects" has nothing to
+                mean, and one over a subject with no topics can only ever
+                narrow to nothing. */}
+            {useMaterial && topics.length > 0 && (
+              <>
+                <label htmlFor="assistant-topic" className="sr-only">
+                  Narrow to a topic
+                </label>
+                <Select
+                  id="assistant-topic"
+                  value={topicId}
+                  onChange={(event) => setTopicId(event.target.value)}
+                  className="h-10 w-auto rounded-none border-0 border-l border-rule bg-transparent pr-8 pl-3.5 text-sm shadow-none"
+                >
+                  <option value="">Every topic</option>
+                  {topics.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name}
+                    </option>
+                  ))}
+                </Select>
+              </>
+            )}
           </div>
         </header>
 

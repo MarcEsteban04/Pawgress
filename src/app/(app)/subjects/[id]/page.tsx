@@ -1,9 +1,10 @@
-import { Archive, ArrowLeft, ListTree, Upload } from "lucide-react";
+import { Archive, ArrowLeft, ListTree, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
   Button,
+  buttonStyles,
   Card,
   CardBody,
   EmptyState,
@@ -242,6 +243,16 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
         </div>
 
         <div className="flex shrink-0 gap-2">
+          {/* Scope carried from the page a student is already on. Opening Ask
+              from here and finding it set to "all your subjects" would make
+              them re-answer a question the app already knew the answer to. */}
+          <Link
+            href={`/assistant?subject=${subject.id}`}
+            className={buttonStyles({ variant: "subtle" })}
+          >
+            <Sparkles aria-hidden />
+            Ask Aki
+          </Link>
           <UploadDialog subjectId={subject.id} topics={headerTopics} />
           <TopicDialog subjectId={subject.id} />
         </div>

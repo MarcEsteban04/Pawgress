@@ -1,6 +1,7 @@
 import { AssistantChat } from "@/features/assistant/components/AssistantChat";
 import { getConversation, listConversations } from "@/server/conversations/queries";
 import { listSubjects } from "@/server/subjects/queries";
+import { listTopics } from "@/server/topics/queries";
 
 export const metadata = { title: "Ask" };
 
@@ -35,12 +36,29 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
      read and edit the question first. */
   const prefill = first("ask") ?? "";
   const prefillSubjectId = first("subject") ?? "";
+  const prefillTopicId = first("topic") ?? "";
 
   const [subjects, conversations, thread] = await Promise.all([
     listSubjects(),
     listConversations(),
     requested ? getConversation(requested) : Promise.resolve(null),
   ]);
+
+  /* Topics for every subject, so the scope selector can narrow without a round
+     trip when a subject is picked. `listTopics` is `cache()`d per subject, and
+     a student has tens of subjects rather than thousands — the alternative is a
+     loading state on a dropdown, which is worse than the query.
+
+     If a library ever grows past that, this becomes one grouped query rather
+     than a fetch on selection: a dropdown that pauses is a dropdown people stop
+     trusting. */
+  const topicsBySubject = await Promise.all(
+    subjects.map(async (subject) => ({
+      id: subject.id,
+      name: subject.name,
+      topics: (await listTopics(subject.id)).map((topic) => ({ id: topic.id, name: topic.name })),
+    })),
+  );
 
   return (
     <AssistantChat
@@ -64,10 +82,11 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
        * torn down underneath them.
        */
       key={thread?.conversation.id ?? "new"}
-      subjects={subjects.map((subject) => ({ id: subject.id, name: subject.name }))}
+      subjects={topicsBySubject}
       conversations={conversations}
       prefill={requested ? "" : prefill}
       prefillSubjectId={requested ? "" : prefillSubjectId}
+      prefillTopicId={requested ? "" : prefillTopicId}
       /* An unknown or deleted id opens a new chat rather than erroring. A stale
          link from a bookmark is not a failure worth a page for — the student
          wanted to ask something, and the composer is right there. */
@@ -76,6 +95,7 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
           ? {
               id: thread.conversation.id,
               subjectId: thread.conversation.subjectId,
+              topicId: thread.conversation.topicId,
               useMaterial: thread.conversation.useMaterial,
               messages: thread.messages,
             }

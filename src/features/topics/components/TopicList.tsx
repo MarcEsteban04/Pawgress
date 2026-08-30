@@ -222,7 +222,7 @@ export function TopicList({ subjectId, topics }: Props) {
                         a daily allowance should happen in the place that spends
                         it, where a student can still edit the question. */}
                     <Link
-                      href={`/assistant?subject=${subjectId}&ask=${encodeURIComponent(`Explain ${topic.name}`)}`}
+                      href={`/assistant?subject=${subjectId}&topic=${topic.id}&ask=${encodeURIComponent(`Explain ${topic.name}`)}`}
                       aria-label={`Ask Aki to explain ${topic.name}`}
                       title={`Ask Aki to explain ${topic.name}`}
                       className="inline-flex size-8 items-center justify-center rounded-[var(--radius-control)] text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"

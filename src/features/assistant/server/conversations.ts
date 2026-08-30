@@ -52,6 +52,7 @@ function titleFrom(question: string): string {
 export async function createConversationAction(input: {
   firstQuestion: string;
   subjectId: string | null;
+  topicId: string | null;
   useMaterial: boolean;
 }): Promise<ConversationResult> {
   const session = await requireSession();
@@ -64,6 +65,8 @@ export async function createConversationAction(input: {
       /* An empty select posts "", which is not a uuid. Null means "all my
          subjects", which is a legitimate scope rather than a missing one. */
       subject_id: input.subjectId || null,
+      /* Narrower than the subject, and only meaningful with one. */
+      topic_id: (input.subjectId && input.topicId) || null,
       /* Remembered on the thread, like the scope. Without it, resuming a
          conversation a student had deliberately made general would silently
          switch their files back on and start citing them. */

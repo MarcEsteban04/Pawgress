@@ -144,9 +144,13 @@ export function ConversationRail({
                         >
                           {conversation.title}
                         </span>
+                        {/* The narrowest scope, so two threads about the same
+                            subject are told apart by the thing that differs. */}
                         {conversation.subjectName && (
                           <span className="block truncate text-xs text-ink-subtle">
-                            {conversation.subjectName}
+                            {[conversation.subjectName, conversation.topicName]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </span>
                         )}
                       </span>

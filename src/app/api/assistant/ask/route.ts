@@ -46,7 +46,13 @@ function frame(data: Frame): Uint8Array {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { question?: unknown; subjectId?: unknown; useMaterial?: unknown; task?: unknown };
+  let body: {
+    question?: unknown;
+    subjectId?: unknown;
+    topicId?: unknown;
+    useMaterial?: unknown;
+    task?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -55,11 +61,15 @@ export async function POST(request: NextRequest) {
 
   const question = typeof body.question === "string" ? body.question : "";
   const subjectId = typeof body.subjectId === "string" && body.subjectId ? body.subjectId : null;
+  /* A topic without its subject is meaningless to the filter and would narrow
+     nothing, so it is dropped rather than passed on half-formed. */
+  const topicId =
+    subjectId && typeof body.topicId === "string" && body.topicId ? body.topicId : null;
 
   try {
     const result = await answerQuestion({
       question,
-      scope: { subjectId },
+      scope: { subjectId, topicId },
       /* Defaults to ON. A missing field means an older client, and the safe
          reading of "unspecified" is the product's own default rather than the
          cheaper path. */
