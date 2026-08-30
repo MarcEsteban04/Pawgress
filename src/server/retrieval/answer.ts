@@ -3,6 +3,7 @@ import "server-only";
 import { getAiService } from "@/lib/ai";
 import { type Citation } from "@/lib/ai/types";
 import { requireSessionOrFail } from "@/server/auth/session";
+import { TASK_INSTRUCTIONS, type AssistantTask } from "@/features/assistant/tasks";
 import { buildLibraryFacts } from "./library";
 import { retrieveForQuestion, type RetrievalScope } from "./search";
 
@@ -46,6 +47,12 @@ export type AnswerRequest = {
    * talk should not pay for a search they switched off, in latency or tokens.
    */
   useMaterial?: boolean;
+  /**
+   * What the student asked Aki to DO — explain, simplify, hint, or just
+   * answer. Changes the shape of the reply, never where its facts may come
+   * from: the grounding instruction is composed with this, not replaced by it.
+   */
+  task?: AssistantTask;
 };
 
 export type AnswerResult =
@@ -150,11 +157,17 @@ export async function answerQuestion(request: AnswerRequest): Promise<AnswerResu
   ]);
 
   const service = getAiService();
-  const instruction = !useMaterial
+  const grounding = !useMaterial
     ? CONVERSATION_PROMPT
     : retrieval.empty
       ? GENERAL_PROMPT
       : GROUNDED_PROMPT;
+
+  /* Task second, so it shapes an answer whose sourcing rule has already been
+     set. Reversing them would let "say it simply" read as permission to be
+     loose about where the facts came from. */
+  const taskInstruction = request.task ? TASK_INSTRUCTIONS[request.task] : null;
+  const instruction = taskInstruction ? `${grounding}${taskInstruction}` : grounding;
 
   const { textStream, done } = await service.stream(
     {

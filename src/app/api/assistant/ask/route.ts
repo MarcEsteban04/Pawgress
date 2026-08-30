@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { toAppError } from "@/lib/errors";
 import { logAiError } from "@/lib/ai/log";
+import { isAssistantTask } from "@/features/assistant/tasks";
 import { answerQuestion } from "@/server/retrieval/answer";
 
 /**
@@ -45,7 +46,7 @@ function frame(data: Frame): Uint8Array {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { question?: unknown; subjectId?: unknown; useMaterial?: unknown };
+  let body: { question?: unknown; subjectId?: unknown; useMaterial?: unknown; task?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -63,6 +64,10 @@ export async function POST(request: NextRequest) {
          reading of "unspecified" is the product's own default rather than the
          cheaper path. */
       useMaterial: body.useMaterial !== false,
+      /* An unknown task falls back to a plain answer rather than failing. A
+         client sending one we do not have is a version skew, not an attack,
+         and refusing the question would be the wrong response to either. */
+      task: isAssistantTask(body.task) ? body.task : undefined,
     });
 
     if (!result.grounded) {

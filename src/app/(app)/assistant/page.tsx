@@ -22,8 +22,19 @@ export const metadata = { title: "Ask" };
  */
 export default async function Page({ searchParams }: PageProps<"/assistant">) {
   const params = await searchParams;
-  const raw = params.c;
-  const requested = Array.isArray(raw) ? raw[0] : raw;
+  const first = (key: string) => {
+    const value = params[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const requested = first("c");
+
+  /* A question handed over from somewhere else in the app — a topic row asking
+     Aki to explain it. Prefilled, never auto-sent: a click that spends a
+     generation from a daily allowance should happen where a student can still
+     read and edit the question first. */
+  const prefill = first("ask") ?? "";
+  const prefillSubjectId = first("subject") ?? "";
 
   const [subjects, conversations, thread] = await Promise.all([
     listSubjects(),
@@ -55,6 +66,8 @@ export default async function Page({ searchParams }: PageProps<"/assistant">) {
       key={thread?.conversation.id ?? "new"}
       subjects={subjects.map((subject) => ({ id: subject.id, name: subject.name }))}
       conversations={conversations}
+      prefill={requested ? "" : prefill}
+      prefillSubjectId={requested ? "" : prefillSubjectId}
       /* An unknown or deleted id opens a new chat rather than erroring. A stale
          link from a bookmark is not a failure worth a page for — the student
          wanted to ask something, and the composer is right there. */

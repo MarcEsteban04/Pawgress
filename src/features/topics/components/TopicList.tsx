@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, ChevronUp, GripVertical, Pencil, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Pencil, Sparkles, Upload } from "lucide-react";
+import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button, Card, CardBody, MasteryBar } from "@/components/ui";
 import { DeleteTopicDialog } from "./DeleteTopicDialog";
@@ -214,6 +215,21 @@ export function TopicList({ subjectId, topics }: Props) {
                   <span className="mx-1 h-5 w-px bg-rule" aria-hidden />
 
                   <span className="flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-focus-within/row:opacity-100 lg:group-hover/row:opacity-100">
+                    {/* Ask Aki about this topic, scoped to this subject, with
+                        the question already written. A link rather than a
+                        button because it goes somewhere — and it PREFILLS
+                        rather than sends: a click that spends a generation from
+                        a daily allowance should happen in the place that spends
+                        it, where a student can still edit the question. */}
+                    <Link
+                      href={`/assistant?subject=${subjectId}&ask=${encodeURIComponent(`Explain ${topic.name}`)}`}
+                      aria-label={`Ask Aki to explain ${topic.name}`}
+                      title={`Ask Aki to explain ${topic.name}`}
+                      className="inline-flex size-8 items-center justify-center rounded-[var(--radius-control)] text-ink-subtle transition-colors hover:bg-surface-sunken hover:text-ink"
+                    >
+                      <Sparkles className="size-4" aria-hidden />
+                    </Link>
+
                     <TopicDialog
                       subjectId={subjectId}
                       topic={topic}

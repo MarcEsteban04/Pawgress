@@ -11,6 +11,7 @@ import {
   appendTurnAction,
   createConversationAction,
 } from "@/features/assistant/server/conversations";
+import { type AssistantTask } from "@/features/assistant/tasks";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
 import { cn } from "@/lib/utils";
 import { type ConversationSummary, type StoredMessage } from "@/server/conversations/queries";
@@ -69,6 +70,8 @@ export function AssistantChat({
   subjects,
   conversations,
   initial,
+  prefill = "",
+  prefillSubjectId = "",
 }: {
   subjects: { id: string; name: string }[];
   conversations: ConversationSummary[];
@@ -79,11 +82,14 @@ export function AssistantChat({
     useMaterial: boolean;
     messages: StoredMessage[];
   } | null;
+  /** A question written for the student elsewhere in the app, not yet sent. */
+  prefill?: string;
+  prefillSubjectId?: string;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(() => hydrate(initial?.messages ?? []));
-  const [question, setQuestion] = useState("");
-  const [subjectId, setSubjectId] = useState(initial?.subjectId ?? "");
+  const [question, setQuestion] = useState(prefill);
+  const [subjectId, setSubjectId] = useState(initial?.subjectId ?? prefillSubjectId);
   /* On by default — grounding in the student's own material is what the
      product is for, so turning it off is the deliberate act. Restored from the
      thread when one is resumed, so a conversation kept as a general chat stays
@@ -162,7 +168,7 @@ export function AssistantChat({
   }
 
   const ask = useCallback(
-    async (text: string, replaceId?: string) => {
+    async (text: string, task: AssistantTask = "ask", replaceId?: string) => {
       const controller = new AbortController();
       abortRef.current = controller;
       setBusy(true);
@@ -208,6 +214,7 @@ export function AssistantChat({
             question: text,
             subjectId: subjectId || null,
             useMaterial,
+            task,
           }),
           signal: controller.signal,
         });
@@ -420,7 +427,9 @@ export function AssistantChat({
                 onPick={(text) => void ask(text)}
               />
             ) : (
-              messages.map((message) => <Message key={message.id} message={message} />)
+              messages.map((message) => (
+                <Message key={message.id} message={message} onFollowUp={ask} />
+              ))
             )}
           </div>
         </div>
@@ -451,6 +460,7 @@ export function AssistantChat({
                   }
                 }}
                 rows={1}
+                autoFocus={prefill.length > 0}
                 placeholder={`Ask Aki about ${scopeLabel}…`}
                 className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
               />
@@ -492,7 +502,13 @@ export function AssistantChat({
   );
 }
 
-function Message({ message }: { message: ChatMessage }) {
+function Message({
+  message,
+  onFollowUp,
+}: {
+  message: ChatMessage;
+  onFollowUp: (text: string, task: AssistantTask) => Promise<void>;
+}) {
   if (message.role === "user") {
     return (
       <p className="ml-auto max-w-[85%] rounded-[var(--radius-card)] rounded-br-md bg-ink px-4 py-2.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap text-on-ink shadow-[var(--shadow-pill)]">
@@ -553,6 +569,39 @@ function Message({ message }: { message: ChatMessage }) {
               {message.error.message} {message.error.nextStep}
             </span>
           </p>
+        )}
+
+        {/**
+         * Follow-ups, offered where the thing they act on already is.
+         *
+         * "Simpler" is the one action a student wants often enough to be worth
+         * a permanent control: they have just read an answer and it did not
+         * land. Putting it under the answer means they do not have to compose a
+         * sentence asking for it — and the task prompt keeps every fact while
+         * changing the words, which is what typing "explain simpler" would not
+         * reliably get.
+         *
+         * Only on a finished answer with a question behind it. A hydrated turn
+         * from a saved thread has no question stored, and re-asking an empty
+         * one would send a blank request.
+         */}
+        {!message.streaming && message.text.length > 0 && message.question && (
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => void onFollowUp(message.question, "simplify")}
+              className="rounded-[var(--radius-pill)] border border-rule px-2.5 py-1 text-xs font-medium text-ink-muted transition-colors hover:border-rule-strong hover:text-ink"
+            >
+              Explain simpler
+            </button>
+            <button
+              type="button"
+              onClick={() => void onFollowUp(message.question, "explain")}
+              className="rounded-[var(--radius-pill)] border border-rule px-2.5 py-1 text-xs font-medium text-ink-muted transition-colors hover:border-rule-strong hover:text-ink"
+            >
+              Go deeper
+            </button>
+          </div>
         )}
 
         {message.citations.length > 0 && (
