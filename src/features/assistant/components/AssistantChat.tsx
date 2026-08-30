@@ -11,7 +11,7 @@ import {
   appendTurnAction,
   createConversationAction,
 } from "@/features/assistant/server/conversations";
-import { type AssistantTask } from "@/features/assistant/tasks";
+import { TASK_MODES, type AssistantTask } from "@/features/assistant/tasks";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
 import { cn } from "@/lib/utils";
 import { type ConversationSummary, type StoredMessage } from "@/server/conversations/queries";
@@ -103,6 +103,16 @@ export function AssistantChat({
      thread when one is resumed, so a conversation kept as a general chat stays
      one. */
   const [useMaterial, setUseMaterial] = useState(initial?.useMaterial ?? true);
+  /**
+   * The study mode the composer is in (Sprint 41).
+   *
+   * Not persisted on the conversation, unlike the scope. A mode is what a
+   * student wants from the NEXT message — they explain, then ask, then get
+   * quizzed, inside one thread — where the scope is a property of the thread
+   * itself. Storing it would restore "Quiz me" on a conversation someone came
+   * back to in order to read.
+   */
+  const [mode, setMode] = useState<AssistantTask>("ask");
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -299,7 +309,7 @@ export function AssistantChat({
     const text = question.trim();
     if (text.length === 0 || busy) return;
     setQuestion("");
-    void ask(text);
+    void ask(text, mode);
   }
 
   const subject = subjects.find((entry) => entry.id === subjectId);
@@ -471,7 +481,7 @@ export function AssistantChat({
               <EmptyConversation
                 scopeLabel={scopeLabel}
                 useMaterial={useMaterial}
-                onPick={(text) => void ask(text)}
+                onPick={(text) => void ask(text, mode)}
               />
             ) : (
               messages.map((message) => (
@@ -490,6 +500,26 @@ export function AssistantChat({
         >
           <div className="mx-auto w-full max-w-[60rem]">
             <div className="flex items-end gap-2 rounded-[var(--radius-card)] border border-rule bg-surface px-3 py-2 shadow-[var(--shadow-pill)] transition-colors focus-within:border-rule-strong hover:border-rule-strong">
+              {/* Inside the field, because the mode applies to what is typed
+                  in it. A mode selector up in the header would sit beside the
+                  SCOPE controls, which are properties of the conversation —
+                  this is a property of the next message. */}
+              <label htmlFor="assistant-mode" className="sr-only">
+                What Aki should do
+              </label>
+              <Select
+                id="assistant-mode"
+                value={mode}
+                onChange={(event) => setMode(event.target.value as AssistantTask)}
+                className="h-9 w-auto shrink-0 rounded-[var(--radius-pill)] bg-surface-sunken pr-7 pl-3 text-xs font-medium shadow-none"
+              >
+                {TASK_MODES.map((entry) => (
+                  <option key={entry.task} value={entry.task}>
+                    {entry.label}
+                  </option>
+                ))}
+              </Select>
+
               <label htmlFor="assistant-question" className="sr-only">
                 Ask about {scopeLabel}
               </label>
@@ -508,7 +538,10 @@ export function AssistantChat({
                 }}
                 rows={1}
                 autoFocus={prefill.length > 0}
-                placeholder={`Ask Aki about ${scopeLabel}…`}
+                placeholder={
+                  TASK_MODES.find((entry) => entry.task === mode)?.placeholder(scopeLabel) ??
+                  `Ask Aki about ${scopeLabel}…`
+                }
                 className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-1 py-1.5 text-base text-ink outline-none placeholder:text-ink-subtle"
               />
 
@@ -541,6 +574,11 @@ export function AssistantChat({
               student who has not needs telling once. */}
             <p className="mt-2 text-xs text-ink-subtle">
               Enter to send · Shift + Enter for a new line
+              {/* Said here rather than left for a student to assume. Practice
+                  in chat is not a graded attempt, and a product whose premise
+                  is honest measurement must not let one look like the other.
+                  Recorded attempts arrive with quizzes in Sprint 52. */}
+              {mode === "quiz" && " · Practice only — this does not count toward your progress"}
             </p>
           </div>
         </form>
