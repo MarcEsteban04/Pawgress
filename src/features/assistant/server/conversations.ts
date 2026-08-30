@@ -22,7 +22,19 @@ import { type AssistantCitation } from "../types";
  */
 
 export type ConversationResult =
-  { status: "ok"; conversationId: string } | { status: "error"; message: string; nextStep: string };
+  | {
+      status: "ok";
+      conversationId: string;
+      /**
+       * The stored id of the assistant's message.
+       *
+       * Returned so feedback can be attached to an answer the student is still
+       * reading. Without it, rating an answer would only work after a reload —
+       * which is exactly when nobody wants to go back and do it.
+       */
+      messageId?: string;
+    }
+  | { status: "error"; message: string; nextStep: string };
 
 const failed = (message: string, nextStep: string): ConversationResult => ({
   status: "error",
@@ -101,27 +113,30 @@ export async function appendTurnAction(input: {
   const session = await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const { error } = await supabase.from("conversation_messages").insert([
-    {
-      user_id: session.userId,
-      conversation_id: input.conversationId,
-      role: "user",
-      content: cleanText(input.question).slice(0, 100_000),
-      citations: [],
-      ungrounded: false,
-    },
-    {
-      user_id: session.userId,
-      conversation_id: input.conversationId,
-      role: "assistant",
-      /* NOT `cleanText`. The answer is Markdown the renderer parses; stripping
+  const { data, error } = await supabase
+    .from("conversation_messages")
+    .insert([
+      {
+        user_id: session.userId,
+        conversation_id: input.conversationId,
+        role: "user",
+        content: cleanText(input.question).slice(0, 100_000),
+        citations: [],
+        ungrounded: false,
+      },
+      {
+        user_id: session.userId,
+        conversation_id: input.conversationId,
+        role: "assistant",
+        /* NOT `cleanText`. The answer is Markdown the renderer parses; stripping
          its punctuation would break the formatting it was written with. It is
          escaped by React at render time, which is where escaping belongs. */
-      content: input.answer.slice(0, 100_000),
-      citations: input.citations,
-      ungrounded: input.ungrounded,
-    },
-  ]);
+        content: input.answer.slice(0, 100_000),
+        citations: input.citations,
+        ungrounded: input.ungrounded,
+      },
+    ])
+    .select("id, role");
 
   if (error) {
     return failed("We could not save that message.", "It is still on screen for now.");
@@ -135,7 +150,11 @@ export async function appendTurnAction(input: {
     .eq("id", input.conversationId);
 
   revalidatePath("/assistant");
-  return { status: "ok", conversationId: input.conversationId };
+  return {
+    status: "ok",
+    conversationId: input.conversationId,
+    messageId: data?.find((row) => row.role === "assistant")?.id,
+  };
 }
 
 export async function renameConversationAction(

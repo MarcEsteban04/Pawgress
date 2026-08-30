@@ -27,6 +27,15 @@ export type ChatMessage =
       question: string;
       text: string;
       citations: AssistantCitation[];
+      /**
+       * The row id, once the turn has been saved.
+       *
+       * Absent while an answer is streaming and for the moment after, because
+       * the turn is written only once it finishes. Feedback needs it, so the
+       * rating controls appear when it arrives rather than being disabled
+       * before it.
+       */
+      storedId?: string;
       /** True while tokens are still arriving. */
       streaming: boolean;
       /** True when this answer was NOT grounded in the student's material. */

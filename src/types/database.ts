@@ -102,6 +102,41 @@ export type Database = {
         }
         Relationships: []
       }
+      answer_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          rating: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          rating: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          rating?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_feedback_message_fkey"
+            columns: ["message_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_messages"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       conversation_messages: {
         Row: {
           citations: Json

@@ -1,8 +1,16 @@
 "use client";
 
-import { ArrowUp, FileSearch, Sparkles, Square, TriangleAlert } from "lucide-react";
+import {
+  ArrowUp,
+  FileSearch,
+  Sparkles,
+  Square,
+  ThumbsDown,
+  ThumbsUp,
+  TriangleAlert,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { AcadifyMark } from "@/components/shared/Logo";
 import { Button, Select, SourceChip } from "@/components/ui";
 import { Markdown } from "@/features/assistant/markdown";
@@ -11,6 +19,7 @@ import {
   appendTurnAction,
   createConversationAction,
 } from "@/features/assistant/server/conversations";
+import { rateAnswerAction, type FeedbackRating } from "@/features/assistant/server/feedback";
 import { TASK_MODES, type AssistantTask } from "@/features/assistant/tasks";
 import { readFrames, type AssistantCitation, type ChatMessage } from "@/features/assistant/types";
 import { cn } from "@/lib/utils";
@@ -63,6 +72,7 @@ function hydrate(stored: StoredMessage[]): ChatMessage[] {
           question: "",
           text: message.content,
           citations: message.citations,
+          storedId: message.id,
           /* Finished by definition — a saved turn is one that completed. */
           streaming: false,
           ungrounded: message.ungrounded,
@@ -133,6 +143,7 @@ export function AssistantChat({
    */
   const persist = useCallback(
     async (
+      liveId: string,
       askedQuestion: string,
       answer: string,
       citations: AssistantCitation[],
@@ -153,13 +164,27 @@ export function AssistantChat({
         setActiveId(id);
       }
 
-      await appendTurnAction({
+      const saved = await appendTurnAction({
         conversationId: id,
         question: askedQuestion,
         answer,
         citations,
         ungrounded,
       });
+
+      /* The answer on screen learns its row id, which is what lets a student
+         rate the thing they are still reading rather than having to come back
+         to it after a reload. */
+      if (saved.status === "ok" && saved.messageId) {
+        const storedId = saved.messageId;
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === liveId && message.role === "assistant"
+              ? { ...message, storedId }
+              : message,
+          ),
+        );
+      }
 
       /* Refresh the server component so the rail shows the new thread and its
          new position, without a full navigation that would unmount the
@@ -279,7 +304,7 @@ export function AssistantChat({
            all: a failed or refused turn is not history, and a list full of
            threads containing a single error is a list nobody opens. */
         if (streamed.trim().length > 0) {
-          void persist(text, streamed, latestCitations, wasUngrounded);
+          void persist(answerId, text, streamed, latestCitations, wasUngrounded);
         }
       } catch (thrown) {
         /* An abort is the student pressing stop, not a failure. Whatever had
@@ -686,6 +711,8 @@ function Message({
             >
               Go deeper
             </button>
+
+            {message.storedId && <AnswerRating messageId={message.storedId} />}
           </div>
         )}
 
@@ -767,5 +794,70 @@ function EmptyConversation({
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Was this answer any use? (Sprint 42, FR-P9)
+ *
+ * **Two values, not five stars.** A star rating asks a student to grade
+ * something they came here to read, and the only distinction that changes what
+ * we do with it is whether the answer helped. Everything finer is a number
+ * nobody acts on.
+ *
+ * Nothing is announced beyond the button changing state. A toast thanking
+ * someone for feedback is the product congratulating itself for being told it
+ * was wrong, and it interrupts the reading it just interrupted once already.
+ *
+ * This exists because every guardrail in the product is an assertion about
+ * behaviour we cannot see from the outside. `npm run ai:eval` checks the cases
+ * we thought of; this is where the ones we did not think of arrive.
+ */
+function AnswerRating({ messageId }: { messageId: string }) {
+  const [rating, setRating] = useState<FeedbackRating | null>(null);
+  const [isSending, startSending] = useTransition();
+
+  function rate(next: FeedbackRating) {
+    /* Optimistic, and it stays that way even if the write fails. The student
+       has told us something true about the answer; making them re-click
+       because our database was busy is punishing them for our problem. The
+       action returns ok:false and the next rating overwrites it. */
+    setRating(next);
+    startSending(async () => {
+      await rateAnswerAction(messageId, next);
+    });
+  }
+
+  return (
+    <span className="ml-auto flex items-center gap-0.5" aria-label="Was this answer useful?">
+      <button
+        type="button"
+        aria-pressed={rating === "helpful"}
+        disabled={isSending}
+        onClick={() => rate("helpful")}
+        title="This helped"
+        className={cn(
+          "rounded-full p-1.5 transition-colors",
+          rating === "helpful" ? "text-ok" : "text-ink-subtle hover:text-ink",
+        )}
+      >
+        <ThumbsUp className="size-3.5" aria-hidden />
+        <span className="sr-only">This answer helped</span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={rating === "unhelpful"}
+        disabled={isSending}
+        onClick={() => rate("unhelpful")}
+        title="This did not help"
+        className={cn(
+          "rounded-full p-1.5 transition-colors",
+          rating === "unhelpful" ? "text-bad" : "text-ink-subtle hover:text-ink",
+        )}
+      >
+        <ThumbsDown className="size-3.5" aria-hidden />
+        <span className="sr-only">This answer did not help</span>
+      </button>
+    </span>
   );
 }
