@@ -20,6 +20,7 @@ export type JobKind =
   | "embed_chunks"
   | "ocr_image"
   | "generate_reviewer"
+  | "generate_flashcards"
   | "generate_quiz";
 
 export type Job = {

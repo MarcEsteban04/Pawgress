@@ -1221,6 +1221,7 @@ export type Database = {
         | "ocr_image"
         | "generate_reviewer"
         | "generate_quiz"
+        | "generate_flashcards"
       job_status:
         | "queued"
         | "uploading"
@@ -1387,6 +1388,7 @@ export const Constants = {
         "ocr_image",
         "generate_reviewer",
         "generate_quiz",
+        "generate_flashcards",
       ],
       job_status: [
         "queued",

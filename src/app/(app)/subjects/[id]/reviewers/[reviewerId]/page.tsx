@@ -1,7 +1,9 @@
-import { ArrowLeft, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Layers, Sparkles, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardBody, SectionLabel, StatusBadge } from "@/components/ui";
+import { GenerateFlashcardsButton } from "@/features/flashcards/components/GenerateFlashcardsButton";
+import { countFlashcards } from "@/server/flashcards/queries";
 import { getReviewer } from "@/server/reviewers/queries";
 import { getSubject } from "@/server/subjects/queries";
 
@@ -30,7 +32,11 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps<"/subjects/[id]/reviewers/[reviewerId]">) {
   const { id, reviewerId } = await params;
-  const [subject, reviewer] = await Promise.all([getSubject(id), getReviewer(reviewerId)]);
+  const [subject, reviewer, cardCount] = await Promise.all([
+    getSubject(id),
+    getReviewer(reviewerId),
+    countFlashcards(reviewerId),
+  ]);
 
   if (!subject || !reviewer) notFound();
 
@@ -60,7 +66,25 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
             {reviewer.title}
           </h1>
         </div>
-        <StatusBadge status={reviewer.status} />
+        <div className="flex items-center gap-3">
+          {/* Offered only once there is something to make cards FROM. A button
+              on a reviewer that is still being written can only fail, and a
+              button whose whole job is to explain why it will not work is a
+              worse answer than not being there. */}
+          {reviewer.status === "ready" &&
+            (cardCount > 0 ? (
+              <Link
+                href={`/subjects/${id}/reviewers/${reviewerId}/flashcards`}
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-rule bg-surface px-3.5 py-2 text-sm font-medium transition-colors hover:border-rule-strong hover:bg-surface-sunken"
+              >
+                <Layers className="size-4" aria-hidden />
+                Study {cardCount} cards
+              </Link>
+            ) : (
+              <GenerateFlashcardsButton subjectId={id} reviewerId={reviewerId} size="sm" />
+            ))}
+          <StatusBadge status={reviewer.status} />
+        </div>
       </div>
 
       {/* Three states, and they are genuinely different. Still working is not a

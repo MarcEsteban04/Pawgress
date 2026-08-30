@@ -8,6 +8,7 @@ import { type Database } from "@/types/database";
 import { chunkTextHandler } from "./handlers/chunkText";
 import { embedChunksHandler } from "./handlers/embedChunks";
 import { extractTextHandler } from "./handlers/extractText";
+import { generateFlashcardsHandler } from "./handlers/generateFlashcards";
 import { generateReviewerHandler } from "./handlers/generateReviewer";
 import { ocrImageHandler } from "./handlers/ocrImage";
 import { MAX_JOB_ATTEMPTS, type Job, type JobHandler, type JobKind } from "./types";
@@ -39,6 +40,7 @@ const HANDLERS: Partial<Record<JobKind, JobHandler>> = {
   chunk_text: chunkTextHandler,
   embed_chunks: embedChunksHandler,
   generate_reviewer: generateReviewerHandler,
+  generate_flashcards: generateFlashcardsHandler,
 };
 
 /**
@@ -222,6 +224,7 @@ function statusWhileRunning(kind: JobKind): JobStatus {
     case "embed_chunks":
       return "embedding";
     case "generate_reviewer":
+    case "generate_flashcards":
     case "generate_quiz":
       return "generating";
   }
@@ -235,8 +238,15 @@ function statusWhileRunning(kind: JobKind): JobStatus {
  * matched no rows — silently, because updating zero rows is not an error. The
  * student would have watched a reviewer sit at queued while it generated.
  */
-function targetTable(kind: JobKind): "materials" | "reviewers" | "quizzes" {
+function targetTable(kind: JobKind): "materials" | "reviewers" | "quizzes" | null {
   switch (kind) {
+    /* Flashcards target a reviewer but must NOT write their status to it. The
+       reviewer is already `ready` and on screen; mirroring the card job onto it
+       would make a finished document announce that it is still being written,
+       every time a student asked for cards from it. The job row carries this
+       one's status on its own. */
+    case "generate_flashcards":
+      return null;
     case "generate_reviewer":
       return "reviewers";
     case "generate_quiz":
@@ -257,7 +267,9 @@ function targetTable(kind: JobKind): "materials" | "reviewers" | "quizzes" {
 async function setJobStatus(job: Job, status: JobStatus): Promise<void> {
   const supabase = createSupabaseAdminClient();
   await supabase.from("jobs").update({ status }).eq("id", job.id);
-  await supabase.from(targetTable(job.kind)).update({ status }).eq("id", job.targetId);
+
+  const table = targetTable(job.kind);
+  if (table) await supabase.from(table).update({ status }).eq("id", job.targetId);
 }
 
 async function finishJob(job: Job): Promise<void> {
