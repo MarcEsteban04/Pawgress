@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — last_activity_at on subjects (Sprint 24)
+-- Acadify — last_activity_at on subjects (Sprint 24)
 --
 -- Sorting the subject list by "recent activity" meant reading EVERY material
 -- row's `subject_id` and `created_at` on every page load and reducing them in

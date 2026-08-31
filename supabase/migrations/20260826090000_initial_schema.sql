@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — initial schema (Sprint 13)
+-- Acadify — initial schema (Sprint 13)
 --
 -- The sixteen core tables, their foreign keys, indexes and constraints.
 --

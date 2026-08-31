@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — storage buckets and their policies (Sprint 16)
+-- Acadify — storage buckets and their policies (Sprint 16)
 --
 -- FR-U9: files are private to their owner AT THE STORAGE LAYER, not merely
 -- hidden in the UI. NFR-S2: objects are private and reached only through

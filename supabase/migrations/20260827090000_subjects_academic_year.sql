@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — academic year on subjects (Sprint 22)
+-- Acadify — academic year on subjects (Sprint 22)
 --
 -- FR-S6 / US-B6: "a subject can be assigned a semester AND academic year, and
 -- the list can group by them". `semester` already exists as free text; this

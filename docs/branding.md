@@ -144,7 +144,7 @@ alone), `AppMark` (the mark on an ink tile), `Logo` (mark + wordmark) and `Brand
 brand moment on the sign-up aside).
 
 The A is the initial. The accent crossbar is what the product does — so the mark carries the thesis,
-not just the letter. That is deliberate salvage: the *idea* in the old name "Pawgress" was progress,
+not just the letter. That is deliberate salvage: the *idea* in the original name was progress,
 and when the name went the idea moved into the mark rather than being thrown away.
 
 **Wordmark** — "Acadify" in Outfit semibold at −2% tracking. It stays **type**, never artwork: type
@@ -240,11 +240,11 @@ a student is choosing on a phone.
 
 Kept because the reasoning is worth more than the artwork.
 
-**The name "Pawgress"** *(shipped Sprints 01–37, renamed)* — a pun on "paw" and "progress", with a
-1.4 MB illustration of a dog in a graduation cap to match. Renamed to **Acadify** because the name and
-the design system had stopped agreeing with each other: "Daylight" is neutral ground, an ink chrome and
-one blue accent, and nothing in it is playful or animal. A student arriving from the name expected a
-pet app and met a study tool.
+**The original name** *(shipped Sprints 01–37, renamed to Acadify)* — an animal pun, with a 1.4 MB
+illustration of a dog in a graduation cap to match. Renamed because the name and the design system had
+stopped agreeing with each other: "Daylight" is neutral ground, an ink chrome and one blue accent, and
+nothing in it is playful or animal. A student arriving from the name expected a pet app and met a study
+tool. The dead name is deliberately not recorded here — the product carries no trace of it.
 
 The lesson worth keeping is that the *mascot* was the expensive half, not the name. Renaming was a
 find-and-replace; removing the animal meant redrawing the mark, the favicon, the landing hero and the
@@ -252,7 +252,7 @@ sign-up aside, because the illustration had been load-bearing in all four. **A b
 illustration is more expensive to change than one carried by type and geometry** — which is the reason
 `Logo.tsx` is now entirely drawn in SVG on `currentColor`.
 
-The idea inside the old name survived: the crossbar of the A is a progress bar (§4).
+One idea survived the rename: the crossbar of the A is a progress bar (§4).
 
 **"Study Desk"** *(shipped Sprint 05–06, superseded)* — warm paper `#FAF6EF`, terracotta `#A8502F`,
 Newsreader + Public Sans + IBM Plex Mono, 12 px radii. The calm-notebook idea was right about the
@@ -261,8 +261,8 @@ problem by making *everything* quiet, including the data: a warm, low-contrast, 
 has nowhere to put five subject identities and a mastery ramp, so a dense dashboard built in it turns
 muddy. "Daylight" keeps the restraint and moves it into the chrome.
 
-**"Trail"** — deep pine `#14452F` with an amber `#E8A33D` accent, Bricolage Grotesque, a geometric dog
-and a paw-print progress trail. Most memorable of the original three and the easiest to grow into
+**"Trail"** — deep pine `#14452F` with an amber `#E8A33D` accent, Bricolage Grotesque, a geometric
+animal mark and a footprint progress trail. Most memorable of the original three and the easiest to grow into
 streaks and achievements. Rejected because a bold brand makes 42% louder too, and it tips toward a
 kids' app.
 

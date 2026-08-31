@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — reordering topics (Sprint 24, FR-S7)
+-- Acadify — reordering topics (Sprint 24, FR-S7)
 --
 -- Topics have carried a sparse `position` since Sprint 21 (100, 200, 300…)
 -- specifically so a move writes ONE row: the new position is the midpoint

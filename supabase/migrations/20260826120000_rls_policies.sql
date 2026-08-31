@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — Row Level Security (Sprint 14)
+-- Acadify — Row Level Security (Sprint 14)
 --
 -- Sprint 13 enabled RLS with no policies, which denies everything. This file
 -- opens it up to exactly one rule: a student sees and writes their own rows.

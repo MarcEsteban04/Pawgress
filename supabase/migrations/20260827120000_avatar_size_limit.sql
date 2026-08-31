@@ -1,5 +1,5 @@
 -- ============================================================================
--- Pawgress — raise the avatar size limit to 25 MB
+-- Acadify — raise the avatar size limit to 25 MB
 --
 -- At the product owner's direction. The previous 2 MB was chosen because an
 -- avatar renders at 36px and everything past that is bytes nobody sees; 25 MB

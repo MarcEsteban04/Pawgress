@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
  *    the apex when the strokes thicken; low, the counter stays open.
  *  - Its ends are inset to x 9.6/22.4 so round caps land flush on the legs
  *    rather than overhanging them.
- *  - No fourth element. The paw it replaced had to drop a toe at favicon size;
+ *  - No fourth element. The mark it replaced had to shed detail at favicon size;
  *    this has nothing left to drop, which is the correct amount of detail.
  */
 export function AcadifyMark({ className }: { className?: string }) {

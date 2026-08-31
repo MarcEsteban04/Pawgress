@@ -1020,7 +1020,7 @@ What the wireframes above actually need built. This is the shopping list for the
 
 Deliberately left open here — these are brand and system decisions, not layout ones.
 
-1. ~~**Mascot role.**~~ **Resolved:** there is no mascot. The animal direction was dropped with the "Pawgress" name — celebration is copy, motion and the accent, per [`states.md` §5](states.md#5-copy-rules).
+1. ~~**Mascot role.**~~ **Resolved:** there is no mascot. The animal direction was dropped with the original name — celebration is copy, motion and the accent, per [`states.md` §5](states.md#5-copy-rules).
 2. **Type scale and font.** Must survive 16 px body on a 360 px screen with long Filipino and English words.
 3. **Colour system.** Subject colours must be distinguishable from status colours, or a red subject reads as a failed one.
 4. **Mastery bar palette.** Needs to read at a glance without implying pass/fail — students are sensitive about this, and colour alone is out (NFR-A3).
