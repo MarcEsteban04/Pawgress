@@ -58,6 +58,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 44 | Flashcards — generate from a reviewer, flip, known/unknown, review session | done | one migration for the `generate_flashcards` job kind; cards come from the reviewer, not the raw material |
 | 45 | Practice questions — MCQ, true/false, identification, short answer, with explanations | done | one migration linking `quizzes` to a reviewer; practice is session-local, no attempt recorded until Sprint 49 |
 | 46 | Reviewer editor — edit sections, delete items, own notes, per-section rewrite | done | no migration: notes, `editedAt` and the pending-section request live in the `content` jsonb |
+| 48 | Question quality — deduplication, answer verification, difficulty control, MCQ choice order | done | no migration: `quizzes.difficulty` has existed since Sprint 13 and nothing read it. Deterministic, no second model call — `npm run practice:test`, 26 checks |
 | 47 | Reviewer library — one cross-subject `/reviewers`, URL-driven search/filter/sort, duplicate, counted delete | done | no migration. **Top level, not per-subject** — "filter by subject" only means something if the list spans them. "Save reviewer" needed no work: reviewers have persisted at generation since Sprint 43 |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
 | — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
@@ -67,9 +68,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 48 | Reviewer quality — prompts, duplicate questions, answer verification, difficulty | 45 |
 | 49 | Quiz creation — generate from material, choose topic, difficulty, count | 45 |
-| 50 | Quiz interface | 49 |
+| 50 | Quiz interface — one question at a time, progress, review | 49 |
+| 51 | Question types — rendering and marking each of the four | 50 |
 
 ---
 

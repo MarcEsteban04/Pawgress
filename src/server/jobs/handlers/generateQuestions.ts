@@ -2,7 +2,9 @@ import "server-only";
 
 import { getAiService } from "@/lib/ai";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { QUESTION_PROMPT, questionSetSchema, usableQuestion } from "@/features/practice/schema";
+import { logAiEvent } from "@/lib/ai/log";
+import { selectQuestions } from "@/features/practice/quality";
+import { isQuizDifficulty, questionPrompt, questionSetSchema } from "@/features/practice/schema";
 import { type Job, type JobSliceResult } from "../types";
 
 /**
@@ -23,7 +25,7 @@ export async function generateQuestionsHandler(job: Job): Promise<JobSliceResult
 
   const { data: quiz } = await supabase
     .from("quizzes")
-    .select("id, user_id, subject_id, topic_id, reviewer_id")
+    .select("id, user_id, subject_id, topic_id, reviewer_id, difficulty")
     .eq("id", job.targetId)
     .maybeSingle();
 
@@ -78,6 +80,11 @@ export async function generateQuestionsHandler(job: Job): Promise<JobSliceResult
     ...(content.terms ?? []).map((term) => `- ${term.term}: ${term.definition}`),
   ].join("\n");
 
+  /* Falls back to medium rather than throwing. The column has a DEFAULT and a
+     CHECK, so an unreadable value means the enum grew and this code did not —
+     generating a medium set beats failing a job over a label. */
+  const difficulty = isQuizDifficulty(quiz.difficulty) ? quiz.difficulty : "medium";
+
   try {
     const { data } = await getAiService().generate(
       {
@@ -85,20 +92,53 @@ export async function generateQuestionsHandler(job: Job): Promise<JobSliceResult
         task: "practice_questions",
         idempotencyKey: `questions:${quiz.id}`,
       },
-      `${source}\n\n${QUESTION_PROMPT}`,
+      `${source}\n\n${questionPrompt(difficulty)}`,
       questionSetSchema,
       { context: [] },
     );
 
     /* Filtered, not rejected — see the schema's header. What reaches the table
-       is only what can actually be put in front of a student. */
-    const usable = data.questions.filter(usableQuestion);
+       is only what can actually be put in front of a student. Sprint 48 turned
+       this from one usability check into the full quality pass: verification,
+       deduplication, and a deterministic choice order. */
+    const { kept: usable, dropped } = selectQuestions(data.questions, source);
+
+    if (dropped.length > 0) {
+      /* Logged in aggregate, not per question. These counts are the only signal
+         that a prompt change made the output worse — a set where half the
+         questions are dropped as duplicates is a PROMPT problem, and without
+         this it looks like a short reviewer. */
+      const byReason: Record<string, number> = {};
+      for (const rejection of dropped) {
+        byReason[rejection.reason] = (byReason[rejection.reason] ?? 0) + 1;
+      }
+      logAiEvent("practice.questions.filtered", {
+        quizId: quiz.id,
+        difficulty,
+        generated: data.questions.length,
+        kept: usable.length,
+        ...byReason,
+      });
+    }
 
     if (usable.length < 3) {
+      /* Two different failures, and a student can act on only one of them. If
+         the model produced plenty and dedupe took them, the reviewer is not too
+         short — it is too repetitive to examine, and telling them to add more
+         material would be the wrong advice. */
+      const duplicates = dropped.filter(
+        (rejection) => rejection.reason === "duplicate" || rejection.reason === "duplicate_answer",
+      ).length;
+      const mostlyDuplicates = duplicates > dropped.length / 2;
+
       return {
         kind: "failed",
-        message: "We could not write usable questions from this reviewer.",
-        nextStep: "It may be too short — try a reviewer built from more material.",
+        message: mostlyDuplicates
+          ? "The questions we wrote from this reviewer were all variations of each other."
+          : "We could not write usable questions from this reviewer.",
+        nextStep: mostlyDuplicates
+          ? "This reviewer covers a narrow topic — try one built from more of your material."
+          : "It may be too short — try a reviewer built from more material.",
         retryable: false,
       };
     }

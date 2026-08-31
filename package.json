@@ -27,6 +27,7 @@
     "db:test:reorder": "node scripts/reorder-test.mjs",
     "ai:test": "node scripts/ai-test.mjs",
     "md:test": "node scripts/markdown-test.mjs",
+    "practice:test": "node scripts/practice-quality-test.mjs",
     "ai:eval": "node scripts/ai-eval.mjs"
   },
   "dependencies": {
