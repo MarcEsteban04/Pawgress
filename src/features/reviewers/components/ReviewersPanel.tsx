@@ -25,6 +25,17 @@ export function ReviewersPanel({
       <CardHeader>
         <CardTitle>Reviewers</CardTitle>
         <CardActions>
+          {/* Into the ONE library, pre-filtered to this subject. A second
+              per-subject index would render a near-identical list at a second
+              URL, and the two would drift. */}
+          {reviewers.length > 0 && (
+            <Link
+              href={`/reviewers?subject=${subjectId}`}
+              className="text-sm text-ink-muted transition-colors hover:text-ink"
+            >
+              See all
+            </Link>
+          )}
           <GenerateReviewerButton subjectId={subjectId} size="sm" label="Generate" />
         </CardActions>
       </CardHeader>

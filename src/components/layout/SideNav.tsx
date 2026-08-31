@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BookOpen,
   House,
   Layers,
   MessageSquare,
@@ -47,6 +48,12 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "Home", Icon: House, hint: "What to study today" },
       { href: "/subjects", label: "Subjects", Icon: Layers, hint: "Your classes and files" },
+      {
+        href: "/reviewers",
+        label: "Reviewers",
+        Icon: BookOpen,
+        hint: "Revision aids written from your files",
+      },
       {
         href: "/assistant",
         label: "Ask",

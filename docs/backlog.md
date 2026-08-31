@@ -58,6 +58,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 44 | Flashcards — generate from a reviewer, flip, known/unknown, review session | done | one migration for the `generate_flashcards` job kind; cards come from the reviewer, not the raw material |
 | 45 | Practice questions — MCQ, true/false, identification, short answer, with explanations | done | one migration linking `quizzes` to a reviewer; practice is session-local, no attempt recorded until Sprint 49 |
 | 46 | Reviewer editor — edit sections, delete items, own notes, per-section rewrite | done | no migration: notes, `editedAt` and the pending-section request live in the `content` jsonb |
+| 47 | Reviewer library — one cross-subject `/reviewers`, URL-driven search/filter/sort, duplicate, counted delete | done | no migration. **Top level, not per-subject** — "filter by subject" only means something if the list spans them. "Save reviewer" needed no work: reviewers have persisted at generation since Sprint 43 |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
 | — | **Aki** — the assistant is named and conversational, with a per-conversation `Using my material` switch | done | product owner direction. Grounding became a LABEL rather than a refusal; migrations `20260829150000`, `20260829180000` |
 | — | **Redesign to direction "Daylight"** — floating canvas shell, validated data palette, charts, dashboard built out | done | out of sprint order, at the product owner's direction |
@@ -66,9 +67,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 47 | Reviewer library | 43 |
-| 48 | Duplicate filtering, difficulty | 45 |
-| 49 | Quiz generation and attempts | 45 |
+| 48 | Reviewer quality — prompts, duplicate questions, answer verification, difficulty | 45 |
+| 49 | Quiz creation — generate from material, choose topic, difficulty, count | 45 |
+| 50 | Quiz interface | 49 |
 
 ---
 
@@ -195,7 +196,7 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 | 2 | Schema-validated generation output with one retry, then a clean failure | M | 43 | NFR-R4 |
 | 3 | Flashcards + review session with saved progress | M | 44 | US-F2 |
 | 4 | Practice question generation (MCQ, T/F, Identification) with explanations | M | 45 | US-F3 |
-| 5 | Reviewer library: list, search, filter, delete | M | 47 | US-F4 |
+| 5 | Reviewer library: list, search, filter, delete | M | 47 | **done** — US-F4. One cross-subject `/reviewers` with a sixth nav entry, plus duplicate. The subject hub panel links here filtered rather than getting a second index, so the two lists cannot drift. Delete states the asymmetry: flashcards cascade, quizzes are kept and unlinked |
 | 6 | Reviewer editor with per-section regeneration | V1 | 46 | US-F5 |
 | 7 | Duplicate-question filtering and difficulty control | V1 | 48 | US-F5 |
 
