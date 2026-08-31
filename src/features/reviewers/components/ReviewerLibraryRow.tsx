@@ -62,6 +62,16 @@ function consequenceText(impact: Impact): string {
 
 export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem }) {
   const [impact, setImpact] = useState<Impact | null>(null);
+  /**
+   * Third state, and it is not optional.
+   *
+   * `loadReviewerImpactAction` returns null when the count fails, and treating
+   * that as "still loading" left this dialog saying "Checking…" for ever with
+   * the Delete button live — a destructive confirmation whose consequence line
+   * never resolves. It is reachable: the quiz count reads `quizzes.reviewer_id`,
+   * which does not exist until migration `20260831100000` is applied.
+   */
+  const [failed, setFailed] = useState(false);
   const [isLoading, startLoading] = useTransition();
   const [isBusy, startBusy] = useTransition();
 
@@ -72,7 +82,12 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
   function onOpenChange(open: boolean) {
     if (!open) return;
     setImpact(null);
-    startLoading(async () => setImpact(await loadReviewerImpactAction(reviewer.id)));
+    setFailed(false);
+    startLoading(async () => {
+      const result = await loadReviewerImpactAction(reviewer.id);
+      if (result) setImpact(result);
+      else setFailed(true);
+    });
   }
 
   return (
@@ -121,15 +136,21 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
         <DialogContent>
           <DialogTitle>Delete “{reviewer.title}”?</DialogTitle>
           <DialogDescription>
-            {isLoading || !impact
-              ? "Checking what was generated from it…"
-              : consequenceText(impact)}
+            {impact
+              ? consequenceText(impact)
+              : failed
+                ? /* Honest about the gap rather than silent. What IS still known
+                     is the schema's own behaviour, so say that much and let the
+                     student decide — refusing to delete because a count failed
+                     would be worse. */
+                  "We could not check what was generated from this reviewer. Deleting it still removes any flashcards made from it, and still keeps any quizzes you have taken."
+                : "Checking what was generated from it…"}
           </DialogDescription>
 
           {/* Held back until the real counts arrive. Showing zeros while loading
               would be a confident, wrong answer in the one dialog that must not
               give one. */}
-          {isLoading && !impact && <Skeleton className="mt-4 h-4 w-full" />}
+          {isLoading && !impact && !failed && <Skeleton className="mt-4 h-4 w-full" />}
 
           <DialogFooter>
             <DialogClose asChild>
