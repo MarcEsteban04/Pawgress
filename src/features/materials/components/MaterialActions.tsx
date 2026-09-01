@@ -2,7 +2,7 @@
 
 import { Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useId } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Button,
@@ -54,11 +54,21 @@ export function RenameMaterialDialog({
   material: Material;
   trigger?: React.ReactNode;
 }) {
-  const [state, formAction] = useActionState(renameMaterialAction, initialMaterialState);
-  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  /* Remounts the form on every open. Without it `state.status` stays "saved"
+     for the life of the page — and the footer swaps the submit button away on
+     exactly that condition, so a file could be renamed once and then never
+     again without a reload. Same fault as SubjectDialog; see the note there. */
+  const [instance, setInstance] = useState(0);
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setInstance((n) => n + 1);
+        setOpen(next);
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? (
           <Button variant="ghost" size="sm" aria-label={`Rename ${material.title}`}>
@@ -67,44 +77,55 @@ export function RenameMaterialDialog({
         )}
       </DialogTrigger>
       <DialogContent>
-        <DialogTitle>Rename file</DialogTitle>
-        <DialogDescription>
-          This changes what the file is called in Acadify. The original upload is untouched.
-        </DialogDescription>
-
-        <form action={formAction} className="mt-4 flex flex-col gap-4">
-          <input type="hidden" name="id" value={material.id} />
-
-          {state.status === "error" && state.message && (
-            <ErrorState title={state.message} nextStep={state.nextStep ?? ""} />
-          )}
-
-          <Field label="Name" htmlFor={titleId}>
-            <Input
-              id={titleId}
-              name="title"
-              defaultValue={material.title}
-              required
-              maxLength={300}
-              autoFocus
-            />
-          </Field>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="subtle">Cancel</Button>
-            </DialogClose>
-            {state.status === "saved" ? (
-              <DialogClose asChild>
-                <Button variant="accent">Saved</Button>
-              </DialogClose>
-            ) : (
-              <SubmitButton label="Save name" pendingLabel="Saving…" />
-            )}
-          </DialogFooter>
-        </form>
+        <RenameMaterialForm key={instance} material={material} />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RenameMaterialForm({ material }: { material: Material }) {
+  const [state, formAction] = useActionState(renameMaterialAction, initialMaterialState);
+  const titleId = useId();
+
+  return (
+    <>
+      <DialogTitle>Rename file</DialogTitle>
+      <DialogDescription>
+        This changes what the file is called in Acadify. The original upload is untouched.
+      </DialogDescription>
+
+      <form action={formAction} className="mt-4 flex flex-col gap-4">
+        <input type="hidden" name="id" value={material.id} />
+
+        {state.status === "error" && state.message && (
+          <ErrorState title={state.message} nextStep={state.nextStep ?? ""} />
+        )}
+
+        <Field label="Name" htmlFor={titleId}>
+          <Input
+            id={titleId}
+            name="title"
+            defaultValue={material.title}
+            required
+            maxLength={300}
+            autoFocus
+          />
+        </Field>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="subtle">Cancel</Button>
+          </DialogClose>
+          {state.status === "saved" ? (
+            <DialogClose asChild>
+              <Button variant="accent">Saved</Button>
+            </DialogClose>
+          ) : (
+            <SubmitButton label="Save name" pendingLabel="Saving…" />
+          )}
+        </DialogFooter>
+      </form>
+    </>
   );
 }
 
