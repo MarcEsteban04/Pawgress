@@ -19,18 +19,28 @@ import { signInAction } from "@/features/auth/server/actions";
  * `next` rides along as a hidden field rather than being read from the URL in
  * the action, so it survives a failed attempt — otherwise a typo would quietly
  * drop someone back on the dashboard instead of the page they asked for.
+ *
+ * `knownEmail` is the re-authentication mode, used when the browser already
+ * holds a session. The address is filled in and locked, and the password is
+ * still required — the suggestion is a convenience, never a way past the
+ * password. Nothing else changes: the same action, the same generic error, so
+ * there is exactly one sign-in path to reason about.
+ *
+ * Locking the field client-side is not the protection and is not meant to be.
+ * Anyone can edit the value; they still need that account's password, because
+ * the action authenticates whatever pair it is handed.
  */
 
-function SubmitButton() {
+function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="lg" variant="accent" block disabled={pending}>
-      {pending ? "Signing you in…" : "Sign in"}
+      {pending ? "Signing you in…" : label}
     </Button>
   );
 }
 
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm({ next, knownEmail }: { next: string; knownEmail?: string }) {
   const [state, formAction] = useActionState(signInAction, initialAuthState);
   const [revealed, setRevealed] = useState(false);
   const emailId = useId();
@@ -44,6 +54,9 @@ export function LoginForm({ next }: { next: string }) {
         <ErrorState title={state.message} nextStep={state.nextStep ?? ""} />
       )}
 
+      {/* Read-only rather than hidden when the account is known: a password
+          manager keys on a visible email field, and hiding it would stop the
+          browser offering the saved password for that exact account. */}
       <Field label="Email" htmlFor={emailId}>
         <Input
           id={emailId}
@@ -52,8 +65,10 @@ export function LoginForm({ next }: { next: string }) {
           autoComplete="email"
           inputMode="email"
           required
-          defaultValue={state.email}
+          readOnly={Boolean(knownEmail)}
+          defaultValue={knownEmail ?? state.email}
           placeholder="you@school.edu"
+          className={knownEmail ? "cursor-default text-ink-muted" : undefined}
         />
       </Field>
 
@@ -92,14 +107,19 @@ export function LoginForm({ next }: { next: string }) {
         </Link>
       </div>
 
-      <SubmitButton />
+      <SubmitButton label={knownEmail ? "Confirm and continue" : "Sign in"} />
 
-      <p className="text-center text-[0.9375rem] text-ink-muted">
-        New here?{" "}
-        <Link href="/register" className="font-medium text-accent underline underline-offset-4">
-          Create an account
-        </Link>
-      </p>
+      {/* Only for someone who is actually signed out. Offering "create an
+          account" to a browser that already holds a session sends them to a
+          screen whose only real action is signing this one out. */}
+      {!knownEmail && (
+        <p className="text-center text-[0.9375rem] text-ink-muted">
+          New here?{" "}
+          <Link href="/register" className="font-medium text-accent underline underline-offset-4">
+            Create an account
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

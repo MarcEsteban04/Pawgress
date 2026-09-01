@@ -1,27 +1,30 @@
-import { ArrowRight, UserRound } from "lucide-react";
-import Link from "next/link";
-import { Button, buttonStyles } from "@/components/ui";
+import { UserRound } from "lucide-react";
+import { Button } from "@/components/ui";
+import { LoginForm } from "@/features/auth/components/LoginForm";
 import { signOutAction } from "@/features/auth/server/actions";
 
 /**
- * Shown on `/login` when the browser already holds a session.
+ * Shown on `/login` and `/register` when the browser already holds a session.
  *
- * WHY THIS EXISTS. `/login` used to be in the proxy's auth-route list, so a
- * signed-in visitor who clicked "Sign in" was redirected straight to the
- * dashboard. That is wrong twice over:
+ * WHY THIS EXISTS. Both pages used to be in the proxy's auth-route list, so a
+ * signed-in visitor who clicked "Sign in" was redirected to the dashboard
+ * without a word. On a shared machine — a school lab, a library PC, a sibling's
+ * laptop — the person clicking is usually a DIFFERENT person, and they were
+ * dropped into the previous student's subjects, materials and scores having
+ * never been asked for anything.
  *
- *  - **On a shared machine** — a school lab, a library PC, a sibling's laptop —
- *    the person clicking "Sign in" is usually a DIFFERENT person, and they were
- *    dropped into the previous student's subjects, materials and scores without
- *    ever being asked for a password.
- *  - **Even alone**, asking to sign in and simply arriving somewhere is
- *    startling, and it gives no way to reach a second account.
+ * THE SUGGESTION IS A CONVENIENCE, NOT A KEY. The account is named and its
+ * address filled in so nobody retypes it, and then the password is still
+ * required. Recognising the browser is worth something; treating recognition as
+ * proof of identity is what created the problem above.
  *
- * So the request is answered instead of swallowed: here is who you are, carry
- * on, or sign that person out and use the form. Nothing is decided for them.
+ * WHAT THIS DOES NOT DO, stated so nobody mistakes it for more: the existing
+ * session stays valid while this screen is shown, so typing `/dashboard`
+ * directly still works without a password. This gate covers the sign-in path,
+ * which is the one people actually click. The thing that ends an unattended
+ * session is the inactivity and timebox limits in `supabase/config.toml`.
  *
- * The email is shown because it is the only thing that tells two accounts
- * apart, and it is the session's own — never a value from the URL.
+ * The email shown is the session's own, never a value from the URL.
  */
 export function AlreadySignedIn({
   email,
@@ -30,19 +33,21 @@ export function AlreadySignedIn({
 }: {
   email: string;
   next: string;
-  /** Only changes one sentence — the choice offered is identical. */
+  /** On `/register` the primary action is signing out, so no password is asked. */
   intent?: "signin" | "signup";
 }) {
+  const signup = intent === "signup";
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-display text-[1.75rem] leading-tight font-semibold tracking-[-0.025em]">
-          You are already signed in
+          {signup ? "You are already signed in" : "Confirm it is you"}
         </h1>
         <p className="mt-2 text-[0.9375rem] text-ink-muted">
-          {intent === "signup"
+          {signup
             ? "This browser is still signed in. Sign out first to create a separate account."
-            : "This browser is still signed in. Carry on, or sign out to use a different account."}
+            : "This browser is still signed in. Enter the password to carry on, or sign out to use a different account."}
         </p>
       </div>
 
@@ -56,20 +61,18 @@ export function AlreadySignedIn({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <Link href={next} className={buttonStyles({ variant: "accent" })}>
-          Continue as this account
-          <ArrowRight aria-hidden />
-        </Link>
+      {/* The ordinary sign-in form with the address locked, rather than a second
+          path of its own: one action, one error shape, one thing to reason
+          about when the rules change. */}
+      {!signup && <LoginForm next={next} knownEmail={email} />}
 
-        {/* A form, not a link: signing out is a state change and must not be
-            reachable by a prefetch or a crawler following an anchor. */}
-        <form action={signOutAction}>
-          <Button type="submit" variant="subtle" className="w-full">
-            {intent === "signup" ? "Sign out and create a new account" : "Sign in as someone else"}
-          </Button>
-        </form>
-      </div>
+      {/* A form, not a link: signing out is a state change and must not be
+          reachable by a prefetch or a crawler following an anchor. */}
+      <form action={signOutAction}>
+        <Button type="submit" variant="subtle" block>
+          {signup ? "Sign out and create a new account" : "Sign in as someone else"}
+        </Button>
+      </form>
     </div>
   );
 }
