@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { errorFormState } from "@/lib/errors";
+import { logDbError } from "@/lib/log";
 import { cleanText } from "@/lib/sanitize";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BUCKETS } from "@/lib/supabase/storage";
@@ -53,6 +54,10 @@ export async function createSubjectAction(
   });
 
   if (error) {
+    /* The student gets a sentence they can act on; the log gets the reason.
+       Without this the Postgres code was discarded here and the cause was
+       unrecoverable from either side. */
+    logDbError("subjects.insert", error, { userId: session.userId });
     return {
       status: "error",
       message: "We could not create that subject.",
@@ -115,6 +120,7 @@ export async function updateSubjectAction(
     .eq("id", id);
 
   if (error) {
+    logDbError("subjects.update", error, { subjectId: id });
     return {
       status: "error",
       message: "We could not save those changes.",
@@ -193,6 +199,7 @@ export async function deleteSubjectAction(
 
     const { error } = await supabase.from("subjects").delete().eq("id", id);
     if (error) {
+      logDbError("subjects.delete", error, { subjectId: id });
       return {
         status: "error",
         message: "We could not delete that subject.",
@@ -267,6 +274,7 @@ export async function setSubjectArchivedAction(
     .eq("id", id);
 
   if (error) {
+    logDbError("subjects.archive", error, { subjectId: id, archived });
     return {
       status: "error",
       message: archived
