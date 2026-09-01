@@ -9,8 +9,8 @@ import {
   getRecoveryCooldown,
   getRecoveryEmail,
   getResendCooldown,
-  forgetLastEmail,
-  rememberLastEmail,
+  forgetAccount,
+  rememberAccount,
   setPendingEmail,
   setRecoveryEmail,
 } from "./pending";
@@ -291,21 +291,25 @@ export async function signInAction(
 
   /* Only on success. Remembering a failed attempt would suggest an address that
      may have been a typo, and on a shared machine it would leave a stranger's
-     guess on the screen for the next person. */
-  await rememberLastEmail(email);
+     guess in the list for the next person. */
+  await rememberAccount(email);
 
   redirect(next);
 }
 
 /**
- * "Not you?" — drop the remembered address and show an empty form.
+ * The × on a row of the account chooser.
  *
- * A Server Action because it writes a cookie, and it is the control that makes
- * remembering acceptable on a shared machine: the suggestion is always visibly
- * refusable, in one click, without signing anyone in first.
+ * The control that makes remembering acceptable on a shared machine: every
+ * suggestion is visibly refusable in one click, without signing anyone in
+ * first and without touching the other accounts on the list.
+ *
+ * Takes the address from the form rather than an index — see `forgetAccount`
+ * for why removing by position is a way to remove the wrong one.
  */
-export async function forgetAccountAction(): Promise<void> {
-  await forgetLastEmail();
+export async function forgetAccountAction(formData: FormData): Promise<void> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (email) await forgetAccount(email);
   redirect("/login");
 }
 

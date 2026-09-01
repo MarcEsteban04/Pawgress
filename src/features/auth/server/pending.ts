@@ -2,8 +2,9 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import {
-  LAST_EMAIL_COOKIE,
-  LAST_EMAIL_MAX_AGE_SECONDS,
+  ACCOUNTS_COOKIE,
+  ACCOUNTS_MAX,
+  ACCOUNTS_MAX_AGE_SECONDS,
   LAST_SENT_COOKIE,
   PENDING_EMAIL_COOKIE,
   PENDING_MAX_AGE_SECONDS,
@@ -100,45 +101,88 @@ export async function getRecoveryCooldown(): Promise<number> {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  The remembered account                                                     */
+/*  Remembered accounts                                                        */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Remember who signed in here, so `/login` can offer them next time.
+ * The accounts this browser has signed in with, newest first.
  *
- * Written on a SUCCESSFUL sign-in only. Remembering a failed attempt would
- * suggest an address that may simply have been a typo, and on a shared machine
- * it would leave a stranger's guess on the screen.
- *
- * httpOnly, like every other address this app stores: it is the one piece of
- * personal data in the auth flow, and script on the page has no reason to read
- * it. Nothing derived from it is a credential — the password is always asked.
+ * Parsed defensively: the value is a cookie, so it is whatever the client sent.
+ * Anything that is not a list of plausible addresses is treated as absent
+ * rather than repaired — a corrupt suggestion list is worth nothing, and the
+ * cost of dropping it is that someone types their email once.
  */
-export async function rememberLastEmail(email: string) {
+export async function getAccounts(): Promise<string[]> {
   const store = await cookies();
-  store.set(LAST_EMAIL_COOKIE, email, {
+  const raw = store.get(ACCOUNTS_COOKIE)?.value;
+  if (!raw) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0 && value.length <= 320 && value.includes("@"))
+      .slice(0, ACCOUNTS_MAX);
+  } catch {
+    return [];
+  }
+}
+
+async function writeAccounts(emails: string[]) {
+  const store = await cookies();
+
+  if (emails.length === 0) {
+    store.delete(ACCOUNTS_COOKIE);
+    return;
+  }
+
+  store.set(ACCOUNTS_COOKIE, JSON.stringify(emails), {
+    /* httpOnly like every other address this app stores: it is the one piece of
+       personal data in the auth flow, and script on the page has no reason to
+       read it. Nothing here is a credential — the password is always asked. */
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: LAST_EMAIL_MAX_AGE_SECONDS,
+    maxAge: ACCOUNTS_MAX_AGE_SECONDS,
   });
 }
 
-export async function getLastEmail(): Promise<string | null> {
-  const store = await cookies();
-  return store.get(LAST_EMAIL_COOKIE)?.value ?? null;
+/**
+ * Remember an account, newest first.
+ *
+ * Written on a SUCCESSFUL sign-in only. Remembering a failed attempt would
+ * suggest an address that may simply have been a typo, and on a shared machine
+ * it would leave a stranger's guess in the list for the next person.
+ *
+ * Matching is case-insensitive so one account cannot occupy two rows, but the
+ * address is stored as the student typed it — an email local part is
+ * case-sensitive by the spec even though no real provider treats it that way,
+ * and lowercasing what goes back into the form is not ours to do.
+ */
+export async function rememberAccount(email: string) {
+  const existing = await getAccounts();
+  const lower = email.toLowerCase();
+  const next = [email, ...existing.filter((value) => value.toLowerCase() !== lower)].slice(
+    0,
+    ACCOUNTS_MAX,
+  );
+  await writeAccounts(next);
 }
 
 /**
- * Forget it — the "Not you?" control.
+ * Drop one account from the list — the × on its row.
  *
- * Deliberately NOT called on sign-out. Signing out is usually "I am done for
- * now", and forgetting the address then would defeat the whole point of
- * remembering it. Handing the machine to someone else is the different case,
- * and it has its own button.
+ * By VALUE rather than by index: the list can change between the page being
+ * rendered and the button being pressed (another tab signing in, reordering
+ * the rows), and an index would then remove whichever account had moved into
+ * that position. Removing the wrong account is a small betrayal of a control
+ * whose whole job is "forget this one".
  */
-export async function forgetLastEmail() {
-  const store = await cookies();
-  store.delete(LAST_EMAIL_COOKIE);
+export async function forgetAccount(email: string) {
+  const existing = await getAccounts();
+  const lower = email.toLowerCase();
+  await writeAccounts(existing.filter((value) => value.toLowerCase() !== lower));
 }

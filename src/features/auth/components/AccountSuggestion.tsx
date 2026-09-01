@@ -1,7 +1,8 @@
 import { UserRound } from "lucide-react";
-import { Button } from "@/components/ui";
+import Link from "next/link";
+import { Button, buttonStyles } from "@/components/ui";
 import { LoginForm } from "@/features/auth/components/LoginForm";
-import { forgetAccountAction, signOutAction } from "@/features/auth/server/actions";
+import { signOutAction } from "@/features/auth/server/actions";
 
 /**
  * `/login` and `/register` when this browser already knows an account.
@@ -23,9 +24,11 @@ import { forgetAccountAction, signOutAction } from "@/features/auth/server/actio
  *
  *  - `session` — a live session is present. The secondary action signs it out,
  *    because leaving it alive is what put someone else's data on screen.
- *  - `remembered` — no session, but this browser signed in here before. The
- *    secondary action forgets the address. Nothing is signed in, so there is
- *    nothing to sign out.
+ *  - `remembered` — no session, but this browser has signed in here before and
+ *    this row was chosen. The secondary action goes back to the chooser;
+ *    nothing is signed in, so there is nothing to sign out. FORGETTING lives on
+ *    the × in `AccountChooser`, not here — a screen for one account is the
+ *    wrong place to manage the list.
  *
  * WHAT IT DOES NOT DO, said plainly so it is not mistaken for more: in
  * `session` mode the existing session stays valid while this screen is shown,
@@ -78,17 +81,20 @@ export function AccountSuggestion({
           about when the rules change. */}
       {!signup && <LoginForm next={next} knownEmail={email} />}
 
-      {/* Forms, not links: both change state and must not be reachable by a
-          prefetch or a crawler following an anchor. */}
-      <form action={live ? signOutAction : forgetAccountAction}>
-        <Button type="submit" variant="subtle" block>
-          {signup
-            ? "Sign out and create a new account"
-            : live
-              ? "Sign in as someone else"
-              : "Not you? Use a different email"}
-        </Button>
-      </form>
+      {/* Signing out is a state change, so it is a form — never reachable by a
+          prefetch or a crawler following an anchor. Going back to the chooser
+          changes nothing, so it is an ordinary link. */}
+      {live ? (
+        <form action={signOutAction}>
+          <Button type="submit" variant="subtle" block>
+            {signup ? "Sign out and create a new account" : "Sign in as someone else"}
+          </Button>
+        </form>
+      ) : (
+        <Link href="/login" className={buttonStyles({ variant: "subtle", block: true })}>
+          Not you? Choose another account
+        </Link>
+      )}
     </div>
   );
 }

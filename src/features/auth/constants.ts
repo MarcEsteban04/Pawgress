@@ -40,18 +40,29 @@ export const PENDING_MAX_AGE_SECONDS = 60 * 30;
  * shared "pending email" slot would silently overwrite whichever came first.
  */
 /**
- * The last address that successfully signed in on this browser.
+ * The accounts that have successfully signed in on this browser.
+ *
+ * A LIST, not one address — a shared laptop genuinely has several students on
+ * it, and remembering only the most recent means every one of them but the last
+ * retypes their address every time. Stored newest-first as JSON.
  *
  * Separate from every cookie above because it OUTLIVES a flow rather than
  * carrying one: the others exist for the minutes between asking for a code and
- * entering it, this one is what lets `/login` still say "sign in as marc@…"
- * after the session is gone. It is a suggestion and never a credential — the
- * password is always required.
+ * entering it. These are suggestions and never credentials — the password is
+ * required for whichever one is picked.
  */
-export const LAST_EMAIL_COOKIE = "acadify-last-email";
+export const ACCOUNTS_COOKIE = "acadify-accounts";
 
 /** Long enough to still be useful next term, short enough to eventually lapse. */
-export const LAST_EMAIL_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+export const ACCOUNTS_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+
+/**
+ * How many to keep.
+ *
+ * Five is a family laptop or a lab machine with a regular few. Past that the
+ * chooser stops being faster than typing, which is the only reason it exists.
+ */
+export const ACCOUNTS_MAX = 5;
 
 export const RECOVERY_EMAIL_COOKIE = "acadify-recovery-email";
 export const RECOVERY_SENT_COOKIE = "acadify-recovery-sent-at";
