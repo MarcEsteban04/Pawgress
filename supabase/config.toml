@@ -283,11 +283,19 @@ max_frequency = "5s"
 # 4152127777 = "123456"
 
 # Configure logged in session timeouts.
-# [auth.sessions]
+#
+# ENABLED DELIBERATELY. Both default to off, which means a session never
+# expires: jwt_expiry only ages the ACCESS token, and refresh rotation mints a
+# new one silently for ever. Acadify is used on school and library machines —
+# proxy.ts already marks authenticated pages `no-store` for that exact reason —
+# and guarding the back button while leaving the session immortal closes half
+# the door. Kept in step with `scripts/configure-auth.mjs`, which pushes the
+# same two values to the hosted project.
+[auth.sessions]
 # Force log out after the specified duration.
-# timebox = "24h"
+timebox = "24h"
 # Force log out if the user has been inactive longer than the specified duration.
-# inactivity_timeout = "8h"
+inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
 # [auth.hook.before_user_created]

@@ -33,8 +33,22 @@ const PROTECTED = [
   "/quizzes",
 ];
 
-/** Auth screens a signed-in student has no reason to see. */
-const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
+/**
+ * Auth screens a signed-in student has no reason to see.
+ *
+ * `/login` and `/register` are deliberately NOT here. Clicking either is an
+ * explicit request, and silently redirecting it into whichever account the
+ * browser still holds is wrong twice over: on a shared machine it drops one
+ * student into another's account without a password, and even alone it is
+ * startling to ask to sign in and simply be somewhere else. Register is the
+ * worse of the two — a new student on a lab machine could not create an account
+ * at all without knowing to sign someone else out first.
+ *
+ * Both pages answer the request themselves — see `AlreadySignedIn`. The
+ * password-recovery routes stay here: they are reached from an emailed link, so
+ * a signed-in visitor arriving at one is a stale link, not a decision.
+ */
+const AUTH_ROUTES = ["/forgot-password", "/reset-password"];
 
 function isProtected(pathname: string): boolean {
   return PROTECTED.some((route) => pathname === route || pathname.startsWith(`${route}/`));

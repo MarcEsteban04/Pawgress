@@ -170,6 +170,52 @@ if (Number(config.rate_limit_email_sent) < EXPECTED_EMAIL_RATE_LIMIT) {
   console.log(`  ✓ Email rate limit — ${config.rate_limit_email_sent}/hour`);
 }
 
+/**
+ * Session lifetime.
+ *
+ * Both ship as 0, which means NEVER EXPIRES: `jwt_exp` only ages the access
+ * token, and with refresh rotation on, a new one is minted silently forever. A
+ * student who signs in once stays signed in until they explicitly sign out —
+ * across browser restarts, across weeks.
+ *
+ * That is the wrong default for THIS product. Acadify is used by high school
+ * and college students, which means school labs, library machines and a
+ * sibling's laptop. `proxy.ts` already reasons about exactly that when it marks
+ * authenticated pages `no-store` — "a shared or library machine still shows the
+ * previous student's subjects and scores". Guarding the back button while
+ * leaving the session immortal only closes half of it.
+ *
+ *  - inactivity: signed out after a stretch with no activity. The common case —
+ *    someone walks away from a lab machine.
+ *  - timebox: an absolute ceiling regardless of activity, so a session cannot
+ *    live forever by being used occasionally.
+ *
+ * Both in SECONDS. Raise them if signing in daily proves annoying; do not set
+ * them back to 0 without deciding that shared machines are not a concern.
+ */
+const EXPECTED_INACTIVITY_TIMEOUT = 8 * 60 * 60; // 8 hours — a school day.
+const EXPECTED_SESSION_TIMEBOX = 24 * 60 * 60; // 24 hours.
+
+if (Number(config.sessions_inactivity_timeout) !== EXPECTED_INACTIVITY_TIMEOUT) {
+  const current = Number(config.sessions_inactivity_timeout) || 0;
+  console.log(
+    `  → Session inactivity — ${current === 0 ? "never expires" : `${current}s`}, setting ${EXPECTED_INACTIVITY_TIMEOUT}s (8h)`,
+  );
+  payload.sessions_inactivity_timeout = EXPECTED_INACTIVITY_TIMEOUT;
+} else {
+  console.log("  ✓ Session inactivity — 8h");
+}
+
+if (Number(config.sessions_timebox) !== EXPECTED_SESSION_TIMEBOX) {
+  const current = Number(config.sessions_timebox) || 0;
+  console.log(
+    `  → Session timebox — ${current === 0 ? "never expires" : `${current}s`}, setting ${EXPECTED_SESSION_TIMEBOX}s (24h)`,
+  );
+  payload.sessions_timebox = EXPECTED_SESSION_TIMEBOX;
+} else {
+  console.log("  ✓ Session timebox — 24h");
+}
+
 /* -------------------------------------------------------------------------- */
 /*  3. Templates                                                               */
 /* -------------------------------------------------------------------------- */

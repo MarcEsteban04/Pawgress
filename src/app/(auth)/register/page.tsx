@@ -1,8 +1,22 @@
+import { AlreadySignedIn } from "@/features/auth/components/AlreadySignedIn";
 import { RegisterForm } from "@/features/auth/components/RegisterForm";
+import { getSession } from "@/server/auth/session";
+import { DEFAULT_SIGNED_IN_PATH } from "@/lib/redirects";
 
 export const metadata = { title: "Create your account" };
 
-export default function RegisterPage() {
+/**
+ * Not redirected away by the proxy when a session exists — see `AUTH_ROUTES`.
+ * A new student on a shared machine clicking "Create account" was landing in
+ * the previous student's dashboard, with no way to tell what had happened or to
+ * get out of it.
+ */
+export default async function RegisterPage() {
+  const session = await getSession();
+  if (session) {
+    return <AlreadySignedIn email={session.email} next={DEFAULT_SIGNED_IN_PATH} intent="signup" />;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>

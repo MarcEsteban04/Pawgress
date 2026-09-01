@@ -1,4 +1,6 @@
+import { AlreadySignedIn } from "@/features/auth/components/AlreadySignedIn";
 import { LoginForm } from "@/features/auth/components/LoginForm";
+import { getSession } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/redirects";
 
 export const metadata = { title: "Sign in" };
@@ -8,11 +10,20 @@ export const metadata = { title: "Sign in" };
  * signing in returns them there rather than to a generic home page (US-A3).
  * It is validated here as well as in the action — the value came from a URL,
  * which means it came from whoever wrote the link.
+ *
+ * Unlike the other auth screens, this one is NOT redirected away by the proxy
+ * when a session already exists. Clicking "Sign in" is an explicit request, and
+ * on a shared machine the person clicking it is often not the person the
+ * browser is still signed in as. It is answered rather than swallowed — see
+ * `AlreadySignedIn`.
  */
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const raw = Array.isArray(params.next) ? params.next[0] : params.next;
   const next = safeNextPath(raw);
+
+  const session = await getSession();
+  if (session) return <AlreadySignedIn email={session.email} next={next} />;
 
   return (
     <div className="flex flex-col gap-6">
