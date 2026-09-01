@@ -97,14 +97,17 @@ export default function LandingPage() {
           <div className="flex-1 lg:hidden" />
 
           <div className="flex shrink-0 items-center gap-2">
+            {/* Signing in is the primary route at the product owner's direction.
+                The quiet link is hidden below `sm`, so the hero — not this rail —
+                is what has to carry the create-account route on a phone. */}
             <Link
-              href="/login"
+              href="/register"
               className="rounded-[var(--radius-pill)] px-3 py-2 text-[0.9375rem] text-ink-muted transition-colors hover:text-ink max-sm:hidden"
             >
-              Sign in
+              Create account
             </Link>
-            <Link href="/register" className={buttonStyles({ variant: "subtle", size: "sm" })}>
-              Get started
+            <Link href="/login" className={buttonStyles({ variant: "subtle", size: "sm" })}>
+              Sign in
             </Link>
           </div>
         </header>
@@ -131,12 +134,24 @@ export default function LandingPage() {
               you which topic is actually holding you back.
             </p>
 
-            <Link href="/register" className={buttonStyles({ variant: "accent", size: "lg" })}>
-              Get started — it&rsquo;s free
+            <Link href="/login" className={buttonStyles({ variant: "accent", size: "lg" })}>
+              Sign in
               <ArrowRight />
             </Link>
 
-            <p className="text-sm text-ink-subtle">No credit card. No app to install.</p>
+            {/* The reassurance moved onto the create-account line, where it does
+                the work. "No credit card" under a Sign in button answers a
+                question nobody signing in is asking. */}
+            <p className="text-sm text-ink-subtle">
+              New here?{" "}
+              <Link
+                href="/register"
+                className="font-medium text-accent underline underline-offset-4"
+              >
+                Create an account
+              </Link>{" "}
+              — it&rsquo;s free, no credit card, nothing to install.
+            </p>
 
             <HeroStack />
           </div>
@@ -266,10 +281,18 @@ export default function LandingPage() {
               Upload one lecture and take one quiz. That is enough for Acadify to tell you where
               your weakest topic is.
             </p>
-            <Link href="/register" className={buttonStyles({ variant: "accent", size: "lg" })}>
-              Get started
-              <ArrowRight />
-            </Link>
+            {/* Both, side by side. This section argues to someone who has not
+                started, so a Sign in button alone would leave the copy above it
+                with no route that matches what it just promised. */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link href="/login" className={buttonStyles({ variant: "accent", size: "lg" })}>
+                Sign in
+                <ArrowRight />
+              </Link>
+              <Link href="/register" className={buttonStyles({ variant: "subtle", size: "lg" })}>
+                Create an account
+              </Link>
+            </div>
           </div>
         </section>
 
