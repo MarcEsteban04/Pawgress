@@ -1,5 +1,6 @@
-import { AlreadySignedIn } from "@/features/auth/components/AlreadySignedIn";
+import { AccountSuggestion } from "@/features/auth/components/AccountSuggestion";
 import { LoginForm } from "@/features/auth/components/LoginForm";
+import { getLastEmail } from "@/features/auth/server/pending";
 import { getSession } from "@/server/auth/session";
 import { safeNextPath } from "@/lib/redirects";
 
@@ -11,11 +12,15 @@ export const metadata = { title: "Sign in" };
  * It is validated here as well as in the action — the value came from a URL,
  * which means it came from whoever wrote the link.
  *
- * Unlike the other auth screens, this one is NOT redirected away by the proxy
- * when a session already exists. Clicking "Sign in" is an explicit request, and
- * on a shared machine the person clicking it is often not the person the
- * browser is still signed in as. It is answered rather than swallowed — see
- * `AlreadySignedIn`.
+ * THREE STATES, and the password is required in all of them:
+ *
+ *  1. A live session — offer that account, ask for its password, and offer to
+ *     sign it out. Not redirected away by the proxy the way the other auth
+ *     screens are: clicking "Sign in" is an explicit request, and on a shared
+ *     machine the person clicking is often not the person the browser holds.
+ *  2. No session, but this browser signed in before — offer that address, ask
+ *     for the password, and offer to forget it.
+ *  3. Nothing known — the plain form.
  */
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
@@ -23,7 +28,14 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const next = safeNextPath(raw);
 
   const session = await getSession();
-  if (session) return <AlreadySignedIn email={session.email} next={next} />;
+  if (session) {
+    return <AccountSuggestion email={session.email} next={next} mode="session" />;
+  }
+
+  const remembered = await getLastEmail();
+  if (remembered) {
+    return <AccountSuggestion email={remembered} next={next} mode="remembered" />;
+  }
 
   return (
     <div className="flex flex-col gap-6">

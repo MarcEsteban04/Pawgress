@@ -2,6 +2,8 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import {
+  LAST_EMAIL_COOKIE,
+  LAST_EMAIL_MAX_AGE_SECONDS,
   LAST_SENT_COOKIE,
   PENDING_EMAIL_COOKIE,
   PENDING_MAX_AGE_SECONDS,
@@ -95,4 +97,48 @@ export async function getRecoveryCooldown(): Promise<number> {
   const elapsed = (Date.now() - Number(raw)) / 1000;
   if (!Number.isFinite(elapsed)) return 0;
   return Math.max(0, Math.ceil(RESEND_COOLDOWN_SECONDS - elapsed));
+}
+
+/* -------------------------------------------------------------------------- */
+/*  The remembered account                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Remember who signed in here, so `/login` can offer them next time.
+ *
+ * Written on a SUCCESSFUL sign-in only. Remembering a failed attempt would
+ * suggest an address that may simply have been a typo, and on a shared machine
+ * it would leave a stranger's guess on the screen.
+ *
+ * httpOnly, like every other address this app stores: it is the one piece of
+ * personal data in the auth flow, and script on the page has no reason to read
+ * it. Nothing derived from it is a credential — the password is always asked.
+ */
+export async function rememberLastEmail(email: string) {
+  const store = await cookies();
+  store.set(LAST_EMAIL_COOKIE, email, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: LAST_EMAIL_MAX_AGE_SECONDS,
+  });
+}
+
+export async function getLastEmail(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(LAST_EMAIL_COOKIE)?.value ?? null;
+}
+
+/**
+ * Forget it — the "Not you?" control.
+ *
+ * Deliberately NOT called on sign-out. Signing out is usually "I am done for
+ * now", and forgetting the address then would defeat the whole point of
+ * remembering it. Handing the machine to someone else is the different case,
+ * and it has its own button.
+ */
+export async function forgetLastEmail() {
+  const store = await cookies();
+  store.delete(LAST_EMAIL_COOKIE);
 }

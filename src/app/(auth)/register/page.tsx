@@ -1,4 +1,4 @@
-import { AlreadySignedIn } from "@/features/auth/components/AlreadySignedIn";
+import { AccountSuggestion } from "@/features/auth/components/AccountSuggestion";
 import { RegisterForm } from "@/features/auth/components/RegisterForm";
 import { getSession } from "@/server/auth/session";
 import { DEFAULT_SIGNED_IN_PATH } from "@/lib/redirects";
@@ -14,7 +14,14 @@ export const metadata = { title: "Create your account" };
 export default async function RegisterPage() {
   const session = await getSession();
   if (session) {
-    return <AlreadySignedIn email={session.email} next={DEFAULT_SIGNED_IN_PATH} intent="signup" />;
+    return (
+      <AccountSuggestion
+        email={session.email}
+        next={DEFAULT_SIGNED_IN_PATH}
+        mode="session"
+        intent="signup"
+      />
+    );
   }
 
   return (

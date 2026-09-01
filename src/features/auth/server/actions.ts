@@ -9,6 +9,8 @@ import {
   getRecoveryCooldown,
   getRecoveryEmail,
   getResendCooldown,
+  forgetLastEmail,
+  rememberLastEmail,
   setPendingEmail,
   setRecoveryEmail,
 } from "./pending";
@@ -287,7 +289,24 @@ export async function signInAction(
     });
   }
 
+  /* Only on success. Remembering a failed attempt would suggest an address that
+     may have been a typo, and on a shared machine it would leave a stranger's
+     guess on the screen for the next person. */
+  await rememberLastEmail(email);
+
   redirect(next);
+}
+
+/**
+ * "Not you?" — drop the remembered address and show an empty form.
+ *
+ * A Server Action because it writes a cookie, and it is the control that makes
+ * remembering acceptable on a shared machine: the suggestion is always visibly
+ * refusable, in one click, without signing anyone in first.
+ */
+export async function forgetAccountAction(): Promise<void> {
+  await forgetLastEmail();
+  redirect("/login");
 }
 
 /**

@@ -39,5 +39,19 @@ export const PENDING_MAX_AGE_SECONDS = 60 * 30;
  * a new account can still ask to reset a password on an older one — and one
  * shared "pending email" slot would silently overwrite whichever came first.
  */
+/**
+ * The last address that successfully signed in on this browser.
+ *
+ * Separate from every cookie above because it OUTLIVES a flow rather than
+ * carrying one: the others exist for the minutes between asking for a code and
+ * entering it, this one is what lets `/login` still say "sign in as marc@…"
+ * after the session is gone. It is a suggestion and never a credential — the
+ * password is always required.
+ */
+export const LAST_EMAIL_COOKIE = "acadify-last-email";
+
+/** Long enough to still be useful next term, short enough to eventually lapse. */
+export const LAST_EMAIL_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
+
 export const RECOVERY_EMAIL_COOKIE = "acadify-recovery-email";
 export const RECOVERY_SENT_COOKIE = "acadify-recovery-sent-at";
