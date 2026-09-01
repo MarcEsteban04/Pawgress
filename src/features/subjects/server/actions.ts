@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { errorFormState } from "@/lib/errors";
-import { logDbError } from "@/lib/log";
+import { logDbError, logEvent } from "@/lib/log";
 import { cleanText } from "@/lib/sanitize";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BUCKETS } from "@/lib/supabase/storage";
@@ -33,6 +33,15 @@ export async function createSubjectAction(
 
   const parsed = parseForm(subjectSchema, formData, FIELDS);
   if (!parsed.ok) {
+    /* Logged as well as shown. A rejected form is the other half of "it will
+       not save", and it used to leave no trace at all — so a failure that never
+       reached Postgres looked identical to one that did. Field NAMES only,
+       never what was typed. */
+    logEvent(
+      "subjects.create_rejected",
+      { fields: Object.keys(parsed.fieldErrors ?? {}), reason: parsed.message },
+      "warn",
+    );
     return {
       status: "error",
       message: parsed.message,
@@ -64,6 +73,8 @@ export async function createSubjectAction(
       nextStep: "Try again in a moment.",
     };
   }
+
+  logEvent("subjects.created", { userId: session.userId });
 
   /* Checked AFTER the insert, on purpose. US-B1 allows duplicates and asks that
      the student be told — so this is a note attached to a success, not a
