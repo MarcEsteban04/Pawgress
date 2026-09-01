@@ -77,15 +77,24 @@ export function RenameMaterialDialog({
         )}
       </DialogTrigger>
       <DialogContent>
-        <RenameMaterialForm key={instance} material={material} />
+        <RenameMaterialForm key={instance} material={material} onDone={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function RenameMaterialForm({ material }: { material: Material }) {
+function RenameMaterialForm({ material, onDone }: { material: Material; onDone: () => void }) {
   const [state, formAction] = useActionState(renameMaterialAction, initialMaterialState);
   const titleId = useId();
+
+  /* Closes on save rather than parking on a "Saved" button. Same reasoning as
+     SubjectDialog: a dialog left open showing a form that cannot be submitted
+     again reads as usable when it is not. Nothing to report here, so there is
+     no exception to make. */
+  const saved = state.status === "saved";
+  useEffect(() => {
+    if (saved) onDone();
+  }, [saved, onDone]);
 
   return (
     <>
@@ -116,13 +125,7 @@ function RenameMaterialForm({ material }: { material: Material }) {
           <DialogClose asChild>
             <Button variant="subtle">Cancel</Button>
           </DialogClose>
-          {state.status === "saved" ? (
-            <DialogClose asChild>
-              <Button variant="accent">Saved</Button>
-            </DialogClose>
-          ) : (
-            <SubmitButton label="Save name" pendingLabel="Saving…" />
-          )}
+          <SubmitButton label="Save name" pendingLabel="Saving…" />
         </DialogFooter>
       </form>
     </>

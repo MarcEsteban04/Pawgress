@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Plus } from "lucide-react";
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Button,
@@ -105,14 +105,14 @@ export function SubjectDialog({
       </DialogTrigger>
 
       <DialogContent>
-        <SubjectForm key={instance} subject={subject} />
+        <SubjectForm key={instance} subject={subject} onDone={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );
 }
 
 /** The fields and the action state, mounted fresh on every open. */
-function SubjectForm({ subject }: { subject?: Subject }) {
+function SubjectForm({ subject, onDone }: { subject?: Subject; onDone: () => void }) {
   const editing = Boolean(subject);
   const [state, formAction] = useActionState(
     editing ? updateSubjectAction : createSubjectAction,
@@ -123,6 +123,24 @@ function SubjectForm({ subject }: { subject?: Subject }) {
   const nameId = useId();
   const semesterId = useId();
   const yearId = useId();
+
+  /**
+   * Close as soon as it saves, rather than parking on a "Done" button.
+   *
+   * That leftover card was the confusing part: the dialog stayed open showing a
+   * filled-in form that could not be submitted again, so it read as "still here,
+   * still usable" when it was neither. Closing states what happened, and adding
+   * another subject is the same button it always was.
+   *
+   * THE ONE EXCEPTION is a duplicate name. US-B1 allows duplicates and requires
+   * that the student be TOLD — "you already had a subject called Biology, both
+   * are kept" — and a dialog that vanishes cannot tell them anything. A save
+   * with something to report stays open until it has been read.
+   */
+  const done = state.status === "saved" && !state.duplicateWarning;
+  useEffect(() => {
+    if (done) onDone();
+  }, [done, onDone]);
 
   return (
     <>
@@ -252,6 +270,8 @@ function SubjectForm({ subject }: { subject?: Subject }) {
           <DialogClose asChild>
             <Button variant="subtle">Cancel</Button>
           </DialogClose>
+          {/* Only reachable in the duplicate-name case above — every other save
+              has already closed this dialog. */}
           {state.status === "saved" ? (
             <DialogClose asChild>
               <Button variant="accent">
