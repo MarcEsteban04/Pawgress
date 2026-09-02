@@ -132,7 +132,15 @@ export async function runJobs(max = 3): Promise<RunSummary> {
 
   if (summary.claimed > 0) logAiEvent("jobs.batch", { ...summary });
 
-  if (kickAgain) {
+  /* A FULL BATCH MEANS THERE IS PROBABLY MORE. `claim_jobs` was asked for `max`
+     and returned `max`, so the queue was not emptied — without this the rest
+     waits for a sweeper, and one upload that fans out into extract, chunk and
+     embed for several files needs more invocations than it gets kicks.
+
+     Self-terminating rather than a loop: the next invocation claims whatever is
+     left, and when it claims nothing it kicks nothing. Safe to be wrong in the
+     cheap direction — a needless invocation claims zero jobs and returns. */
+  if (kickAgain || summary.claimed >= max) {
     kickAgain = false;
     const { kickWorker } = await import("./enqueue");
     kickWorker();

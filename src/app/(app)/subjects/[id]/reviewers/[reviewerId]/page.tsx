@@ -3,6 +3,7 @@ import { type ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card, CardBody, StatusBadge } from "@/components/ui";
+import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
 import { GenerateFlashcardsButton } from "@/features/flashcards/components/GenerateFlashcardsButton";
 import { GenerateQuestionsButton } from "@/features/practice/components/GenerateQuestionsButton";
 import { ReviewerDocumentView } from "@/features/reviewers/components/ReviewerDocumentView";
@@ -50,6 +51,12 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
 
   return (
     <div className="mx-auto flex w-full max-w-[52rem] flex-col gap-5">
+      {/* Only while it is actually generating. Nudges the queue and refreshes,
+          so a finished reviewer appears without a manual reload — and a job
+          whose single kick was lost gets picked up instead of sitting for ever.
+          Renders nothing. */}
+      <ProgressWatcher active={reviewer.status !== "ready" && reviewer.status !== "failed"} />
+
       <Link
         href={`/subjects/${id}`}
         className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"

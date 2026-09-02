@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { buttonStyles, Card, CardBody, EmptyState, PanelBoundary, Skeleton } from "@/components/ui";
+import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
 import { MaterialFilters } from "@/features/materials/components/MaterialFilters";
 import { MaterialRow } from "@/features/materials/components/MaterialRow";
 import { UploadDialog } from "@/features/materials/components/UploadDialog";
@@ -106,8 +107,16 @@ async function MaterialList({
     );
   }
 
+  /* Any file still moving through the pipeline keeps the watcher alive, so the
+     list settles on its own instead of needing a reload per refresh. */
+  const working = materials.some(
+    (material) => !["ready", "failed", "cancelled", "over_quota"].includes(material.status),
+  );
+
   return (
     <>
+      <ProgressWatcher active={working} />
+
       <p className="text-sm text-ink-muted" role="status">
         {materials.length} {materials.length === 1 ? "file" : "files"}
         {filtering ? " matching" : ""}
