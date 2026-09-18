@@ -41,10 +41,32 @@ function fail(state: Omit<AuthFormState, "status">): AuthFormState {
 }
 
 /**
+ * The auth server could not be reached at all, or answered with its own
+ * failure — the request never got as far as being judged.
+ *
+ * Supabase reports an unreachable host as `AuthRetryableFetchError` with
+ * `status: 0` and no `code`, which is indistinguishable from "rejected" unless
+ * it is checked for FIRST. Letting it fall through is how a dead backend — a
+ * paused project, a wrong `NEXT_PUBLIC_SUPABASE_URL`, a student on hotel
+ * wifi — comes out as "that email and password do not match", sending someone
+ * to reset a password that was right all along.
+ */
+function isUnreachable(status: number | undefined): boolean {
+  return status === 0 || (status !== undefined && status >= 500);
+}
+
+const UNREACHABLE: AuthFormState = {
+  status: "error",
+  message: "We could not reach the server.",
+  nextStep: "Check your connection and try again in a moment — nothing you typed was wrong.",
+};
+
+/**
  * Maps a Supabase auth failure onto something a student can act on.
  * The default is deliberately vague about causes and specific about next steps.
  */
 function mapAuthError(status: number | undefined, code: string | undefined): AuthFormState {
+  if (!code && isUnreachable(status)) return UNREACHABLE;
   if (code === "over_email_send_rate_limit" || status === 429) {
     return fail({
       message: "Too many attempts in a short time.",
@@ -281,6 +303,12 @@ export async function signInAction(
         nextStep: "Wait a minute and try again — your account is fine.",
       });
     }
+
+    /* Before the generic message, never after. The point of the generic message
+       is to refuse to say WHICH half was wrong; it is not a catch-all for
+       "something went wrong", and using it as one accuses the student of a
+       mistake the server made. */
+    if (!error.code && isUnreachable(error.status)) return { ...UNREACHABLE, email };
 
     return fail({
       email,
