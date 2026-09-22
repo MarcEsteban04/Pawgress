@@ -362,6 +362,55 @@
     will-change: transform;
   }
 
+  /**
+   * A light sweeping across a placeholder while real content is generated.
+   *
+   * On the SKELETON of the thing being made, never on a spinner. A spinner says
+   * "something is happening"; a shimmering deck of cards says "cards are being
+   * made, and they will land here" — which is the question a student staring at
+   * a blank screen is actually asking.
+   *
+   * `background-size` is 200% and the position travels the full width, so one
+   * pass is a single unbroken sweep rather than a band that restarts mid-panel.
+   */
+  @keyframes pw-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .shimmer {
+    background-image: linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in oklab, var(--ink) 6%, transparent) 40%,
+      color-mix(in oklab, var(--ink) 6%, transparent) 60%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: pw-shimmer 2.2s linear infinite;
+  }
+
+  /* Placeholders rise in sequence rather than all at once, so the panel reads
+     as being built rather than as having failed to load. */
+  @keyframes pw-rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 0.5rem, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .rise {
+    animation: pw-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   /* Keeps a scrolling panel from cutting a grey channel through the canvas. */
   .thin-scroll {
     scrollbar-width: thin;

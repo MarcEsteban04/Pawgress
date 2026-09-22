@@ -36,12 +36,14 @@ export type Reviewer = ReviewerSummary & {
    */
   subjectId: string;
   subjectName: string;
+  /** The subject's colour, so a study screen can carry it. */
+  colorSlot: 1 | 2 | 3 | 4 | 5;
   content: ReviewerDocument | null;
   failureMessage: string | null;
 };
 
 const SELECT =
-  "id, title, status, topic_id, subject_id, source_material_ids, created_at, content, topics(name), subjects(name)";
+  "id, title, status, topic_id, subject_id, source_material_ids, created_at, content, topics(name), subjects(name, color_slot)";
 
 /* `content` is jsonb, so it arrives as `unknown`. Narrowed at the edge rather
    than trusted deeper in: the shape was written by us through a Zod schema, but
@@ -78,6 +80,7 @@ export const getReviewer = cache(async (id: string): Promise<Reviewer | null> =>
     createdAt: data.created_at,
     subjectId: data.subject_id,
     subjectName: data.subjects?.name ?? "",
+    colorSlot: (data.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
     content: readContent(data.content),
     /* Read from the JOB, not embedded here: there is no foreign key from a
        reviewer to the job that produced it, so PostgREST cannot join them and

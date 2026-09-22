@@ -125,66 +125,68 @@ export function PracticeSession({ questions }: { questions: PracticeQuestion[] }
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-5 rounded-[var(--radius-card)] border border-rule bg-surface px-6 py-6 shadow-[var(--shadow-card)] sm:px-8 sm:py-7">
-        <div>
-          <p className="text-xs tracking-[0.08em] text-ink-subtle uppercase">
-            {TYPE_LABEL[question.type]}
-          </p>
-          <h2 className="mt-2 font-display text-lg leading-snug font-semibold tracking-[-0.01em] sm:text-xl">
-            {question.prompt}
-          </h2>
-        </div>
+      <div className="flex flex-1 flex-col rounded-[var(--radius-canvas)] border border-rule bg-surface px-5 py-7 shadow-[var(--shadow-card)] sm:px-8 sm:py-9">
+        <div className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col gap-6">
+          <div>
+            <span className="inline-flex items-center rounded-[var(--radius-pill)] bg-surface-sunken px-2.5 py-1 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-muted uppercase">
+              {TYPE_LABEL[question.type]}
+            </span>
+            <h2 className="mt-3 font-display text-xl leading-snug font-semibold tracking-[-0.015em] text-balance sm:text-2xl">
+              {question.prompt}
+            </h2>
+          </div>
 
-        {question.type === "mcq" || question.type === "true_false" ? (
-          <Choices
-            choices={question.type === "true_false" ? ["True", "False"] : question.choices}
-            given={given}
-            answer={question.answer}
-            locked={revealed}
-            onChoose={check}
-          />
-        ) : (
-          <Written
-            given={given}
-            revealed={revealed}
-            verdict={verdict}
-            selfMark={question.type === "short_answer"}
-            onChange={setGiven}
-            onCheck={() => check(given)}
-            onMark={setVerdict}
-          />
-        )}
+          {question.type === "mcq" || question.type === "true_false" ? (
+            <Choices
+              choices={question.type === "true_false" ? ["True", "False"] : question.choices}
+              given={given}
+              answer={question.answer}
+              locked={revealed}
+              onChoose={check}
+            />
+          ) : (
+            <Written
+              given={given}
+              revealed={revealed}
+              verdict={verdict}
+              selfMark={question.type === "short_answer"}
+              onChange={setGiven}
+              onCheck={() => check(given)}
+              onMark={setVerdict}
+            />
+          )}
 
-        {revealed && (
-          <div
-            className={cn(
-              "flex flex-col gap-2 rounded-[var(--radius-control)] border px-4 py-3",
-              verdict === "correct" && "border-ok/30 bg-ok-soft",
-              verdict === "incorrect" && "border-bad/30 bg-bad-soft",
-              /* Neutral while a short answer waits to be marked. Colouring it
+          {revealed && (
+            <div
+              className={cn(
+                "flex flex-col gap-2 rounded-[var(--radius-control)] border px-4 py-3",
+                verdict === "correct" && "border-ok/30 bg-ok-soft",
+                verdict === "incorrect" && "border-bad/30 bg-bad-soft",
+                /* Neutral while a short answer waits to be marked. Colouring it
                  before the student has said whether they had it would be the
                  product making the call it just declined to make. */
-              !verdict && "border-rule bg-surface-sunken",
-            )}
-          >
-            <p className="flex items-center gap-2 text-sm font-medium">
-              {verdict === "correct" && <Check className="text-ok size-4 shrink-0" aria-hidden />}
-              {verdict === "incorrect" && <X className="size-4 shrink-0 text-bad" aria-hidden />}
-              {verdict === "correct" ? "Correct" : `Answer: ${question.answer}`}
-            </p>
-            {question.explanation && (
-              <p className="text-[0.9375rem] leading-relaxed text-ink-muted">
-                {question.explanation}
+                !verdict && "border-rule bg-surface-sunken",
+              )}
+            >
+              <p className="flex items-center gap-2 text-sm font-medium">
+                {verdict === "correct" && <Check className="text-ok size-4 shrink-0" aria-hidden />}
+                {verdict === "incorrect" && <X className="size-4 shrink-0 text-bad" aria-hidden />}
+                {verdict === "correct" ? "Correct" : `Answer: ${question.answer}`}
               </p>
-            )}
-          </div>
-        )}
+              {question.explanation && (
+                <p className="text-[0.9375rem] leading-relaxed text-ink-muted">
+                  {question.explanation}
+                </p>
+              )}
+            </div>
+          )}
 
-        <div className="mt-auto flex items-center justify-end pt-1">
-          <Button onClick={next} disabled={!verdict}>
-            {index === questions.length - 1 ? "See how you did" : "Next"}
-            <ArrowRight aria-hidden />
-          </Button>
+          <div className="mt-auto flex items-center justify-end pt-2">
+            <Button onClick={next} disabled={!verdict}>
+              {index === questions.length - 1 ? "See how you did" : "Next"}
+              <ArrowRight aria-hidden />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -229,8 +231,9 @@ function Choices({
             disabled={locked}
             onClick={() => onChoose(choice)}
             className={cn(
-              "flex items-center gap-3 rounded-[var(--radius-control)] border px-4 py-3 text-left text-[0.9375rem] transition-colors",
-              !locked && "border-rule hover:border-rule-strong hover:bg-surface-sunken",
+              "flex items-center gap-3 rounded-[var(--radius-control)] border px-4 py-3.5 text-left text-[0.9375rem] transition-all sm:text-base",
+              !locked &&
+                "border-rule hover:-translate-y-px hover:border-rule-strong hover:bg-surface-sunken hover:shadow-[var(--shadow-pill)]",
               locked && isAnswer && "border-ok/40 bg-ok-soft",
               locked && isGiven && !isAnswer && "border-bad/40 bg-bad-soft",
               locked && !isAnswer && !isGiven && "border-rule opacity-50",

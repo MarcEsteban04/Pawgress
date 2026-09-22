@@ -147,24 +147,31 @@ export function FlashcardSession({
         onClick={() => setRevealed(true)}
         aria-label={revealed ? "Answer shown" : "Show the answer"}
         className={cn(
-          "relative flex flex-1 flex-col items-center justify-center gap-6 rounded-[var(--radius-card)] border border-rule bg-surface px-6 py-12 text-center shadow-[var(--shadow-card)] transition-colors",
-          !revealed && "cursor-pointer hover:border-rule-strong",
+          "group relative flex flex-1 flex-col items-center justify-center gap-7 overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface px-6 py-14 text-center shadow-[var(--shadow-card)] transition-all sm:px-12",
+          !revealed && "cursor-pointer hover:border-rule-strong hover:shadow-[var(--shadow-pop)]",
         )}
       >
-        <p className="max-w-[42rem] font-display text-xl leading-snug font-semibold tracking-[-0.01em] text-balance sm:text-2xl">
+        {/* A wash from the top, so a very tall card does not read as an empty
+            sheet with one sentence lost in the middle of it. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-surface-sunken/60 to-transparent"
+        />
+
+        <p className="relative max-w-[46rem] font-display text-2xl leading-[1.25] font-semibold tracking-[-0.02em] text-balance sm:text-3xl lg:text-[2rem]">
           {card.front}
         </p>
 
         {revealed ? (
           <>
-            <span className="h-px w-16 bg-rule" aria-hidden />
-            <p className="max-w-[38rem] text-[0.9375rem] leading-relaxed text-balance text-ink-muted sm:text-base">
+            <span className="relative h-px w-16 bg-rule-strong" aria-hidden />
+            <p className="relative max-w-[42rem] text-base leading-relaxed text-balance text-ink-muted sm:text-lg">
               {card.back}
             </p>
           </>
         ) : (
-          <span className="text-xs tracking-[0.08em] text-ink-subtle uppercase">
-            Click or press space to reveal
+          <span className="relative inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-rule px-3 py-1.5 text-xs tracking-[0.06em] text-ink-subtle uppercase transition-colors group-hover:border-rule-strong group-hover:text-ink-muted">
+            Space to reveal
           </span>
         )}
 

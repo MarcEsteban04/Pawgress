@@ -1,22 +1,20 @@
-import { ArrowLeft, ListChecks, Sparkles, TriangleAlert } from "lucide-react";
-import Link from "next/link";
+import { ListChecks, TriangleAlert } from "lucide-react";
 import { notFound } from "next/navigation";
-import { Card, CardBody } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
+import { GeneratingOverlay, Ghost } from "@/features/jobs/components/GeneratingOverlay";
 import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
 import { GenerateQuestionsButton } from "@/features/practice/components/GenerateQuestionsButton";
 import { PracticeSession } from "@/features/practice/components/PracticeSession";
+import { StudyShell } from "@/features/reviewers/components/StudyShell";
 import { getPracticeSet } from "@/server/practice/queries";
 import { getReviewer } from "@/server/reviewers/queries";
 
 /**
  * Practice questions for one reviewer (FR-C2, US-F3, Sprint 45).
  *
- * A full-height column, like the flashcard deck: a question with its options
- * and its explanation needs the room, and the point of practising is that there
- * is nothing else on screen to look at.
- *
- * No polling. Generation is a job; the state on screen is honest about it and a
- * reload is one key.
+ * The same full-width shell as the flashcard deck, because it is the same
+ * screen with different contents: one thing to answer, and nothing else
+ * competing for the eye.
  */
 
 export async function generateMetadata({ params }: PageProps<"/reviewers/[reviewerId]/practice">) {
@@ -31,9 +29,6 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
 
   if (!reviewer) notFound();
 
-  /* From the ROW, not the URL. The old route carried the subject in its path;
-     this one does not, and reading it here means it can never disagree with the
-     reviewer it belongs to. */
   const id = reviewer.subjectId;
 
   /* Queued counts. A job nobody has claimed looks identical to one mid-flight
@@ -41,41 +36,30 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
   const generating = set.questions.length === 0 && set.status !== null && set.status !== "failed";
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-9rem)] w-full max-w-[52rem] flex-col gap-5">
-      {/**
-       * The fix for the bug that made this look broken.
-       *
-       * Generation is a job, and `enqueueJob` kicks the worker exactly once,
-       * fire-and-forget. Lose that kick and nothing invokes it again: the job
-       * sits at `queued` with zero attempts for ever, which is precisely what
-       * happened — a deck and a question set queued and never claimed.
-       *
-       * The copy said "reload the page", which was worse than useless: a reload
-       * re-reads the same unchanged row and does not start anything. This nudges
-       * the queue AND refreshes, so a lost kick recovers and a finished set
-       * appears without being asked for. Renders nothing.
-       */}
+    <StudyShell
+      backHref={`/reviewers/${reviewerId}`}
+      backLabel={reviewer.title}
+      eyebrow="Practice"
+      title={reviewer.title}
+      colorSlot={reviewer.colorSlot}
+      actions={
+        set.questions.length > 0 ? (
+          <>
+            <span className="hidden text-sm text-ink-subtle tabular-nums sm:inline">
+              {set.questions.length} questions
+            </span>
+            <GenerateQuestionsButton
+              subjectId={id}
+              reviewerId={reviewerId}
+              regenerate
+              variant="quiet"
+              size="sm"
+            />
+          </>
+        ) : null
+      }
+    >
       <ProgressWatcher active={generating} />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={`/reviewers/${reviewerId}`}
-          className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          {reviewer.title}
-        </Link>
-
-        {set.questions.length > 0 && (
-          <GenerateQuestionsButton
-            subjectId={id}
-            reviewerId={reviewerId}
-            regenerate
-            variant="quiet"
-            size="sm"
-          />
-        )}
-      </div>
 
       {set.questions.length > 0 ? (
         /* Keyed on the questions so regenerating starts a genuinely new run
@@ -85,45 +69,66 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
           key={set.questions.map((question) => question.id).join(":")}
           questions={set.questions}
         />
+      ) : generating ? (
+        <GeneratingOverlay
+          title="Aki is writing your questions"
+          detail="Multiple choice, true or false, identification and short answer — each with an explanation for when you get it wrong. Usually under a minute."
+          skeleton={<QuestionSkeleton />}
+        />
+      ) : set.status === "failed" ? (
+        <EmptyState
+          Icon={TriangleAlert}
+          title="Those questions could not be written"
+          description={`${set.failureMessage ?? "We could not write questions from this reviewer."} Your reviewer is untouched.`}
+          action={<GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} />}
+        />
       ) : (
-        <Card>
-          <CardBody className="flex items-start gap-3 py-5">
-            {set.status === "failed" ? (
-              <>
-                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-bad" aria-hidden />
-                <div className="flex flex-col items-start gap-3">
-                  <p className="text-sm leading-relaxed">
-                    {set.failureMessage ?? "We could not write questions from this reviewer."} Your
-                    reviewer is untouched.
-                  </p>
-                  <GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} size="sm" />
-                </div>
-              </>
-            ) : set.status === null ? (
-              <>
-                <ListChecks className="mt-0.5 size-4 shrink-0 text-ink-subtle" aria-hidden />
-                <div className="flex flex-col items-start gap-3">
-                  <p className="text-sm leading-relaxed text-ink-muted">
-                    No practice questions from this reviewer yet.
-                  </p>
-                  <GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} size="sm" />
-                </div>
-              </>
-            ) : (
-              <>
-                <Sparkles
-                  className="mt-0.5 size-4 shrink-0 animate-pulse text-accent"
-                  aria-hidden
-                />
-                <p className="text-sm leading-relaxed text-ink-muted">
-                  Aki is writing questions on this reviewer. It usually takes under a minute, and
-                  they appear here on their own.
-                </p>
-              </>
-            )}
-          </CardBody>
-        </Card>
+        <EmptyState
+          Icon={ListChecks}
+          title="No practice questions yet"
+          description="Aki can turn this reviewer into questions — four kinds, each with an explanation of why the answer is right. Nothing here is recorded against your progress, so a bad first pass costs you nothing."
+          action={<GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} />}
+        />
       )}
+    </StudyShell>
+  );
+}
+
+/**
+ * The shape of a question, before there is one.
+ *
+ * Four ghost options under a two-line prompt: the real layout, so nothing jumps
+ * when the set lands, and a student can see at a glance what they are waiting
+ * for.
+ */
+function QuestionSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Ghost className="h-3 w-16" />
+        <Ghost className="h-1 flex-1" delay={60} />
+        <Ghost className="h-3 w-20" delay={120} />
+      </div>
+
+      <div className="rise flex flex-1 flex-col gap-6 rounded-[var(--radius-card)] border border-rule bg-surface px-6 py-7 shadow-[var(--shadow-card)] sm:px-8">
+        <div className="flex flex-col gap-2.5">
+          <Ghost className="h-2.5 w-28" delay={180} />
+          <Ghost className="h-5 w-[min(34rem,90%)]" delay={220} />
+          <Ghost className="h-5 w-[min(22rem,65%)]" delay={260} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Ghost
+              key={i}
+              className="h-12 w-full rounded-[var(--radius-control)]"
+              delay={320 + i * 70}
+            />
+          ))}
+        </div>
+
+        <Ghost className="mt-auto h-11 w-32 self-end rounded-[var(--radius-pill)]" delay={620} />
+      </div>
     </div>
   );
 }
