@@ -1,8 +1,10 @@
 "use client";
 
-import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, Target, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button, buttonStyles, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { recordStudySessionAction } from "@/features/study/server/actions";
 import { type PracticeQuestion } from "@/server/practice/queries";
@@ -14,9 +16,20 @@ import { type PracticeQuestion } from "@/server/practice/queries";
  * session-local on the argument that practice is not an exam — true, and it
  * left a student with no way to see that they had studied at all, which was
  * worse. What is recorded is what happened: how many questions, how many right,
- * how long it took. Answers are not kept, so a wrong answer costs nothing
- * beyond the tally, and a run is only recorded once it is FINISHED — abandoning
- * one at question two records nothing.
+ * how long it took, and WHICH ones were missed. A run is only recorded once it
+ * is FINISHED — abandoning one at question two records nothing.
+ *
+ * **The verdicts are kept; the answers are not.** Storing which questions went
+ * wrong is what makes "review my mistakes" possible at all, and it is the whole
+ * of what that needs. What a student typed is never sent — see
+ * `recordStudySessionAction`. The privacy line moved rather than disappeared,
+ * and the summary screen says where it moved to.
+ *
+ * **`mode` changes the copy and nothing else.** A retry of four questions a
+ * student already got wrong is the same interaction as a first pass, and
+ * forking the component would be two screens to keep in step for the sake of a
+ * heading. What it must not do is congratulate identically: "4/4" on a first
+ * pass is a good set, and on a retry it is four mistakes cleared.
  *
  * Topic mastery moves only when the reviewer was scoped to a topic, because
  * that is the only case where "which topic is this evidence about" has an
@@ -41,15 +54,23 @@ type Verdict = "correct" | "incorrect";
 
 export function PracticeSession({
   questions,
+  quizId,
   reviewerId,
   subjectId,
   topicId,
+  mode = "practice",
 }: {
   questions: PracticeQuestion[];
+  /** The set these came from. Null only if the set row could not be read. */
+  quizId: string | null;
   reviewerId: string;
   subjectId: string;
   topicId: string | null;
+  /** `review` is a retry of questions already missed — copy only. */
+  mode?: "practice" | "review";
 }) {
+  const isReview = mode === "review";
+  const router = useRouter();
   /**
    * When this run began, and whether it has been recorded.
    *
@@ -69,6 +90,10 @@ export function PracticeSession({
    */
   const startedAt = useRef(0);
   const recorded = useRef(false);
+  /* The in-flight write, so "Go again" on a retry can wait for it before
+     asking the server for a freshly derived list. Without this the refresh
+     races the insert and hands back the list as it was. */
+  const recording = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -86,10 +111,30 @@ export function PracticeSession({
    */
   const [revealed, setRevealed] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
-  const [results, setResults] = useState<Verdict[]>([]);
+  /* The verdict AND the question it was for, because the mistakes list is
+     keyed by question — a bare list of rights and wrongs cannot say which. */
+  const [results, setResults] = useState<{ questionId: string; verdict: Verdict }[]>([]);
 
   const question = questions[index];
   const finished = index >= questions.length;
+
+  /**
+   * On a retry, "go again" must ASK AGAIN rather than replay.
+   *
+   * The list this run was built from is stale the moment it finishes: three of
+   * the four are cleared, and replaying all four would put a student back in
+   * front of questions they have just got right. Refreshing re-derives it on
+   * the server, which either hands back the shorter list or shows the empty
+   * state — and the empty state on this route is the good ending.
+   */
+  async function again() {
+    if (!isReview) {
+      restart();
+      return;
+    }
+    await recording.current;
+    router.refresh();
+  }
 
   function restart() {
     /* A second pass is a second session, timed from now. */
@@ -116,7 +161,7 @@ export function PracticeSession({
   function next() {
     if (!verdict) return;
 
-    const all = [...results, verdict];
+    const all = [...results, { questionId: question.id, verdict }];
     setResults(all);
     setIndex((previous) => previous + 1);
     setGiven("");
@@ -131,25 +176,33 @@ export function PracticeSession({
      * setState in effects, and an effect would fire again on every re-render
      * of the summary. This runs exactly once per completed run.
      *
-     * Fire-and-forget — the summary is already on screen, and a student who
-     * has finished should not wait on our bookkeeping.
+     * Not awaited — the summary is already on screen, and a student who has
+     * finished should not wait on our bookkeeping. The promise is kept only so
+     * that "take what is left" can wait for it before asking the server for a
+     * freshly derived mistakes list.
      */
     if (all.length === questions.length && !recorded.current) {
       recorded.current = true;
-      void recordStudySessionAction({
+      recording.current = recordStudySessionAction({
         activity: "practice",
         subjectId,
         topicId,
         reviewerId,
         total: all.length,
-        correct: all.filter((result) => result === "correct").length,
+        correct: all.filter((result) => result.verdict === "correct").length,
         durationSeconds: elapsedSince(startedAt.current),
+        quizId,
+        answers: all.map((result) => ({
+          questionId: result.questionId,
+          correct: result.verdict === "correct",
+        })),
       });
     }
   }
 
   if (finished) {
-    const correct = results.filter((result) => result === "correct").length;
+    const correct = results.filter((result) => result.verdict === "correct").length;
+    const missed = results.length - correct;
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
         <div>
@@ -160,18 +213,39 @@ export function PracticeSession({
           {/* The number, and what to do about it. No praise over half marks:
               this is a student about to sit an exam. */}
           <p className="mt-2 max-w-[26rem] text-sm text-ink-muted">
-            {correct === results.length
-              ? "All of them. Come back to this set in a few days and see whether it holds."
-              : "Read the explanations on the ones you missed, then go again."}
+            {closingLine(mode, correct, results.length)}
           </p>
-          <p className="mt-3 text-xs text-ink-subtle">
-            Saved to your progress. Your answers are not kept — only how many you got right.
+          <p className="mt-3 max-w-[26rem] text-xs text-ink-subtle">
+            Saved to your progress. We keep which questions you missed so you can come back to them
+            — never what you typed.
           </p>
         </div>
-        <Button onClick={restart}>
-          <RotateCcw aria-hidden />
-          Go again
-        </Button>
+
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button
+            onClick={() => void again()}
+            variant={missed > 0 && !isReview ? "subtle" : "primary"}
+          >
+            <RotateCcw aria-hidden />
+            {isReview ? "Take what is left" : "Go again"}
+          </Button>
+
+          {/* Straight to the ones just missed, rather than back to the reviewer
+              to find the tile. The moment a student has seen what they got
+              wrong is the moment they will fix it, if fixing it is one click. */}
+          {missed > 0 && !isReview && (
+            <Link href={`/reviewers/${reviewerId}/review`} className={buttonStyles()}>
+              <Target aria-hidden />
+              Review the {missed} you missed
+            </Link>
+          )}
+
+          {isReview && (
+            <Link href={`/reviewers/${reviewerId}`} className={buttonStyles({ variant: "subtle" })}>
+              Back to the reviewer
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -191,7 +265,7 @@ export function PracticeSession({
           />
         </div>
         <p className="text-sm text-ink-subtle tabular-nums">
-          {results.filter((result) => result === "correct").length} correct
+          {results.filter((result) => result.verdict === "correct").length} correct
         </p>
       </div>
 
@@ -401,6 +475,32 @@ function Written({
       )}
     </div>
   );
+}
+
+/**
+ * What to say at the end.
+ *
+ * A retry is scored against a different question. "3/4" on a first pass means a
+ * decent set; on a retry it means three mistakes cleared and one still standing,
+ * and that one is the only thing worth saying.
+ */
+function closingLine(mode: "practice" | "review", correct: number, total: number): string {
+  const missed = total - correct;
+
+  if (mode === "review") {
+    if (missed === 0) {
+      return total === 1
+        ? "Cleared. That one is off your list."
+        : "All of them, second time round. Your list is clear.";
+    }
+    return correct === 0
+      ? "Still not sticking. Read the explanations properly, then try the deck or the reviewer itself — more of the same questions will not fix it."
+      : `${correct} cleared, ${missed} still to get. The ones you missed again are still on your list.`;
+  }
+
+  return correct === total
+    ? "All of them. Come back to this set in a few days and see whether it holds."
+    : "Read the explanations on the ones you missed, then go again.";
 }
 
 const TYPE_LABEL: Record<PracticeQuestion["type"], string> = {

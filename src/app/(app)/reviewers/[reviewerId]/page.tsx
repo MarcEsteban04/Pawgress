@@ -1,4 +1,4 @@
-import { ArrowRight, Layers, ListChecks, TriangleAlert } from "lucide-react";
+import { ArrowRight, Layers, ListChecks, Shuffle, Target, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { type ReactNode } from "react";
@@ -10,9 +10,10 @@ import { GenerateQuestionsButton } from "@/features/practice/components/Generate
 import { ReviewerDocumentView } from "@/features/reviewers/components/ReviewerDocumentView";
 import { ReviewerTitle } from "@/features/reviewers/components/ReviewerTitle";
 import { StudyShell } from "@/features/reviewers/components/StudyShell";
+import { MATCH_MINIMUM, matchPairs } from "@/features/reviewers/matching";
 import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
 import { countFlashcards } from "@/server/flashcards/queries";
-import { countPracticeQuestions } from "@/server/practice/queries";
+import { countMissedQuestions, countPracticeQuestions } from "@/server/practice/queries";
 import { getReviewer } from "@/server/reviewers/queries";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +46,11 @@ export async function generateMetadata({ params }: PageProps<"/reviewers/[review
 
 export default async function Page({ params }: PageProps<"/reviewers/[reviewerId]">) {
   const { reviewerId } = await params;
-  const [reviewer, cardCount, questionCount] = await Promise.all([
+  const [reviewer, cardCount, questionCount, missedCount] = await Promise.all([
     getReviewer(reviewerId),
     countFlashcards(reviewerId),
     countPracticeQuestions(reviewerId),
+    countMissedQuestions(reviewerId),
   ]);
 
   if (!reviewer) notFound();
@@ -56,6 +58,10 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
   const id = reviewer.subjectId;
   const content = reviewer.content;
   const working = reviewer.status !== "ready" && reviewer.status !== "failed";
+  /* Matching needs no generation — the pairs are the reviewer's own key terms.
+     Counted here so the rail can leave the tile out rather than offer a board
+     of two. */
+  const pairCount = content ? matchPairs(content).length : 0;
 
   return (
     <StudyShell
@@ -148,6 +154,33 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
                     <GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} size="sm" />
                   }
                 />
+
+                {/* Only when there is something to fix. A tile reading "0
+                    mistakes" is furniture, and its absence says the same thing
+                    without taking up the rail — the list clears itself, so this
+                    appears and disappears on its own. */}
+                <StudyTile
+                  colorSlot={reviewer.colorSlot}
+                  icon={<Target className="size-[1.125rem]" aria-hidden />}
+                  title="Review mistakes"
+                  count={missedCount}
+                  unit="question"
+                  note={`${missedCount} to get right`}
+                  href={`/reviewers/${reviewerId}/review`}
+                />
+
+                {/* Needs nothing generated, so it is offered the moment the
+                    reviewer is — as long as it has enough terms to be a board
+                    rather than a formality. */}
+                <StudyTile
+                  colorSlot={reviewer.colorSlot}
+                  icon={<Shuffle className="size-[1.125rem]" aria-hidden />}
+                  title="Matching"
+                  count={pairCount >= MATCH_MINIMUM ? pairCount : 0}
+                  unit="pair"
+                  note={`${pairCount} pairs · nothing to generate`}
+                  href={`/reviewers/${reviewerId}/matching`}
+                />
               </div>
             </aside>
           )}
@@ -173,19 +206,31 @@ function StudyTile({
   blurb,
   count,
   unit,
+  note,
   href,
   generate,
 }: {
   colorSlot: 1 | 2 | 3 | 4 | 5;
   icon: ReactNode;
   title: string;
-  blurb: string;
+  /** Only needed by a tile that has an empty state to explain. */
+  blurb?: string;
   count: number;
   unit: string;
+  /** Replaces "N units ready" where that is the wrong sentence. */
+  note?: string;
   href: string;
-  generate: ReactNode;
+  /**
+   * The control that makes the thing. Absent for the modes that need no
+   * generation — mistakes accumulate on their own and matching is built from
+   * the reviewer — and those tiles simply do not render while empty, because
+   * there is nothing to offer and nothing to explain.
+   */
+  generate?: ReactNode;
 }) {
   const tone = SUBJECT_TONE[colorSlot];
+
+  if (count === 0 && !generate) return null;
 
   if (count === 0) {
     return (
@@ -220,7 +265,7 @@ function StudyTile({
       <span className="min-w-0 flex-1">
         <span className="block font-display font-semibold">{title}</span>
         <span className="mt-0.5 block text-[0.8125rem] text-ink-subtle tabular-nums">
-          {count} {count === 1 ? unit : `${unit}s`} ready
+          {note ?? `${count} ${count === 1 ? unit : `${unit}s`} ready`}
         </span>
       </span>
 

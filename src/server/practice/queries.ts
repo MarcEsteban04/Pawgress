@@ -96,3 +96,54 @@ export const countPracticeQuestions = cache(async (reviewerId: string): Promise<
      against a half-written one advertising questions nobody can answer yet. */
   return quiz?.status === "ready" ? (quiz.question_count ?? 0) : 0;
 });
+
+/* -------------------------------------------------------------------------- */
+/*  The mistakes list                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The questions whose MOST RECENT answer was wrong.
+ *
+ * "Most recent", not "ever wrong", and that is the whole design: the list
+ * clears itself. Get one right on the retry and its newest verdict is correct,
+ * so it drops out — no "mark as learned" button to remember to press, and no
+ * list that only ever grows. Get it wrong again and it stays, which is also
+ * correct.
+ *
+ * Two queries, both indexed. `quiz_answers_latest_idx` is what makes the second
+ * one a range scan rather than a walk over every answer the student has given.
+ */
+export const getMissedQuestions = cache(async (reviewerId: string): Promise<PracticeQuestion[]> => {
+  const set = await getPracticeSet(reviewerId);
+  if (set.questions.length === 0) return [];
+
+  const supabase = await createSupabaseServerClient();
+  const { data: answers } = await supabase
+    .from("quiz_answers")
+    .select("question_id, is_correct, answered_at")
+    .in(
+      "question_id",
+      set.questions.map((question) => question.id),
+    )
+    .order("answered_at", { ascending: false });
+
+  /* Newest first, so the first verdict seen for a question is its latest one.
+     Everything after it is that question's history, which nothing here asks
+     about. */
+  const latest = new Map<string, boolean>();
+  for (const row of answers ?? []) {
+    if (row.question_id && !latest.has(row.question_id)) {
+      latest.set(row.question_id, row.is_correct === true);
+    }
+  }
+
+  /* In the set's own order, not in the order they were missed. A retry that
+     jumps about is harder to place against the material it came from. */
+  return set.questions.filter((question) => latest.get(question.id) === false);
+});
+
+/** How many are waiting, for the reviewer page's tile. */
+export const countMissedQuestions = cache(async (reviewerId: string): Promise<number> => {
+  const missed = await getMissedQuestions(reviewerId);
+  return missed.length;
+});

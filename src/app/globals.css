@@ -411,6 +411,26 @@
     animation: pw-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* A wrong pairing on the matching board. Short and small on purpose: this is
+     "not that one", not an error — the board is unchanged and nothing was lost.
+     Honoured by `prefers-reduced-motion` below, where the colour alone says it. */
+  @keyframes pw-shake {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    25% {
+      transform: translate3d(-3px, 0, 0);
+    }
+    75% {
+      transform: translate3d(3px, 0, 0);
+    }
+  }
+
+  .shake {
+    animation: pw-shake 0.3s ease-in-out;
+  }
+
   /* Keeps a scrolling panel from cutting a grey channel through the canvas. */
   .thin-scroll {
     scrollbar-width: thin;

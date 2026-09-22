@@ -68,6 +68,7 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
         <PracticeSession
           key={set.questions.map((question) => question.id).join(":")}
           questions={set.questions}
+          quizId={set.id}
           reviewerId={reviewerId}
           subjectId={id}
           topicId={reviewer.topicId}

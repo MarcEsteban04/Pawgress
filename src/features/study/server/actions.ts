@@ -28,9 +28,19 @@ import { requireSession } from "@/server/auth/session";
  *    is not the same evidence as answering a question, and folding the two into
  *    one percentage is exactly the "mastery misleads students" risk in the
  *    register. Cards keep their own honest counts on `flashcards`.
+ *
+ * **Per-question verdicts, and NOT the answers themselves.** A run can now hand
+ * over which questions were right and which were wrong, which is what the
+ * mistakes list reads back. What a student actually typed is never stored:
+ * `given_answer` stays null. The verdict is the whole of what "show me the ones
+ * I missed" needs, and the text is the part that would turn this into a record
+ * of how badly somebody was doing.
  */
 
 export type StudyActivity = "flashcards" | "practice" | "quiz" | "review" | "reading";
+
+/** One question's outcome. The question, and whether it was right — no answer text. */
+export type AnswerOutcome = { questionId: string; correct: boolean };
 
 export type RecordSessionInput = {
   activity: StudyActivity;
@@ -43,6 +53,15 @@ export type RecordSessionInput = {
   correct: number;
   /** Wall-clock seconds the student spent. Measured by the client that ran it. */
   durationSeconds: number;
+  /**
+   * The per-question verdicts, for a practice run.
+   *
+   * Both of these or neither: an attempt row with no answers under it is a
+   * score with nothing to explain it. Omitted by flashcards and matching, which
+   * have no questions to point at.
+   */
+  quizId?: string | null;
+  answers?: AnswerOutcome[];
 };
 
 export async function recordStudySessionAction(input: RecordSessionInput): Promise<void> {
@@ -72,6 +91,43 @@ export async function recordStudySessionAction(input: RecordSessionInput): Promi
     items_total: input.total,
     items_correct: correct,
   });
+
+  /**
+   * The attempt, and the verdicts under it.
+   *
+   * Best-effort and deliberately not awaited before the mastery write: a
+   * student has finished either way, and losing one mistakes-list entry is a
+   * far smaller failure than losing the session that proves they studied.
+   */
+  if (input.quizId && input.answers?.length) {
+    const { data: attempt } = await supabase
+      .from("quiz_attempts")
+      .insert({
+        user_id: session.userId,
+        quiz_id: input.quizId,
+        started_at: new Date(endedAt.getTime() - duration * 1000).toISOString(),
+        submitted_at: endedAt.toISOString(),
+        score_correct: correct,
+        score_total: input.total,
+        duration_seconds: duration,
+      })
+      .select("id")
+      .single();
+
+    if (attempt) {
+      await supabase.from("quiz_answers").insert(
+        input.answers.map((answer) => ({
+          user_id: session.userId,
+          attempt_id: attempt.id,
+          question_id: answer.questionId,
+          /* Never the text. See the header — the verdict is all the mistakes
+             list needs, and the text is the part worth not keeping. */
+          given_answer: null,
+          is_correct: answer.correct,
+        })),
+      );
+    }
+  }
 
   /* Topic mastery, and only from practice. Through the RPC rather than a
      read-then-write: PostgREST cannot express `answered = answered + $1`, and
