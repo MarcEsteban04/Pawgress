@@ -1,4 +1,13 @@
-import { Brain, CalendarCheck, Flame, Layers, ListChecks, Target, Timer } from "lucide-react";
+import {
+  Brain,
+  CalendarCheck,
+  Flame,
+  Layers,
+  ListChecks,
+  Shuffle,
+  Target,
+  Timer,
+} from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -277,6 +286,7 @@ const ACTIVITY_LABEL: Record<string, string> = {
   flashcards: "Flashcards",
   practice: "Practice",
   quiz: "Quiz",
+  matching: "Matching",
   review: "Review",
   reading: "Reading",
 };
@@ -298,6 +308,8 @@ function SessionRow({ session }: { session: RecentSession }) {
           <Layers className="size-4" aria-hidden />
         ) : session.activity === "practice" || session.activity === "quiz" ? (
           <ListChecks className="size-4" aria-hidden />
+        ) : session.activity === "matching" ? (
+          <Shuffle className="size-4" aria-hidden />
         ) : (
           <CalendarCheck className="size-4" aria-hidden />
         )}

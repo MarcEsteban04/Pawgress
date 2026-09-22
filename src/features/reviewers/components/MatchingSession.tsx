@@ -100,14 +100,15 @@ export function MatchingSession({
      * that knows it was the last — not from an effect watching `finished`,
      * which would fire again on every re-render of the results.
      *
-     * `review` rather than `practice`: this is recognition against a bank of
+     * Its own activity, not `practice`: this is recognition against a bank of
      * terms on screen, not answering a question cold, and only practice is
-     * allowed to move topic mastery.
+     * allowed to move topic mastery. Not `review` either — that means revision
+     * with nothing measured, and this has a score.
      */
     if (Object.keys(next).length === order.length && !recorded.current) {
       recorded.current = true;
       void recordStudySessionAction({
-        activity: "review",
+        activity: "matching",
         subjectId,
         topicId,
         reviewerId,
@@ -127,6 +128,14 @@ export function MatchingSession({
           <p className="font-display text-5xl font-semibold tracking-[-0.03em] tabular-nums">
             {correct}
             <span className="text-ink-subtle">/{order.length}</span>
+          </p>
+          {/* A bare fraction is a number with no unit. Saying what was counted
+              is what makes this a matching result rather than a score that
+              could have come from any screen in the app. */}
+          <p className="mt-1 text-sm font-medium">
+            {correct === 1 ? "1 pair" : `${correct} pairs`} matched correctly
+            {correct < order.length &&
+              ` · ${order.length - correct} ${order.length - correct === 1 ? "pair" : "pairs"} wrong`}
           </p>
           <p className="mx-auto mt-2 max-w-[32rem] text-sm text-ink-muted">
             {correct === order.length
@@ -189,8 +198,8 @@ export function MatchingSession({
         </div>
 
         <p className="text-center text-xs text-ink-subtle">
-          Saved to your progress as revision. Matching does not move your mastery score — only
-          answering questions does.
+          Saved to your progress as a matching session, with this score. It does not move your
+          mastery percentage — only answering questions does.
         </p>
       </div>
     );

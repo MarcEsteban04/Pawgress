@@ -37,7 +37,13 @@ import { requireSession } from "@/server/auth/session";
  * of how badly somebody was doing.
  */
 
-export type StudyActivity = "flashcards" | "practice" | "quiz" | "review" | "reading";
+/**
+ * `matching` is separate from `review` because it carries a SCORE. `review` is
+ * revision with nothing measured; a finished matching board has a result, and
+ * folding the two together left it in a student's history as "Review · 9/12"
+ * with nothing to say what the nine were.
+ */
+export type StudyActivity = "flashcards" | "practice" | "quiz" | "matching" | "review" | "reading";
 
 /** One question's outcome. The question, and whether it was right — no answer text. */
 export type AnswerOutcome = { questionId: string; correct: boolean };

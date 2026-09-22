@@ -1,0 +1,24 @@
+-- ============================================================================
+-- Acadify — matching is its own study activity
+--
+-- Matching runs were being recorded as 'review', because that was the closest
+-- existing value. The result was a finished board appearing in Progress as
+-- "Review · 9/12" with a calendar icon — a score with nothing to say what was
+-- scored, indistinguishable from any other revision a student had done. A study
+-- mode the product cannot name in its own history is one a student cannot see
+-- they did.
+--
+-- 'review' keeps its meaning: revision with no score attached. Matching has a
+-- score, so it needs its own value rather than a shared one.
+--
+-- ADD VALUE, never a rewrite of the type. Recreating the enum would mean
+-- dropping and re-adding every column that uses it, and `study_sessions.activity`
+-- carries a student's whole history. Postgres 12 and up allow this inside the
+-- implicit transaction the migration runner uses, so long as the new value is
+-- not itself used in the same transaction — nothing here does.
+--
+-- `plan_activity` is deliberately untouched. It is the planner's vocabulary for
+-- what to schedule, and nothing schedules a matching board yet.
+-- ============================================================================
+
+alter type public.study_activity add value if not exists 'matching';

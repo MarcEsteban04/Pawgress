@@ -1273,7 +1273,13 @@ export type Database = {
         | "study_session"
       question_type: "mcq" | "true_false" | "identification" | "short_answer"
       reviewer_kind: "summary" | "key_terms" | "concepts" | "practice"
-      study_activity: "review" | "practice" | "quiz" | "flashcards" | "reading"
+      study_activity:
+        | "review"
+        | "practice"
+        | "quiz"
+        | "flashcards"
+        | "reading"
+        | "matching"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1443,7 +1449,14 @@ export const Constants = {
       ],
       question_type: ["mcq", "true_false", "identification", "short_answer"],
       reviewer_kind: ["summary", "key_terms", "concepts", "practice"],
-      study_activity: ["review", "practice", "quiz", "flashcards", "reading"],
+      study_activity: [
+        "review",
+        "practice",
+        "quiz",
+        "flashcards",
+        "reading",
+        "matching",
+      ],
     },
   },
 } as const
