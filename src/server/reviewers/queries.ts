@@ -43,27 +43,6 @@ function readContent(value: unknown): ReviewerDocument | null {
   return typeof candidate.summary === "string" ? (candidate as ReviewerDocument) : null;
 }
 
-export const listReviewers = cache(async (subjectId: string): Promise<ReviewerSummary[]> => {
-  await requireSession();
-  const supabase = await createSupabaseServerClient();
-
-  const { data } = await supabase
-    .from("reviewers")
-    .select(SELECT)
-    .eq("subject_id", subjectId)
-    .order("created_at", { ascending: false });
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    title: row.title,
-    status: row.status as JobStatus,
-    topicId: row.topic_id,
-    topicName: row.topics?.name ?? null,
-    sourceCount: row.source_material_ids?.length ?? 0,
-    createdAt: row.created_at,
-  }));
-});
-
 export const getReviewer = cache(async (id: string): Promise<Reviewer | null> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
@@ -99,11 +78,9 @@ export const getReviewer = cache(async (id: string): Promise<Reviewer | null> =>
 /**
  * The whole library, across every subject (Sprint 47).
  *
- * Separate from `listReviewers` rather than a superset of it, because the two
- * answer different questions: the subject hub asks "what does THIS class have?"
- * and never needs a subject name on the row, while the library asks "what do I
- * have to revise from?" and is useless without one. Collapsing them would mean
- * every hub panel paying for a join it does not render.
+ * The only list of reviewers there is. A per-subject version existed for the
+ * subject hub's preview panel; that panel is gone — the hub is subjects, topics
+ * and files now — so this is the one query, and `subjectId` narrows it.
  *
  * No `user_id` filter anywhere: RLS scopes every statement to the caller
  * (Sprint 14). `subjectId` chooses WHICH of the student's reviewers to return
