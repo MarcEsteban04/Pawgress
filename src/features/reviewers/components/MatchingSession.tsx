@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, RotateCcw, X } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Button, buttonStyles } from "@/components/ui";
-import { MATCH_ROUND_SIZE, shufflePairs, type MatchPair } from "@/features/reviewers/matching";
+import { shufflePairs, type MatchPair } from "@/features/reviewers/matching";
 import { recordStudySessionAction } from "@/features/study/server/actions";
 import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
 import { cn } from "@/lib/utils";
@@ -12,43 +12,42 @@ import { cn } from "@/lib/utils";
 /**
  * Matching type (Sprint 49).
  *
- * **Recognition, which is the one thing flashcards and practice both skip.** A
- * flashcard asks you to produce the answer with nothing to go on; a multiple
- * choice hands you four options for one question. Matching sits between them:
- * six definitions, six terms, and every wrong pairing costs you a pairing
- * somewhere else. It is the format that catches the student who knows five
- * terms and has quietly swapped two of them.
+ * **Answered blind, marked at the end.** The first version marked every pairing
+ * as it was made, which meant a student could tap answers until one turned
+ * green — and a board you can brute-force scores everybody the same. Nothing is
+ * revealed until the last pair is placed, so the only route to a good score is
+ * knowing the terms, which is what the score was supposed to mean.
  *
- * **Pick a clue, then pick an answer.** Not drag and drop: dragging is a
- * gesture that fails on a phone, needs a fallback for the keyboard, and buys
- * nothing here — two taps say the same thing and work everywhere. The selected
- * clue stays lit so there is never a question of what the next tap applies to.
+ * **One definition at a time, and the choice is final.** A whole board on screen
+ * let a student do the easy pairs first and leave the rest to elimination.
+ * Stepping through them removes that; locking each pick removes the other half.
+ * There is deliberately no undo: with nothing revealed it would change no score,
+ * and would only invite second-guessing a test that is meant to be one.
  *
- * **A wrong pair is shown and then forgiven.** It flashes, clears, and the
- * board stays put. The alternative — locking a wrong answer in — turns one
- * mistake into two, because the term it stole is now missing from somewhere
- * else, and a student cannot tell which of the two errors was theirs.
+ * **Terms are spent, exactly as on paper.** Each matches one definition, so
+ * picking it takes it out of the bank. One mistake therefore costs two marks —
+ * the definition it was wrong for, and the one it was right for — which is
+ * inherent to the format rather than a flaw in it. The results screen shows the
+ * swap, instead of leaving a student to work out why two went red.
  *
- * **Scored on first attempt, not on finishing.** Everyone finishes a matching
- * board eventually; process of elimination guarantees it. The number worth
- * recording is how many were right the first time they were tried, which is the
- * only part that reflects what the student knew when they sat down.
+ * **The bank shrinks as it goes**, which is the natural shape of a matching
+ * test: hardest at the start when nothing has been given away, and a short tail
+ * the student has already earned.
  */
 
-type Status = "idle" | "wrong";
-
 export function MatchingSession({
-  pairs,
+  clues,
+  answerBank,
   reviewerId,
-  reviewerTitle,
   subjectId,
   topicId,
   colorSlot,
 }: {
-  /** Already shuffled by the server — see `matching.ts`. */
-  pairs: MatchPair[];
+  /** The definitions, in the order they are asked. Shuffled by the server. */
+  clues: MatchPair[];
+  /** The same pairs in a DIFFERENT order — the bank of terms to pick from. */
+  answerBank: MatchPair[];
   reviewerId: string;
-  reviewerTitle: string;
   subjectId: string;
   topicId: string | null;
   colorSlot: 1 | 2 | 3 | 4 | 5;
@@ -56,35 +55,16 @@ export function MatchingSession({
   const tone = SUBJECT_TONE[colorSlot];
 
   /**
-   * The board, and the answer column beside it.
-   *
-   * Two independent orders on purpose: a board where the third clue's answer is
-   * also third is a board that can be solved without reading either column.
-   * Both are state rather than memos because "go again" reshuffles them, and
-   * that is a deliberate act rather than a render.
+   * Both orders are state rather than derived, because "go again" reshuffles
+   * them. That happens long after hydration, so it cannot disagree with the
+   * server the way a shuffle on mount would — see the page for why that matters.
    */
-  const [round, setRound] = useState(0);
-  const [board, setBoard] = useState<MatchPair[]>(() => pairs.slice(0, MATCH_ROUND_SIZE));
-  const [answers, setAnswers] = useState<MatchPair[]>(() =>
-    shufflePairs(pairs.slice(0, MATCH_ROUND_SIZE)),
-  );
+  const [order, setOrder] = useState(clues);
+  const [bank, setBank] = useState(answerBank);
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [matched, setMatched] = useState<string[]>([]);
-  /**
-   * Clues that have ever had a wrong answer tried against them, across every
-   * round of this run. The inverse of the score.
-   *
-   * Keyed by CLUE and kept for the whole run rather than reset per tap: a
-   * student who guesses wrong, goes off to pair something else, and comes back
-   * to get it right has still not known it. Tracking "was the last tap wrong"
-   * instead would forgive exactly that, which is the commonest way of playing
-   * a matching board.
-   */
-  const [missedOnce, setMissedOnce] = useState<string[]>([]);
-  const [status, setStatus] = useState<Status>("idle");
-  /** Which answer flashed red, so only that one lights up. */
-  const [rejected, setRejected] = useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  /** Which term was assigned to which definition. The answer sheet. */
+  const [picks, setPicks] = useState<Record<string, string>>({});
 
   const startedAt = useRef(0);
   const recorded = useRef(false);
@@ -93,92 +73,107 @@ export function MatchingSession({
     startedAt.current = Date.now();
   }, []);
 
-  const rounds = Math.ceil(pairs.length / MATCH_ROUND_SIZE);
-  const finished = matched.length === board.length && board.length > 0;
-  const isLastRound = round >= rounds - 1;
-
-  function deal(next: number) {
-    const slice = pairs.slice(next * MATCH_ROUND_SIZE, (next + 1) * MATCH_ROUND_SIZE);
-    setRound(next);
-    setBoard(slice);
-    setAnswers(shufflePairs(slice));
-    setSelected(null);
-    setMatched([]);
-    setStatus("idle");
-    setRejected(null);
-  }
+  const current = order[step];
+  const finished = step >= order.length;
+  const used = new Set(Object.values(picks));
 
   function restart() {
-    /* A second pass is a second session, timed and scored from now. */
+    /* A second pass is a second session, timed and scored from now, and dealt
+       differently — replaying the same order would be a memory test. */
     startedAt.current = Date.now();
     recorded.current = false;
-    setMissedOnce([]);
-    deal(0);
+    setOrder(shufflePairs(order));
+    setBank(shufflePairs(bank));
+    setStep(0);
+    setPicks({});
   }
 
-  function choose(answer: MatchPair) {
-    if (!selected || matched.includes(answer.id)) return;
+  function pick(answer: MatchPair) {
+    if (!current || used.has(answer.id)) return;
 
-    if (answer.id === selected) {
-      const nextMatched = [...matched, answer.id];
+    const next = { ...picks, [current.id]: answer.id };
+    setPicks(next);
+    setStep((previous) => previous + 1);
 
-      setMatched(nextMatched);
-      setSelected(null);
-      setStatus("idle");
-      setRejected(null);
-
-      /**
-       * Recorded when the LAST pair of the LAST round is matched, from inside
-       * the handler that knows it was the last — not from an effect watching
-       * `finished`, which would fire again on every re-render of the summary.
-       *
-       * `review` rather than `practice`: this is recall over the reviewer's own
-       * terms, not answering questions, and only practice is allowed to move
-       * topic mastery. Folding self-evident recognition into a mastery
-       * percentage is the "mastery misleads students" risk in the register.
-       */
-      if (nextMatched.length === board.length && isLastRound && !recorded.current) {
-        recorded.current = true;
-        void recordStudySessionAction({
-          activity: "review",
-          subjectId,
-          topicId,
-          reviewerId,
-          total: pairs.length,
-          correct: pairs.length - missedOnce.length,
-          durationSeconds: elapsedSince(startedAt.current),
-        });
-      }
-      return;
+    /**
+     * Recorded when the LAST definition is answered, from inside the handler
+     * that knows it was the last — not from an effect watching `finished`,
+     * which would fire again on every re-render of the results.
+     *
+     * `review` rather than `practice`: this is recognition against a bank of
+     * terms on screen, not answering a question cold, and only practice is
+     * allowed to move topic mastery.
+     */
+    if (Object.keys(next).length === order.length && !recorded.current) {
+      recorded.current = true;
+      void recordStudySessionAction({
+        activity: "review",
+        subjectId,
+        topicId,
+        reviewerId,
+        total: order.length,
+        correct: order.filter((pair) => next[pair.id] === pair.id).length,
+        durationSeconds: elapsedSince(startedAt.current),
+      });
     }
-
-    /* Wrong. Shown, then forgiven — the board does not change, and the only
-       lasting cost is that this clue no longer counts toward the score. */
-    setStatus("wrong");
-    setRejected(answer.id);
-    setMissedOnce((previous) => (previous.includes(selected) ? previous : [...previous, selected]));
   }
 
-  if (finished && isLastRound) {
-    const firstTime = pairs.length - missedOnce.length;
+  if (finished) {
+    const correct = order.filter((pair) => picks[pair.id] === pair.id).length;
 
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-        <div>
+      <div className="flex flex-1 flex-col gap-6">
+        <div className="text-center">
           <p className="font-display text-5xl font-semibold tracking-[-0.03em] tabular-nums">
-            {firstTime}
-            <span className="text-ink-subtle">/{pairs.length}</span>
+            {correct}
+            <span className="text-ink-subtle">/{order.length}</span>
           </p>
-          <p className="mt-2 max-w-[28rem] text-sm text-ink-muted">
-            {firstTime === pairs.length
-              ? "Every pair first time. These terms are yours — the practice questions will be a better use of the next ten minutes."
-              : `First time on ${firstTime} of ${pairs.length}. The ones that took a second guess are the ones to read again in the reviewer.`}
-          </p>
-          <p className="mt-3 max-w-[28rem] text-xs text-ink-subtle">
-            Saved to your progress as revision. Matching does not move your mastery score — only
-            answering questions does.
+          <p className="mx-auto mt-2 max-w-[32rem] text-sm text-ink-muted">
+            {correct === order.length
+              ? "Every one. These terms are yours — the practice questions will be a better use of the next ten minutes."
+              : "The rows in red are the pairs to read again. A term picked for the wrong definition also went missing from the right one, so mistakes here usually come in twos."}
           </p>
         </div>
+
+        {/* The whole answer sheet, right and wrong together. A score with no
+            paper behind it tells a student they were wrong four times and not
+            which four, which is the version of this that teaches nothing. */}
+        <ol className="mx-auto flex w-full max-w-[52rem] flex-col gap-2">
+          {order.map((pair) => {
+            const chosen = bank.find((candidate) => candidate.id === picks[pair.id]);
+            const right = chosen?.id === pair.id;
+
+            return (
+              <li
+                key={pair.id}
+                className={cn(
+                  "flex flex-col gap-2 rounded-[var(--radius-control)] border px-4 py-3 sm:flex-row sm:items-start sm:gap-4",
+                  right ? "border-ok/30 bg-ok-soft" : "border-bad/30 bg-bad-soft",
+                )}
+              >
+                <span className="mt-0.5 shrink-0">
+                  {right ? (
+                    <Check className="text-ok size-4" aria-hidden />
+                  ) : (
+                    <X className="size-4 text-bad" aria-hidden />
+                  )}
+                  <span className="sr-only">{right ? "Correct" : "Wrong"}</span>
+                </span>
+
+                <span className="min-w-0 flex-1 text-[0.9375rem] leading-relaxed">{pair.clue}</span>
+
+                <span className="flex shrink-0 flex-col gap-0.5 text-sm sm:w-56 sm:text-right">
+                  <span className={cn("font-medium", !right && "text-bad line-through")}>
+                    {chosen?.answer ?? "—"}
+                  </span>
+                  {/* Only when they differ. Printing the right answer beside a
+                      right answer is noise on every row that went well. */}
+                  {!right && <span className="font-medium">{pair.answer}</span>}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
 
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button onClick={restart}>
@@ -192,115 +187,81 @@ export function MatchingSession({
             Practice questions
           </Link>
         </div>
+
+        <p className="text-center text-xs text-ink-subtle">
+          Saved to your progress as revision. Matching does not move your mastery score — only
+          answering questions does.
+        </p>
       </div>
     );
   }
 
+  if (!current) return null;
+
+  const remaining = bank.filter((pair) => !used.has(pair.id));
+
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className="flex items-center gap-3">
         <p className="tabular text-sm text-ink-subtle">
-          {rounds > 1 ? `Round ${round + 1} of ${rounds} · ` : ""}
-          {matched.length} of {board.length} paired
+          {step + 1} of {order.length}
         </p>
-        <div className="h-1 min-w-24 flex-1 overflow-hidden rounded-full bg-surface-sunken">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-sunken">
           <div
             className={cn("h-full rounded-full transition-[width] duration-300", tone.dot)}
-            style={{ width: `${(matched.length / Math.max(1, board.length)) * 100}%` }}
+            style={{ width: `${(step / order.length) * 100}%` }}
           />
         </div>
-        <p className="text-sm text-ink-subtle" role="status">
-          {selected ? "Now pick its match" : "Pick a definition"}
-        </p>
+        <p className="tabular text-sm text-ink-subtle">{remaining.length} left</p>
       </div>
 
-      <div className="grid flex-1 gap-3 md:grid-cols-2 md:gap-5">
-        {/* Clues. The long side, so it gets the first column on a wide screen
-            and the top on a narrow one — you read before you choose. */}
-        <ul className="flex flex-col gap-2.5">
-          {board.map((pair) => {
-            const done = matched.includes(pair.id);
-            const active = selected === pair.id;
+      <div className="flex flex-1 flex-col rounded-[var(--radius-canvas)] border border-rule bg-surface px-5 py-7 shadow-[var(--shadow-card)] sm:px-8 sm:py-9">
+        <div className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col gap-6">
+          <div>
+            <span className="inline-flex items-center rounded-[var(--radius-pill)] bg-surface-sunken px-2.5 py-1 text-[0.6875rem] font-semibold tracking-[0.08em] text-ink-muted uppercase">
+              {current.kind === "term" ? "Key term" : "Concept"}
+            </span>
+            <h2 className="mt-3 font-display text-xl leading-snug font-semibold tracking-[-0.015em] text-balance sm:text-2xl">
+              {current.clue}
+            </h2>
+          </div>
 
-            return (
-              <li key={pair.id}>
-                <button
-                  type="button"
-                  disabled={done}
-                  aria-pressed={active}
-                  onClick={() => {
-                    setSelected(active ? null : pair.id);
-                    setStatus("idle");
-                    setRejected(null);
-                  }}
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-[var(--radius-control)] border px-4 py-3 text-left text-[0.9375rem] leading-relaxed transition-all",
-                    done && "border-rule bg-surface-sunken text-ink-subtle",
-                    !done &&
-                      !active &&
-                      "border-rule bg-surface hover:-translate-y-px hover:border-rule-strong hover:shadow-[var(--shadow-pill)]",
-                    active && "border-transparent shadow-[var(--shadow-pop)]",
-                    active && tone.tint,
-                  )}
-                >
-                  <span className="flex-1">{pair.clue}</span>
-                  {done && <Check className="text-ok mt-0.5 size-4 shrink-0" aria-hidden />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+          {/* Two columns rather than one: with a dozen terms to scan, one per
+              row is a page of scrolling for every single definition. */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {remaining.map((pair) => (
+              <button
+                key={pair.id}
+                type="button"
+                onClick={() => pick(pair)}
+                className="flex items-center gap-3 rounded-[var(--radius-control)] border border-rule px-4 py-3.5 text-left text-[0.9375rem] font-medium transition-all hover:-translate-y-px hover:border-rule-strong hover:bg-surface-sunken hover:shadow-[var(--shadow-pill)] sm:text-base"
+              >
+                <span className="flex-1">{pair.answer}</span>
+                <ArrowRight className="size-4 shrink-0 text-ink-subtle" aria-hidden />
+              </button>
+            ))}
+          </div>
 
-        {/* Answers. Short, so they sit as a column of pills rather than blocks. */}
-        <ul className="flex flex-col gap-2.5 md:sticky md:top-0 md:self-start">
-          {answers.map((pair) => {
-            const done = matched.includes(pair.id);
-            const wrong = rejected === pair.id;
-
-            return (
-              <li key={pair.id}>
-                <button
-                  type="button"
-                  disabled={done || !selected}
-                  onClick={() => choose(pair)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-[var(--radius-control)] border px-4 py-3 text-left font-medium transition-all",
-                    done && cn("border-transparent", tone.tint, tone.ink),
-                    wrong && "shake border-bad/50 bg-bad-soft text-bad",
-                    !done && !wrong && "border-rule bg-surface",
-                    !done &&
-                      !wrong &&
-                      selected &&
-                      "hover:-translate-y-px hover:border-rule-strong hover:shadow-[var(--shadow-pill)]",
-                    /* Dimmed rather than hidden while nothing is selected: the
-                       answers are half the information on this board, and a
-                       student reads both columns before the first tap. */
-                    !done && !selected && "opacity-70",
-                  )}
-                >
-                  <span className="flex-1">{pair.answer}</span>
-                  {done && <Check className="size-4 shrink-0" aria-hidden />}
-                  {wrong && <X className="size-4 shrink-0" aria-hidden />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Between rounds. A board that dealt itself would move under the hand of
-          a student still looking at the pair they just got. */}
-      {finished && !isLastRound && (
-        <div className="flex items-center justify-center gap-3 pt-1">
-          <p className="text-sm text-ink-muted">Round {round + 1} done.</p>
-          <Button onClick={() => deal(round + 1)}>Next round</Button>
+          {/* What has been spent, so the bank visibly shrinks without any of it
+              being marked. */}
+          {used.size > 0 && (
+            <div className="mt-auto border-t border-rule pt-4">
+              <p className="text-xs font-semibold tracking-[0.08em] text-ink-subtle uppercase">
+                Already used
+              </p>
+              <p className="mt-1.5 text-sm text-ink-subtle">
+                {bank
+                  .filter((pair) => used.has(pair.id))
+                  .map((pair) => pair.answer)
+                  .join(" · ")}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <p className="text-center text-xs text-ink-subtle">
-        {status === "wrong"
-          ? "Not that one. Nothing is locked in — try another."
-          : `Matching the ${reviewerTitle} key terms. A wrong pair costs you nothing but the first-time score.`}
+        Each term matches one definition, and a pick is final. Nothing is marked until the end.
       </p>
     </div>
   );

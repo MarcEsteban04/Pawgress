@@ -16,10 +16,11 @@ import { type ReviewerDocument } from "@/features/reviewers/schema";
  * concept's explanation runs to three sentences and a column of those is a
  * reading exercise rather than a matching one.
  *
- * **Rounds of six, and the cap is the design.** Twelve pairs on one board is
- * twenty-four things to hold in view; the matching gets harder because the
- * scanning does, which is difficulty of the wrong kind. Six is a board a
- * student can see at once on a laptop and still scroll on a phone.
+ * **One run over everything, no rounds.** The session asks one definition at a
+ * time against a bank that shrinks as terms are spent, so the twelve-pair case
+ * is twelve short screens rather than one wall of text. Splitting it into
+ * rounds would mean marking each round separately, and the whole point of the
+ * format is that nothing is marked until the end.
  */
 
 export type MatchPair = {
@@ -36,8 +37,15 @@ export type MatchPair = {
 /** Below this a board is not a game — four pairs is two guesses and a gimme. */
 export const MATCH_MINIMUM = 4;
 
-/** One round's worth. See the header for why it is six and not twelve. */
-export const MATCH_ROUND_SIZE = 6;
+/**
+ * How many pairs a board aims for before it stops topping up with concepts.
+ *
+ * Not a cap on terms — a reviewer with twelve of them plays all twelve. It is
+ * the point past which borrowing from the concepts list stops earning its
+ * place, because a concept's explanation is three sentences where a definition
+ * is one.
+ */
+export const MATCH_TARGET_SIZE = 6;
 
 /**
  * Every pair a reviewer can offer, in a stable order.
@@ -54,12 +62,12 @@ export function matchPairs(document: ReviewerDocument): MatchPair[] {
     kind: "term",
   }));
 
-  if (terms.length >= MATCH_ROUND_SIZE) return terms;
+  if (terms.length >= MATCH_TARGET_SIZE) return terms;
 
-  /* Only as far as a full round. Beyond that the extra concepts add length
-     without adding a round, and lengthen the answer column for nothing. */
+  /* Only up to the target. Past it the extra concepts lengthen every screen's
+     answer bank without making the test any better. */
   const concepts: MatchPair[] = document.concepts
-    .slice(0, Math.max(0, MATCH_ROUND_SIZE - terms.length))
+    .slice(0, Math.max(0, MATCH_TARGET_SIZE - terms.length))
     .map((concept) => ({
       id: `concept:${concept.name}`,
       clue: concept.explanation,

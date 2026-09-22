@@ -16,11 +16,14 @@ import { getReviewer } from "@/server/reviewers/queries";
  * reviewer costs a generation job and a minute of waiting, and this one is
  * playable the second the reviewer is ready.
  *
- * **Shuffled HERE, on the server.** A client component that shuffles on mount
- * renders one order into the HTML and a different one on hydration, which React
- * discards and repaints — visible as the whole board jumping. Shuffling before
- * the markup exists means there is nothing to disagree about; the session
- * reshuffles for "go again", which happens long after hydration.
+ * **Shuffled HERE, on the server, TWICE.** The definitions and the bank of terms
+ * need independent orders — a bank in the same order as the questions is a test
+ * you can pass by going down the list — and both have to be fixed before the
+ * markup exists. A client component that shuffles on mount renders one order
+ * into the HTML and a different one on hydration, which React discards and
+ * repaints, visible as the whole screen jumping. The session reshuffles for "go
+ * again", which happens long after hydration and so cannot disagree with
+ * anything.
  */
 
 export async function generateMetadata({ params }: PageProps<"/reviewers/[reviewerId]/matching">) {
@@ -35,7 +38,9 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
 
   if (!reviewer) notFound();
 
-  const pairs = reviewer.content ? shufflePairs(matchPairs(reviewer.content)) : [];
+  const pairs = reviewer.content ? matchPairs(reviewer.content) : [];
+  const clues = shufflePairs(pairs);
+  const answerBank = shufflePairs(pairs);
 
   return (
     <StudyShell
@@ -54,9 +59,9 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
     >
       {pairs.length >= MATCH_MINIMUM ? (
         <MatchingSession
-          pairs={pairs}
+          clues={clues}
+          answerBank={answerBank}
           reviewerId={reviewerId}
-          reviewerTitle={reviewer.title}
           subjectId={reviewer.subjectId}
           topicId={reviewer.topicId}
           colorSlot={reviewer.colorSlot}
