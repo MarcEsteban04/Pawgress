@@ -148,7 +148,7 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
                   colorSlot={reviewer.colorSlot}
                   icon={<ListChecks className="size-[1.125rem]" aria-hidden />}
                   title="Practice questions"
-                  blurb="Four kinds, each with an explanation. Nothing is recorded."
+                  blurb="Four kinds, each with an explanation. Finishing a set updates your progress."
                   count={questionCount}
                   unit="question"
                   href={`/reviewers/${reviewerId}/practice`}

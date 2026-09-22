@@ -88,6 +88,8 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
           cards={deck.cards}
           reviewerId={reviewerId}
           reviewerTitle={reviewer.title}
+          subjectId={id}
+          topicId={reviewer.topicId}
         />
       ) : generating ? (
         <GeneratingOverlay

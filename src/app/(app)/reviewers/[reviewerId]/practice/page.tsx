@@ -68,6 +68,9 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
         <PracticeSession
           key={set.questions.map((question) => question.id).join(":")}
           questions={set.questions}
+          reviewerId={reviewerId}
+          subjectId={id}
+          topicId={reviewer.topicId}
         />
       ) : generating ? (
         <GeneratingOverlay
@@ -86,7 +89,7 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
         <EmptyState
           Icon={ListChecks}
           title="No practice questions yet"
-          description="Aki can turn this reviewer into questions — four kinds, each with an explanation of why the answer is right. Nothing here is recorded against your progress, so a bad first pass costs you nothing."
+          description="Aki can turn this reviewer into questions — four kinds, each with an explanation of why the answer is right. Finishing a set records how you did, so your progress finally has something to measure."
           action={<GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} />}
         />
       )}

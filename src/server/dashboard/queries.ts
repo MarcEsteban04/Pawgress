@@ -107,7 +107,7 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
 
   const weekAgo = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
 
-  const [subjectRows, progressRows, eventRows, planRows, attemptRows, sessionRows] =
+  const [subjectRows, progressRows, eventRows, planRows, attemptRows, sessionRows, scoredRows] =
     await Promise.all([
       supabase
         .from("subjects")
@@ -147,6 +147,23 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
         .select("started_at, duration_seconds")
         .gte("started_at", weekAgo)
         .not("duration_seconds", "is", null),
+      /**
+       * Scored practice, for the trend line.
+       *
+       * Separate from the week's sessions above because it answers a different
+       * question over a different window: that one is "how much have I studied
+       * lately", this one is "am I getting better". Flashcards are excluded —
+       * a self-marked recall tally on the same axis as answered questions
+       * would be two measures sharing one line, which is the chart mistake the
+       * design system bans outright.
+       */
+      supabase
+        .from("study_sessions")
+        .select("started_at, items_total, items_correct, activity")
+        .in("activity", ["practice", "quiz"])
+        .gt("items_total", 0)
+        .order("started_at", { ascending: true })
+        .limit(30),
     ]);
 
   const progress = progressRows.data ?? [];
@@ -222,14 +239,33 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
      with a different scale would need its own chart, never a second y-scale
      (docs/design-system.md §3). */
   const attempts = attemptRows.data ?? [];
-  const scoreTrend: ScorePoint[] = attempts
-    .filter((row) => (row.score_total ?? 0) > 0)
-    .map((row) => ({
-      label: new Date(row.submitted_at as string).toLocaleDateString(undefined, {
+  const scored = scoredRows.data ?? [];
+
+  /* Both sources, one series: a graded quiz attempt and a finished practice
+     set are the same measurement — proportion of questions answered correctly
+     — so they belong on the same line. Merged and re-sorted rather than
+     concatenated, because the two queries are ordered independently and a line
+     that jumps backwards in time is unreadable. */
+  const scoreTrend: ScorePoint[] = [
+    ...attempts
+      .filter((row) => (row.score_total ?? 0) > 0)
+      .map((row) => ({
+        at: row.submitted_at as string,
+        value: (row.score_correct ?? 0) / (row.score_total as number),
+      })),
+    ...scored.map((row) => ({
+      at: row.started_at,
+      value: (row.items_correct ?? 0) / (row.items_total as number),
+    })),
+  ]
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .slice(-30)
+    .map((point) => ({
+      label: new Date(point.at).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       }),
-      value: (row.score_correct ?? 0) / (row.score_total as number),
+      value: point.value,
     }));
 
   /* Seven days, every one of them present. Skipping days with no sessions would
@@ -252,7 +288,10 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
       subjects: subjectList.length,
       materials: subjectList.reduce((sum, row) => sum + (row.materials?.[0]?.count ?? 0), 0),
       topicsTracked: progress.length,
-      quizzesTaken: attempts.length,
+      /* Practice counts. It is the only thing a student can currently sit, and
+         a dashboard reporting zero while they work through set after set was
+         the complaint that produced all of this. */
+      quizzesTaken: attempts.length + scored.length,
       minutesThisWeek: studyByDay.reduce((sum, day) => sum + day.minutes, 0),
     },
     scoreTrend,

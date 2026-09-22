@@ -2,10 +2,11 @@
 
 import { Check, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { resetFlashcardsAction, reviewFlashcardAction } from "@/features/flashcards/server/actions";
+import { recordStudySessionAction } from "@/features/study/server/actions";
 import { type Flashcard } from "@/server/flashcards/queries";
 
 /**
@@ -33,10 +34,14 @@ export function FlashcardSession({
   cards,
   reviewerId,
   reviewerTitle,
+  subjectId,
+  topicId,
 }: {
   cards: Flashcard[];
   reviewerId: string;
   reviewerTitle: string;
+  subjectId: string;
+  topicId: string | null;
 }) {
   const router = useRouter();
 
@@ -55,6 +60,31 @@ export function FlashcardSession({
   const [revealed, setRevealed] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
 
+  /**
+   * When this run began.
+   *
+   * A ref, not state: it must not cause a render, and it must survive every
+   * flip and answer in between. Reset by "Go again", because a second pass is
+   * a second session — recording it as one long sitting would inflate the
+   * study time by however long the student left the tab open.
+   */
+  /**
+   * Zero until the screen is actually on, then set once from an effect.
+   *
+   * `useRef(Date.now())` reads the clock on EVERY render and throws all but
+   * the first away — which the React Compiler lint rejects, correctly: an
+   * impure call in render is a value that can change for reasons the component
+   * did not ask for. Writing a ref from an effect is allowed and is the honest
+   * moment anyway, because a session starts when the student can see it.
+   */
+  const startedAt = useRef(0);
+  /* Recorded once. A refresh or a re-render must not log the same run twice. */
+  const recorded = useRef(false);
+
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
+
   const card = deck[index];
   const finished = index >= deck.length;
 
@@ -63,16 +93,42 @@ export function FlashcardSession({
       const current = deck[index];
       if (!current) return;
 
-      setAnswers((previous) => [...previous, value]);
+      const next = [...answers, value];
+      setAnswers(next);
       setIndex((previous) => previous + 1);
       setRevealed(false);
+
+      /**
+       * The session is recorded when the LAST card is answered, from inside
+       * the handler that knows it was the last.
+       *
+       * Not in an effect watching `finished`: the React Compiler lint forbids
+       * setState in effects for good reasons, and an effect here would also
+       * fire again on every re-render of the summary screen. The handler runs
+       * exactly once per run, which is exactly how often this should happen.
+       *
+       * Fire-and-forget. A student who has finished a deck should not be made
+       * to wait on our bookkeeping, and the summary is already on screen.
+       */
+      if (next.length === deck.length && !recorded.current) {
+        recorded.current = true;
+        void recordStudySessionAction({
+          activity: "flashcards",
+          subjectId,
+          topicId,
+          reviewerId,
+          total: next.length,
+          correct: next.filter((entry) => entry === "known").length,
+          durationSeconds: elapsedSince(startedAt.current),
+        });
+      }
 
       /* Not awaited, and not in a transition. The next card is already on
          screen; a pending state here would only put a spinner over a card the
          student is reading. */
       void reviewFlashcardAction(current.id, value === "known");
     },
-    [deck, index],
+    [answers, deck, index, reviewerId, subjectId, topicId],
   );
 
   useEffect(() => {
@@ -114,6 +170,9 @@ export function FlashcardSession({
           setIndex(0);
           setAnswers([]);
           setRevealed(false);
+          /* A second pass is a second session, timed from now. */
+          startedAt.current = Date.now();
+          recorded.current = false;
         }}
         onReset={() => router.refresh()}
       />
@@ -368,4 +427,9 @@ function CardFace({
       {children}
     </span>
   );
+}
+
+/** Seconds since the clock started, or 0 if it never did. */
+function elapsedSince(startedAt: number): number {
+  return startedAt === 0 ? 0 : Math.round((Date.now() - startedAt) / 1000);
 }

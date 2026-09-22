@@ -1,19 +1,26 @@
 "use client";
 
 import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { recordStudySessionAction } from "@/features/study/server/actions";
 import { type PracticeQuestion } from "@/server/practice/queries";
 
 /**
  * A practice run (FR-C2, US-F3, Sprint 45).
  *
- * **Nothing is saved, and the page says so.** A student answering questions to
- * learn the material is not sitting an exam, and quietly recording their first
- * pass would build a score history out of their worst attempt — in a product
- * whose entire claim is that its numbers mean something. Graded attempts arrive
- * in Sprint 49; this is deliberately session-local.
+ * **A finished run IS recorded now, and the page says so.** It was
+ * session-local on the argument that practice is not an exam — true, and it
+ * left a student with no way to see that they had studied at all, which was
+ * worse. What is recorded is what happened: how many questions, how many right,
+ * how long it took. Answers are not kept, so a wrong answer costs nothing
+ * beyond the tally, and a run is only recorded once it is FINISHED — abandoning
+ * one at question two records nothing.
+ *
+ * Topic mastery moves only when the reviewer was scoped to a topic, because
+ * that is the only case where "which topic is this evidence about" has an
+ * answer. Graded, timed attempts are still Sprint 49's job.
  *
  * **Marked immediately, one question at a time.** Feedback delayed to the end
  * of a set is feedback nobody reads: the explanation for question three lands
@@ -32,7 +39,41 @@ import { type PracticeQuestion } from "@/server/practice/queries";
 
 type Verdict = "correct" | "incorrect";
 
-export function PracticeSession({ questions }: { questions: PracticeQuestion[] }) {
+export function PracticeSession({
+  questions,
+  reviewerId,
+  subjectId,
+  topicId,
+}: {
+  questions: PracticeQuestion[];
+  reviewerId: string;
+  subjectId: string;
+  topicId: string | null;
+}) {
+  /**
+   * When this run began, and whether it has been recorded.
+   *
+   * Refs, not state: neither must cause a render, and both must survive every
+   * answer in between. Reset by "Go again", because a second pass is a second
+   * session — timing it from the first would count however long the student
+   * spent reading the explanations of the first.
+   */
+  /**
+   * Zero until the screen is actually on, then set once from an effect.
+   *
+   * `useRef(Date.now())` reads the clock on EVERY render and throws all but
+   * the first away — which the React Compiler lint rejects, correctly: an
+   * impure call in render is a value that can change for reasons the component
+   * did not ask for. Writing a ref from an effect is allowed and is the honest
+   * moment anyway, because a session starts when the student can see it.
+   */
+  const startedAt = useRef(0);
+  const recorded = useRef(false);
+
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
+
   const [index, setIndex] = useState(0);
   const [given, setGiven] = useState("");
   /**
@@ -51,6 +92,9 @@ export function PracticeSession({ questions }: { questions: PracticeQuestion[] }
   const finished = index >= questions.length;
 
   function restart() {
+    /* A second pass is a second session, timed from now. */
+    startedAt.current = Date.now();
+    recorded.current = false;
     setIndex(0);
     setGiven("");
     setRevealed(false);
@@ -71,11 +115,37 @@ export function PracticeSession({ questions }: { questions: PracticeQuestion[] }
 
   function next() {
     if (!verdict) return;
-    setResults((previous) => [...previous, verdict]);
+
+    const all = [...results, verdict];
+    setResults(all);
     setIndex((previous) => previous + 1);
     setGiven("");
     setRevealed(false);
     setVerdict(null);
+
+    /**
+     * Recorded when the LAST question is answered, from inside the handler
+     * that knows it was the last.
+     *
+     * Not from an effect watching `finished`: the React Compiler lint forbids
+     * setState in effects, and an effect would fire again on every re-render
+     * of the summary. This runs exactly once per completed run.
+     *
+     * Fire-and-forget — the summary is already on screen, and a student who
+     * has finished should not wait on our bookkeeping.
+     */
+    if (all.length === questions.length && !recorded.current) {
+      recorded.current = true;
+      void recordStudySessionAction({
+        activity: "practice",
+        subjectId,
+        topicId,
+        reviewerId,
+        total: all.length,
+        correct: all.filter((result) => result === "correct").length,
+        durationSeconds: elapsedSince(startedAt.current),
+      });
+    }
   }
 
   if (finished) {
@@ -95,7 +165,7 @@ export function PracticeSession({ questions }: { questions: PracticeQuestion[] }
               : "Read the explanations on the ones you missed, then go again."}
           </p>
           <p className="mt-3 text-xs text-ink-subtle">
-            Practice is not recorded — this does not affect your progress.
+            Saved to your progress. Your answers are not kept — only how many you got right.
           </p>
         </div>
         <Button onClick={restart}>
@@ -191,7 +261,7 @@ export function PracticeSession({ questions }: { questions: PracticeQuestion[] }
       </div>
 
       <p className="text-center text-xs text-ink-subtle">
-        Practice only — nothing here is recorded against your progress.
+        Finish the set to save it to your progress. Leaving early records nothing.
       </p>
     </div>
   );
@@ -367,4 +437,9 @@ function normalise(value: string): string {
     .replace(/^(the|a|an)\s+/, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Seconds since the clock started, or 0 if it never did. */
+function elapsedSince(startedAt: number): number {
+  return startedAt === 0 ? 0 : Math.round((Date.now() - startedAt) / 1000);
 }
