@@ -155,30 +155,40 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
                   }
                 />
 
-                {/* Only when there is something to fix. A tile reading "0
-                    mistakes" is furniture, and its absence says the same thing
-                    without taking up the rail — the list clears itself, so this
-                    appears and disappears on its own. */}
-                <StudyTile
-                  colorSlot={reviewer.colorSlot}
-                  icon={<Target className="size-[1.125rem]" aria-hidden />}
-                  title="Review mistakes"
-                  count={missedCount}
-                  unit="question"
-                  note={`${missedCount} to get right`}
-                  href={`/reviewers/${reviewerId}/review`}
-                />
+                {/* Shown from the moment there are questions to get wrong, not
+                    from the moment some have been. Empty it explains what fills
+                    it; full it is the way in. It empties itself again as they
+                    are cleared, which is the good ending rather than a gap. */}
+                {questionCount > 0 && (
+                  <StudyTile
+                    colorSlot={reviewer.colorSlot}
+                    icon={<Target className="size-[1.125rem]" aria-hidden />}
+                    title="Review mistakes"
+                    blurb="Anything you miss in practice lands here, so you can go back and get it right without taking the whole set again."
+                    count={missedCount}
+                    unit="question"
+                    note={`${missedCount} to get right`}
+                    emptyNote={
+                      missedCount === 0 && questionCount > 0
+                        ? "Nothing missed yet — practise first."
+                        : undefined
+                    }
+                    href={`/reviewers/${reviewerId}/review`}
+                  />
+                )}
 
                 {/* Needs nothing generated, so it is offered the moment the
-                    reviewer is — as long as it has enough terms to be a board
-                    rather than a formality. */}
+                    reviewer is. Below the minimum it says why rather than
+                    vanishing — a missing tile reads as a missing feature. */}
                 <StudyTile
                   colorSlot={reviewer.colorSlot}
                   icon={<Shuffle className="size-[1.125rem]" aria-hidden />}
                   title="Matching"
+                  blurb="Pair each key term with its definition. Built from this reviewer, so there is nothing to generate and nothing to wait for."
                   count={pairCount >= MATCH_MINIMUM ? pairCount : 0}
                   unit="pair"
                   note={`${pairCount} pairs · nothing to generate`}
+                  emptyNote={`Needs ${MATCH_MINIMUM} key terms; this one has ${pairCount}.`}
                   href={`/reviewers/${reviewerId}/matching`}
                 />
               </div>
@@ -209,6 +219,7 @@ function StudyTile({
   note,
   href,
   generate,
+  emptyNote,
 }: {
   colorSlot: 1 | 2 | 3 | 4 | 5;
   icon: ReactNode;
@@ -220,17 +231,23 @@ function StudyTile({
   /** Replaces "N units ready" where that is the wrong sentence. */
   note?: string;
   href: string;
-  /**
-   * The control that makes the thing. Absent for the modes that need no
-   * generation — mistakes accumulate on their own and matching is built from
-   * the reviewer — and those tiles simply do not render while empty, because
-   * there is nothing to offer and nothing to explain.
-   */
+  /** The control that makes the thing, for the modes that are generated. */
   generate?: ReactNode;
+  /**
+   * What an empty tile says instead of offering a button.
+   *
+   * THE REASON THIS EXISTS. "Review mistakes" was hidden until it had something
+   * in it, on the reasoning that a tile reading "0 mistakes" is furniture. What
+   * that actually did was hide the feature from everyone who had not yet made a
+   * mistake — which is everyone, the first time they look — so the one place it
+   * could have been discovered showed no sign of it. A study mode nobody can
+   * find is not a tidier rail; it is a missing feature.
+   */
+  emptyNote?: string;
 }) {
   const tone = SUBJECT_TONE[colorSlot];
 
-  if (count === 0 && !generate) return null;
+  if (count === 0 && !generate && !emptyNote) return null;
 
   if (count === 0) {
     return (
@@ -242,7 +259,14 @@ function StudyTile({
           <p className="font-display font-semibold">{title}</p>
         </div>
         <p className="text-[0.8125rem] leading-relaxed text-ink-muted">{blurb}</p>
-        <div className="mt-0.5">{generate}</div>
+        {/* A button when there is something to press, and a plain line when
+            there is not. Nothing here fills a mistakes list except practising,
+            so offering a control would be offering the wrong one. */}
+        {generate ? (
+          <div className="mt-0.5">{generate}</div>
+        ) : (
+          emptyNote && <p className="text-[0.8125rem] font-medium text-ink-subtle">{emptyNote}</p>
+        )}
       </div>
     );
   }
