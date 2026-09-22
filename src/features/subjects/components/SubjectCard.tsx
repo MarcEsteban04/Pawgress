@@ -7,18 +7,7 @@ import { SubjectDialog } from "./SubjectDialog";
 import { SUBJECT_TONE, SubjectGlyph } from "./SubjectIcon";
 import { type Subject } from "@/server/subjects/queries";
 import { formatAcademicYear } from "@/lib/validation/subject";
-import { cn } from "@/lib/utils";
-
-/** "3 days ago" beats a date a student has to subtract from today. */
-function relative(iso: string): string {
-  const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 7) return `${days} days ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
-  return `${Math.floor(days / 365)}y ago`;
-}
+import { cn, relativeDate } from "@/lib/utils";
 
 /**
  * One subject in the list (FR-S2, US-B2).
@@ -139,10 +128,10 @@ export function SubjectCard({ subject }: { subject: Subject }) {
               subject.academicYear !== null ? formatAcademicYear(subject.academicYear) : null,
               subject.semester,
               archived
-                ? `archived ${relative(subject.archivedAt!)}`
+                ? `archived ${relativeDate(subject.archivedAt!)}`
                 : subject.materialCount > 0
-                  ? `active ${relative(subject.lastActivityAt)}`
-                  : `created ${relative(subject.createdAt)}`,
+                  ? `active ${relativeDate(subject.lastActivityAt)}`
+                  : `created ${relativeDate(subject.createdAt)}`,
             ]
               .filter(Boolean)
               .join(" · ")}

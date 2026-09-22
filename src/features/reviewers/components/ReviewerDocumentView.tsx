@@ -216,7 +216,7 @@ export function ReviewerDocumentView({
         ) : (
           document.terms.length > 0 && (
             <Card>
-              <CardBody className="p-0">
+              <CardBody flush>
                 <dl className="divide-y divide-rule">
                   {document.terms.map((term) => (
                     <div

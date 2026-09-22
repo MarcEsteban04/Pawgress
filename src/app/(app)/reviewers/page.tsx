@@ -7,7 +7,11 @@ import { NewReviewerDialog } from "@/features/reviewers/components/NewReviewerDi
 import { ReviewerFilters } from "@/features/reviewers/components/ReviewerFilters";
 import { ReviewerLibraryRow } from "@/features/reviewers/components/ReviewerLibraryRow";
 import { isFiltering, isReviewerSort, type ReviewerQuery } from "@/features/reviewers/query";
-import { listAllReviewers, listReviewerSubjectFacets } from "@/server/reviewers/queries";
+import {
+  listAllReviewers,
+  listReviewerStudyCounts,
+  listReviewerSubjectFacets,
+} from "@/server/reviewers/queries";
 import { listSubjects } from "@/server/subjects/queries";
 import { listTopics } from "@/server/topics/queries";
 
@@ -77,6 +81,10 @@ async function ReviewerList({
     );
   }
 
+  /* Two queries for the whole list, after the list is known — not two per row.
+     See `listReviewerStudyCounts`. */
+  const counts = await listReviewerStudyCounts(reviewers.map((reviewer) => reviewer.id));
+
   return (
     <>
       <p className="text-sm text-ink-muted" role="status">
@@ -84,11 +92,15 @@ async function ReviewerList({
         {filtering ? " matching" : ""}
       </p>
 
-      <Card>
-        <CardBody className="p-0">
+      <Card className="overflow-hidden">
+        <CardBody flush>
           <ul className="divide-y divide-rule">
             {reviewers.map((reviewer) => (
-              <ReviewerLibraryRow key={reviewer.id} reviewer={reviewer} />
+              <ReviewerLibraryRow
+                key={reviewer.id}
+                reviewer={reviewer}
+                counts={counts.get(reviewer.id) ?? { cards: 0, questions: 0 }}
+              />
             ))}
           </ul>
         </CardBody>
@@ -155,14 +167,15 @@ export default async function Page({ searchParams }: PageProps<"/reviewers">) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader
-          eyebrow="Written from your own material"
-          title="Reviewers"
-          description="Every reviewer here was built from files you uploaded. Open one to revise, duplicate it before cutting it down, or turn it into flashcards and practice questions."
-        />
-        {newReviewer}
-      </div>
+      {/* The button goes in PageHeader's own `action` slot. Sitting outside it
+          in a second flex row put two competing layouts on one line, which is
+          why the title block and the button never agreed on a baseline. */}
+      <PageHeader
+        eyebrow="Written from your own material"
+        title="Reviewers"
+        description="Every reviewer here was built from files you uploaded. Open one to revise, duplicate it before cutting it down, or turn it into flashcards and practice questions."
+        action={newReviewer}
+      />
 
       {/* Filters are furniture above an empty library. They appear once there is
           something to sort through, or once a filter is already applied —

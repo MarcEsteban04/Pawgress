@@ -13,7 +13,7 @@ import { formatBytes, KIND_LABELS } from "@/features/materials/upload";
 import { LOW_CONFIDENCE_THRESHOLD } from "@/features/materials/ocr";
 import { type Material } from "@/server/materials/queries";
 import { type MaterialKind } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, relativeDate } from "@/lib/utils";
 
 /**
  * One file in the library (FR-U4, US-C4).
@@ -34,16 +34,6 @@ const KIND_ICONS: Record<MaterialKind, typeof FileText> = {
   image: FileImage,
   note: FileText,
 };
-
-/** "3 days ago" beats a date a student has to subtract from today. */
-function relative(iso: string): string {
-  const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
 
 export function MaterialRow({
   material,
@@ -93,7 +83,7 @@ export function MaterialRow({
             </>
           )}
           <span aria-hidden>·</span>
-          <span>{relative(material.createdAt)}</span>
+          <span>{relativeDate(material.createdAt, "short")}</span>
         </div>
 
         {/* A shaky transcription is not a failure, so it is not styled as one —

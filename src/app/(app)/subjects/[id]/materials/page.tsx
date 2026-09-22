@@ -122,8 +122,8 @@ async function MaterialList({
         {filtering ? " matching" : ""}
       </p>
 
-      <Card>
-        <CardBody className="p-0">
+      <Card className="overflow-hidden">
+        <CardBody flush>
           <ul className="divide-y divide-rule">
             {materials.map((material) => (
               <MaterialRow key={material.id} material={material} topics={topics} />

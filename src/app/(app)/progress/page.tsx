@@ -135,8 +135,8 @@ export default async function Page() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:items-start">
         <section className="flex flex-col gap-3">
           <SectionLabel>By subject</SectionLabel>
-          <Card>
-            <CardBody className="p-0">
+          <Card className="overflow-hidden">
+            <CardBody flush>
               <ul className="divide-y divide-rule">
                 {data.subjects.map((subject) => {
                   const tone = SUBJECT_TONE[subject.colorSlot];
@@ -221,8 +221,8 @@ export default async function Page() {
 
       <section className="flex flex-col gap-3">
         <SectionLabel>Recent sessions</SectionLabel>
-        <Card>
-          <CardBody className="p-0">
+        <Card className="overflow-hidden">
+          <CardBody flush>
             <ul className="divide-y divide-rule">
               {data.recent.map((session) => (
                 <SessionRow key={session.id} session={session} />

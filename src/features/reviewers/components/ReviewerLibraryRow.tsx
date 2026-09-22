@@ -1,8 +1,8 @@
 "use client";
 
-import { Copy, FileText, Trash2 } from "lucide-react";
+import { Copy, FileText, Layers, ListChecks, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import {
   Button,
   Dialog,
@@ -20,7 +20,9 @@ import {
   duplicateReviewerAction,
   loadReviewerImpactAction,
 } from "@/features/reviewers/server/actions";
-import { type ReviewerListItem } from "@/server/reviewers/queries";
+import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
+import { type ReviewerListItem, type ReviewerStudyCounts } from "@/server/reviewers/queries";
+import { cn, relativeDate } from "@/lib/utils";
 
 /**
  * One reviewer in the library (Sprint 47).
@@ -29,6 +31,24 @@ import { type ReviewerListItem } from "@/server/reviewers/queries";
  * titles and subjects, and cards force that comparison into two dimensions for
  * no gain. The subject is on every row because this list crosses subjects —
  * without it a title like "Chapter 4" is unidentifiable.
+ *
+ * **The subject's colour is on the row, not just its name.** Every other surface
+ * in the app carries the tone — the dashboard, the study bar, the subject list —
+ * and this was the one list that dropped it for a grey document glyph, so five
+ * classes' worth of reviewers all looked like the same thing. Colour is the part
+ * of "which class is this" that survives being skimmed.
+ *
+ * **What is ready to study is on the row too.** "1 source" is the least useful
+ * fact available about a reviewer: it describes what went IN. The question a
+ * student is actually asking a library is which of these they can revise from
+ * right now, which is the flashcard and question counts — so they are here, in
+ * the same two glyphs the reviewer's own page uses for them.
+ *
+ * **The whole row is the link.** It used to tint on hover across its full width
+ * while only the text half navigated, so half of every row promised a click it
+ * did not honour. The anchor stays a real anchor wrapping the title — ctrl-click
+ * still opens a tab (docs/navigation.md §1) — and grows its hit area with a
+ * pseudo-element, with the action buttons lifted above it.
  */
 
 type Impact = { flashcards: number; quizzes: number };
@@ -60,7 +80,36 @@ function consequenceText(impact: Impact): string {
     : `${cards} generated from it are deleted too, along with what you had marked as known. ${quizzes} are kept — your answers are your own work — but will no longer be linked to a reviewer.`;
 }
 
-export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem }) {
+/**
+ * A count of something you can study, dimmed to nothing at zero.
+ *
+ * Zero is shown rather than hidden: a row with one chip and a row with two are
+ * hard to compare down a column, and "no flashcards yet" is exactly the fact
+ * that decides whether this reviewer is the one to open.
+ */
+function StudyCount({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return (
+    <span
+      title={`${countLabel(value, label, `${label}s`)}`}
+      className={cn(
+        "tabular inline-flex items-center gap-1.5 text-[0.8125rem]",
+        value > 0 ? "text-ink-muted" : "text-ink-subtle/60",
+      )}
+    >
+      {icon}
+      {value}
+      <span className="sr-only">{value === 1 ? label : `${label}s`}</span>
+    </span>
+  );
+}
+
+export function ReviewerLibraryRow({
+  reviewer,
+  counts,
+}: {
+  reviewer: ReviewerListItem;
+  counts: ReviewerStudyCounts;
+}) {
   const [impact, setImpact] = useState<Impact | null>(null);
   /**
    * Third state, and it is not optional.
@@ -77,6 +126,7 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
 
   const href = `/reviewers/${reviewer.id}`;
   const isReady = reviewer.status === "ready";
+  const tone = SUBJECT_TONE[reviewer.colorSlot];
 
   /* Counts are read when the dialog opens, not for every row on the page. */
   function onOpenChange(open: boolean) {
@@ -91,11 +141,26 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
   }
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken">
-      <FileText className="size-[1.125rem] shrink-0 text-ink-subtle" aria-hidden />
+    <li className="group relative flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-surface-sunken sm:px-5">
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-control)]",
+          tone.tint,
+          tone.ink,
+        )}
+        aria-hidden
+      >
+        <FileText className="size-[1.125rem]" />
+      </span>
 
-      <Link href={href} className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{reviewer.title}</span>
+      {/* `after:` is what makes the row clickable end to end without wrapping
+          the delete button in an anchor — nesting a button inside a link is a
+          click target with two meanings. */}
+      <Link href={href} className="min-w-0 flex-1 after:absolute after:inset-0 after:content-['']">
+        <span className="flex items-center gap-2">
+          <span className="truncate font-medium">{reviewer.title}</span>
+          {!isReady && <StatusBadge status={reviewer.status} />}
+        </span>
         <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-ink-muted">
           <span className="truncate">{reviewer.subjectName}</span>
           {reviewer.topicName && (
@@ -106,70 +171,93 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
           )}
           <span aria-hidden>·</span>
           <span className="tabular">{countLabel(reviewer.sourceCount, "source", "sources")}</span>
+          <span aria-hidden>·</span>
+          <span className="tabular">{relativeDate(reviewer.createdAt, "short")}</span>
         </span>
       </Link>
 
-      {!isReady && <StatusBadge status={reviewer.status} />}
-
-      {/* Duplicate is offered only on a finished reviewer. Copying one that is
-          still generating would produce a permanent orphan — the copy has no
-          job pointing at it, so it would sit at "generating" for ever. */}
+      {/* Dropped below `sm` rather than wrapped: on a phone this row is already
+          two lines, and a third would turn the list into a stack of blocks
+          nobody can skim. */}
       {isReady && (
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Duplicate ${reviewer.title}`}
-          disabled={isBusy}
-          onClick={() => startBusy(async () => void (await duplicateReviewerAction(reviewer.id)))}
-        >
-          <Copy aria-hidden />
-        </Button>
+        <div className="relative hidden shrink-0 items-center gap-3.5 pr-1 sm:flex">
+          <StudyCount
+            icon={<Layers className="size-4" aria-hidden />}
+            value={counts.cards}
+            label="flashcard"
+          />
+          <StudyCount
+            icon={<ListChecks className="size-4" aria-hidden />}
+            value={counts.questions}
+            label="question"
+          />
+        </div>
       )}
 
-      <Dialog onOpenChange={onOpenChange}>
-        <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" aria-label={`Delete ${reviewer.title}`}>
-            <Trash2 aria-hidden />
+      {/* `relative` lifts these clear of the anchor's stretched hit area.
+          Visible rather than hover-only: this list is read on phones, where a
+          control that only exists under a pointer does not exist at all. */}
+      <div className="relative flex shrink-0 items-center gap-0.5">
+        {/* Duplicate is offered only on a finished reviewer. Copying one that is
+            still generating would produce a permanent orphan — the copy has no
+            job pointing at it, so it would sit at "generating" for ever. */}
+        {isReady && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Duplicate ${reviewer.title}`}
+            disabled={isBusy}
+            onClick={() => startBusy(async () => void (await duplicateReviewerAction(reviewer.id)))}
+          >
+            <Copy aria-hidden />
           </Button>
-        </DialogTrigger>
+        )}
 
-        <DialogContent>
-          <DialogTitle>Delete “{reviewer.title}”?</DialogTitle>
-          <DialogDescription>
-            {impact
-              ? consequenceText(impact)
-              : failed
-                ? /* Honest about the gap rather than silent. What IS still known
-                     is the schema's own behaviour, so say that much and let the
-                     student decide — refusing to delete because a count failed
-                     would be worse. */
-                  "We could not check what was generated from this reviewer. Deleting it still removes any flashcards made from it, and still keeps any quizzes you have taken."
-                : "Checking what was generated from it…"}
-          </DialogDescription>
+        <Dialog onOpenChange={onOpenChange}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="sm" aria-label={`Delete ${reviewer.title}`}>
+              <Trash2 aria-hidden />
+            </Button>
+          </DialogTrigger>
 
-          {/* Held back until the real counts arrive. Showing zeros while loading
-              would be a confident, wrong answer in the one dialog that must not
-              give one. */}
-          {isLoading && !impact && !failed && <Skeleton className="mt-4 h-4 w-full" />}
+          <DialogContent>
+            <DialogTitle>Delete “{reviewer.title}”?</DialogTitle>
+            <DialogDescription>
+              {impact
+                ? consequenceText(impact)
+                : failed
+                  ? /* Honest about the gap rather than silent. What IS still known
+                       is the schema's own behaviour, so say that much and let the
+                       student decide — refusing to delete because a count failed
+                       would be worse. */
+                    "We could not check what was generated from this reviewer. Deleting it still removes any flashcards made from it, and still keeps any quizzes you have taken."
+                  : "Checking what was generated from it…"}
+            </DialogDescription>
 
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="subtle">Keep it</Button>
-            </DialogClose>
-            <DialogClose asChild>
-              <Button
-                variant="danger"
-                disabled={isBusy}
-                onClick={() =>
-                  startBusy(async () => void (await deleteReviewerAction(reviewer.id)))
-                }
-              >
-                Delete reviewer
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            {/* Held back until the real counts arrive. Showing zeros while loading
+                would be a confident, wrong answer in the one dialog that must not
+                give one. */}
+            {isLoading && !impact && !failed && <Skeleton className="mt-4 h-4 w-full" />}
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="subtle">Keep it</Button>
+              </DialogClose>
+              <DialogClose asChild>
+                <Button
+                  variant="danger"
+                  disabled={isBusy}
+                  onClick={() =>
+                    startBusy(async () => void (await deleteReviewerAction(reviewer.id)))
+                  }
+                >
+                  Delete reviewer
+                </Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </li>
   );
 }

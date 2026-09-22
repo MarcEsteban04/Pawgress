@@ -49,8 +49,22 @@ export function CardActions({ className, ...props }: ComponentProps<"div">) {
   return <div className={cn("ml-auto flex shrink-0 items-center gap-1.5", className)} {...props} />;
 }
 
-export function CardBody({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cn("px-5 pb-5 sm:px-6 sm:pb-6", className)} {...props} />;
+/**
+ * `flush` is a prop rather than something a caller expresses in `className`,
+ * because `className="p-0"` DOES NOT WORK here and fails in a way nobody sees
+ * in review: tailwind-merge drops the unprefixed `px-5 pb-5`, but `p-0` carries
+ * no breakpoint so it never conflicts with `sm:px-6 sm:pb-6`, which survive. The
+ * result was every full-bleed list — the reviewer library, the material list,
+ * both progress panels — inset by 24px with 24px of dead space under the last
+ * row, on every screen above 640px. Padding that can be switched off is the
+ * component's job to switch off.
+ */
+export function CardBody({
+  className,
+  flush = false,
+  ...props
+}: ComponentProps<"div"> & { flush?: boolean }) {
+  return <div className={cn(!flush && "px-5 pb-5 sm:px-6 sm:pb-6", className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }: ComponentProps<"div">) {

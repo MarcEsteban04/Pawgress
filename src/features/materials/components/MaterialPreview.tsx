@@ -43,7 +43,7 @@ function fileUrl(material: Material, opts?: { download?: boolean; page?: number 
 function PreviewFrame({ children }: { children: React.ReactNode }) {
   return (
     <Card className="overflow-hidden">
-      <CardBody className="p-0">{children}</CardBody>
+      <CardBody flush>{children}</CardBody>
     </Card>
   );
 }

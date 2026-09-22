@@ -23,6 +23,8 @@ export type ReviewerSummary = {
 export type ReviewerListItem = ReviewerSummary & {
   subjectId: string;
   subjectName: string;
+  /** The subject's colour. A list spanning five classes is unreadable without it. */
+  colorSlot: 1 | 2 | 3 | 4 | 5;
 };
 
 export type Reviewer = ReviewerSummary & {
@@ -108,7 +110,7 @@ export const listAllReviewers = cache(
     let request = supabase
       .from("reviewers")
       .select(
-        "id, title, status, topic_id, subject_id, source_material_ids, created_at, topics(name), subjects(name)",
+        "id, title, status, topic_id, subject_id, source_material_ids, created_at, topics(name), subjects(name, color_slot)",
       );
 
     /* `%` and `_` are LIKE wildcards, so a student searching for "50%" would
@@ -142,11 +144,72 @@ export const listAllReviewers = cache(
       topicName: row.topics?.name ?? null,
       subjectId: row.subject_id,
       subjectName: row.subjects?.name ?? "",
+      colorSlot: (row.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
       sourceCount: row.source_material_ids?.length ?? 0,
       createdAt: row.created_at,
     }));
   },
 );
+
+/** What a library row can say about itself beyond its own title. */
+export type ReviewerStudyCounts = { cards: number; questions: number };
+
+/**
+ * Flashcard and question counts for a whole page of reviewers.
+ *
+ * TWO QUERIES FOR THE WHOLE LIST, not two per row. `countFlashcards` and
+ * `countPracticeQuestions` are the right shape for one reviewer's own page and
+ * the wrong shape here — forty reviewers would be eighty round trips before the
+ * list could render, and `cache()` does not help because every call has a
+ * different argument.
+ *
+ * Flashcards are counted by reading back one uuid column and tallying it, since
+ * PostgREST has no GROUP BY. That is a lot of rows in exchange for one request,
+ * and one small column of them; the alternative is a database view, which is
+ * worth doing the day a student has thousands.
+ */
+/* Not wrapped in `cache()`: React memoises on argument identity, and a fresh
+   array every render would never hit it. The page calls this once. */
+export async function listReviewerStudyCounts(
+  reviewerIds: string[],
+): Promise<Map<string, ReviewerStudyCounts>> {
+  const counts = new Map<string, ReviewerStudyCounts>();
+  if (reviewerIds.length === 0) return counts;
+
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const [cards, quizzes] = await Promise.all([
+    supabase.from("flashcards").select("reviewer_id").in("reviewer_id", reviewerIds),
+    supabase
+      .from("quizzes")
+      .select("reviewer_id, question_count, status")
+      .in("reviewer_id", reviewerIds),
+  ]);
+
+  const get = (id: string) => {
+    const existing = counts.get(id);
+    if (existing) return existing;
+    const fresh = { cards: 0, questions: 0 };
+    counts.set(id, fresh);
+    return fresh;
+  };
+
+  for (const row of cards.data ?? []) {
+    if (row.reviewer_id) get(row.reviewer_id).cards += 1;
+  }
+
+  /* Only a finished set counts, matching `countPracticeQuestions`: a queued
+     one has no `question_count` yet, and advertising questions nobody can
+     answer is worse than saying nothing. */
+  for (const row of quizzes.data ?? []) {
+    if (row.reviewer_id && row.status === "ready") {
+      get(row.reviewer_id).questions += row.question_count ?? 0;
+    }
+  }
+
+  return counts;
+}
 
 /**
  * Which subjects actually have a reviewer.
