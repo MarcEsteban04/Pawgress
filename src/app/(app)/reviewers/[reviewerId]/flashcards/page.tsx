@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Card, CardBody } from "@/components/ui";
 import { FlashcardSession } from "@/features/flashcards/components/FlashcardSession";
 import { GenerateFlashcardsButton } from "@/features/flashcards/components/GenerateFlashcardsButton";
+import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
 import { getFlashcardDeck } from "@/server/flashcards/queries";
 import { getReviewer } from "@/server/reviewers/queries";
 
@@ -20,16 +21,14 @@ import { getReviewer } from "@/server/reviewers/queries";
 
 export async function generateMetadata({
   params,
-}: PageProps<"/subjects/[id]/reviewers/[reviewerId]/flashcards">) {
+}: PageProps<"/reviewers/[reviewerId]/flashcards">) {
   const { reviewerId } = await params;
   const reviewer = await getReviewer(reviewerId);
   return { title: reviewer ? `Flashcards · ${reviewer.title}` : "Flashcards" };
 }
 
-export default async function Page({
-  params,
-}: PageProps<"/subjects/[id]/reviewers/[reviewerId]/flashcards">) {
-  const { id, reviewerId } = await params;
+export default async function Page({ params }: PageProps<"/reviewers/[reviewerId]/flashcards">) {
+  const { reviewerId } = await params;
   const [reviewer, deck] = await Promise.all([
     getReviewer(reviewerId),
     getFlashcardDeck(reviewerId),
@@ -37,11 +36,35 @@ export default async function Page({
 
   if (!reviewer) notFound();
 
+  /* From the ROW, not the URL. The old route carried the subject in its path;
+     this one does not, and reading it here means it can never disagree with the
+     reviewer it belongs to. */
+  const id = reviewer.subjectId;
+
+  /* Queued counts. A job nobody has claimed looks identical to one mid-flight
+     from here, and both need the same nudge. */
+  const generating = deck.cards.length === 0 && deck.status !== null && deck.status !== "failed";
+
   return (
     <div className="mx-auto flex min-h-[calc(100dvh-9rem)] w-full max-w-[52rem] flex-col gap-5">
+      {/**
+       * The fix for the bug that made this look broken.
+       *
+       * Generation is a job, and `enqueueJob` kicks the worker exactly once,
+       * fire-and-forget. Lose that kick and nothing invokes it again: the job
+       * sits at `queued` with zero attempts for ever, which is precisely what
+       * happened — a deck and a question set queued and never claimed.
+       *
+       * The copy said "reload the page", which was worse than useless: a reload
+       * re-reads the same unchanged row and does not start anything. This nudges
+       * the queue AND refreshes, so a lost kick recovers and a finished set
+       * appears without being asked for. Renders nothing.
+       */}
+      <ProgressWatcher active={generating} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={`/subjects/${id}/reviewers/${reviewerId}`}
+          href={`/reviewers/${reviewerId}`}
           className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
         >
           <ArrowLeft className="size-4" aria-hidden />
@@ -100,8 +123,8 @@ export default async function Page({
                   aria-hidden
                 />
                 <p className="text-sm leading-relaxed text-ink-muted">
-                  Aki is turning this reviewer into cards. It usually takes under a minute — reload
-                  the page to see them.
+                  Aki is turning this reviewer into cards. It usually takes under a minute, and they
+                  appear here on their own.
                 </p>
               </>
             )}

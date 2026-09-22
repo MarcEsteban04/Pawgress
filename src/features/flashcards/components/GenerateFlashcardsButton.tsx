@@ -41,7 +41,7 @@ export function GenerateFlashcardsButton({
         setError(`${result.message} ${result.nextStep}`);
         return;
       }
-      router.push(`/subjects/${subjectId}/reviewers/${reviewerId}/flashcards`);
+      router.push(`/reviewers/${reviewerId}/flashcards`);
     });
   }
 

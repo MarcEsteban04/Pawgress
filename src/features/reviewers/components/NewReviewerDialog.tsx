@@ -62,7 +62,7 @@ export function NewReviewerDialog({
         setError(`${result.message} ${result.nextStep}`);
         return;
       }
-      router.push(`/subjects/${subjectId}/reviewers/${result.reviewerId}`);
+      router.push(`/reviewers/${result.reviewerId}`);
     });
   }
 

@@ -75,7 +75,7 @@ export function ReviewerLibraryRow({ reviewer }: { reviewer: ReviewerListItem })
   const [isLoading, startLoading] = useTransition();
   const [isBusy, startBusy] = useTransition();
 
-  const href = `/subjects/${reviewer.subjectId}/reviewers/${reviewer.id}`;
+  const href = `/reviewers/${reviewer.id}`;
   const isReady = reviewer.status === "ready";
 
   /* Counts are read when the dialog opens, not for every row on the page. */

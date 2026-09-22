@@ -26,13 +26,22 @@ export type ReviewerListItem = ReviewerSummary & {
 };
 
 export type Reviewer = ReviewerSummary & {
-  /** Null until the job finishes, and null if it produced nothing usable. */
+  /**
+   * The subject it was built from.
+   *
+   * Carried on the reviewer now that the detail page lives at /reviewers/[id]
+   * rather than under a subject. Generating flashcards and questions needs it,
+   * and reading it here beats keeping it in the URL where it could disagree
+   * with the row.
+   */
+  subjectId: string;
+  subjectName: string;
   content: ReviewerDocument | null;
   failureMessage: string | null;
 };
 
 const SELECT =
-  "id, title, status, topic_id, source_material_ids, created_at, content, topics(name)";
+  "id, title, status, topic_id, subject_id, source_material_ids, created_at, content, topics(name), subjects(name)";
 
 /* `content` is jsonb, so it arrives as `unknown`. Narrowed at the edge rather
    than trusted deeper in: the shape was written by us through a Zod schema, but
@@ -67,6 +76,8 @@ export const getReviewer = cache(async (id: string): Promise<Reviewer | null> =>
     topicName: data.topics?.name ?? null,
     sourceCount: data.source_material_ids?.length ?? 0,
     createdAt: data.created_at,
+    subjectId: data.subject_id,
+    subjectName: data.subjects?.name ?? "",
     content: readContent(data.content),
     /* Read from the JOB, not embedded here: there is no foreign key from a
        reviewer to the job that produced it, so PostgREST cannot join them and

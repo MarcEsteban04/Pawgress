@@ -11,7 +11,6 @@ import { ReviewerTitle } from "@/features/reviewers/components/ReviewerTitle";
 import { countFlashcards } from "@/server/flashcards/queries";
 import { countPracticeQuestions } from "@/server/practice/queries";
 import { getReviewer } from "@/server/reviewers/queries";
-import { getSubject } from "@/server/subjects/queries";
 
 /**
  * One generated reviewer (FR-R1, US-F1).
@@ -22,30 +21,30 @@ import { getSubject } from "@/server/subjects/queries";
  * concepts; then the terms. Reversing that would produce a glossary with a
  * summary attached.
  *
- * The page re-renders on navigation rather than polling. Generation takes about
- * a minute, and a poll that fires every two seconds for a minute is thirty
- * requests to learn one thing — the state is on screen and honest, and a reload
- * is one key.
+ * **Its own route, not a page inside a subject.** A reviewer is what a student
+ * revises FROM, and it is the hub the flashcards and the practice set hang off
+ * — nesting it under /subjects/[id] made opening one from the library feel like
+ * being sent back to a class you had already left. The subject it came from is
+ * still named, as a fact about the reviewer rather than as the way back.
  */
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/subjects/[id]/reviewers/[reviewerId]">) {
+export async function generateMetadata({ params }: PageProps<"/reviewers/[reviewerId]">) {
   const { reviewerId } = await params;
   const reviewer = await getReviewer(reviewerId);
   return { title: reviewer?.title ?? "Reviewer" };
 }
 
-export default async function Page({ params }: PageProps<"/subjects/[id]/reviewers/[reviewerId]">) {
-  const { id, reviewerId } = await params;
-  const [subject, reviewer, cardCount, questionCount] = await Promise.all([
-    getSubject(id),
+export default async function Page({ params }: PageProps<"/reviewers/[reviewerId]">) {
+  const { reviewerId } = await params;
+  const [reviewer, cardCount, questionCount] = await Promise.all([
     getReviewer(reviewerId),
     countFlashcards(reviewerId),
     countPracticeQuestions(reviewerId),
   ]);
 
-  if (!subject || !reviewer) notFound();
+  if (!reviewer) notFound();
+
+  const id = reviewer.subjectId;
 
   const content = reviewer.content;
 
@@ -57,18 +56,22 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
           Renders nothing. */}
       <ProgressWatcher active={reviewer.status !== "ready" && reviewer.status !== "failed"} />
 
+      {/* Back to the LIBRARY, which is where this was opened from. Sending a
+          student to the subject would be answering a question they did not
+          ask — the subject is named below as a property of the reviewer. */}
       <Link
-        href={`/subjects/${id}`}
+        href="/reviewers"
         className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        {subject.name}
+        Reviewers
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm text-ink-subtle">
             {[
+              reviewer.subjectName,
               reviewer.topicName,
               `${reviewer.sourceCount} source${reviewer.sourceCount === 1 ? "" : "s"}`,
             ]
@@ -89,7 +92,7 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
         <div className="flex flex-wrap items-center gap-2">
           {cardCount > 0 ? (
             <StudyLink
-              href={`/subjects/${id}/reviewers/${reviewerId}/flashcards`}
+              href={`/reviewers/${reviewerId}/flashcards`}
               icon={<Layers className="size-4" aria-hidden />}
               label={`Study ${cardCount} cards`}
             />
@@ -99,7 +102,7 @@ export default async function Page({ params }: PageProps<"/subjects/[id]/reviewe
 
           {questionCount > 0 ? (
             <StudyLink
-              href={`/subjects/${id}/reviewers/${reviewerId}/practice`}
+              href={`/reviewers/${reviewerId}/practice`}
               icon={<ListChecks className="size-4" aria-hidden />}
               label={`Practise ${questionCount} questions`}
             />

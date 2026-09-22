@@ -38,7 +38,7 @@ export function GenerateQuestionsButton({
         setError(`${result.message} ${result.nextStep}`);
         return;
       }
-      router.push(`/subjects/${subjectId}/reviewers/${reviewerId}/practice`);
+      router.push(`/reviewers/${reviewerId}/practice`);
     });
   }
 
