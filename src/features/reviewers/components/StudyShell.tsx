@@ -1,8 +1,16 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode } from "react";
+import { isValidElement, type ReactNode } from "react";
 import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
 import { cn } from "@/lib/utils";
+
+/**
+ * The heading's own styling, exported so a caller supplying its own `<h1>`
+ * looks identical to one passing a plain string. Two definitions of this would
+ * drift the first time the bar is restyled.
+ */
+export const STUDY_TITLE =
+  "truncate font-display text-lg leading-tight font-semibold tracking-[-0.01em] sm:text-xl";
 
 /**
  * The frame every study screen sits in (Sprint 44–45).
@@ -21,6 +29,13 @@ import { cn } from "@/lib/utils";
  * Shared rather than copied into both pages, because the flashcard deck and the
  * practice set are the same screen with different contents, and two copies
  * would have drifted by the second change.
+ *
+ * **This bar owns the page's `<h1>`, and it is the only one.** The reviewer page
+ * used to pass the title here AND render it again above the document, so every
+ * reviewer opened with its name printed twice and two competing `<h1>`s for a
+ * screen reader to announce. A caller that needs the title to do something —
+ * the reviewer's rename-in-place — passes an element instead of a string and
+ * owns the heading itself; see `STUDY_TITLE` for the type to match.
  */
 export function StudyShell({
   backHref,
@@ -34,7 +49,8 @@ export function StudyShell({
   backHref: string;
   backLabel: string;
   eyebrow: string;
-  title: string;
+  /** A string gets the standard `<h1>`; an element must render its own. */
+  title: ReactNode;
   colorSlot: 1 | 2 | 3 | 4 | 5;
   actions?: ReactNode;
   children: ReactNode;
@@ -60,18 +76,19 @@ export function StudyShell({
         </Link>
 
         <div className="min-w-0 flex-1">
+          {/* `max-w-full truncate` because this now carries a subject AND a
+              topic on the reviewer page, and a long pair used to push the bar
+              wider than the viewport. */}
           <p
             className={cn(
-              "inline-flex items-center rounded-[var(--radius-pill)] px-2 py-0.5 text-[0.6875rem] font-semibold tracking-[0.08em] uppercase",
+              "inline-block max-w-full truncate rounded-[var(--radius-pill)] px-2 py-0.5 align-top text-[0.6875rem] font-semibold tracking-[0.08em] uppercase",
               tone.tint,
               tone.ink,
             )}
           >
             {eyebrow}
           </p>
-          <h1 className="mt-1 truncate font-display text-lg leading-tight font-semibold tracking-[-0.01em] sm:text-xl">
-            {title}
-          </h1>
+          {isValidElement(title) ? title : <h1 className={cn("mt-1", STUDY_TITLE)}>{title}</h1>}
         </div>
 
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

@@ -1,4 +1,4 @@
-import { ArrowRight, FileText, Layers, ListChecks, TriangleAlert } from "lucide-react";
+import { ArrowRight, Layers, ListChecks, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { type ReactNode } from "react";
@@ -61,8 +61,12 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
     <StudyShell
       backHref="/reviewers"
       backLabel="your reviewers"
-      eyebrow={reviewer.subjectName || "Reviewer"}
-      title={reviewer.title}
+      /* Subject AND topic, because this is the only screen where "which part of
+         the class is this" is not already answered by the surrounding list. */
+      eyebrow={[reviewer.subjectName || "Reviewer", reviewer.topicName].filter(Boolean).join(" · ")}
+      /* An element, not a string: the shell's `<h1>` becomes the renameable one,
+         instead of the page printing its own title a second time underneath. */
+      title={<ReviewerTitle reviewerId={reviewerId} title={reviewer.title} />}
       colorSlot={reviewer.colorSlot}
       actions={<StatusBadge status={reviewer.status} />}
     >
@@ -100,18 +104,6 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
           {/* The prose column keeps a measure a person can read. Capped, and
               centred only until the rail appears beside it. */}
           <div className="mx-auto w-full max-w-[52rem] min-w-0 xl:mx-0 xl:flex-1">
-            <div className="mb-5">
-              <p className="text-sm text-ink-subtle">
-                {[
-                  reviewer.topicName,
-                  `${reviewer.sourceCount} source${reviewer.sourceCount === 1 ? "" : "s"}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-              <ReviewerTitle reviewerId={reviewerId} title={reviewer.title} />
-            </div>
-
             <ReviewerDocumentView
               reviewerId={reviewerId}
               document={content}
@@ -156,12 +148,6 @@ export default async function Page({ params }: PageProps<"/reviewers/[reviewerId
                     <GenerateQuestionsButton subjectId={id} reviewerId={reviewerId} size="sm" />
                   }
                 />
-
-                <p className="flex items-start gap-2 px-1 text-xs leading-relaxed text-ink-subtle">
-                  <FileText className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-                  Built from {reviewer.sourceCount} of your{" "}
-                  {reviewer.sourceCount === 1 ? "file" : "files"} in {reviewer.subjectName}.
-                </p>
               </div>
             </aside>
           )}
