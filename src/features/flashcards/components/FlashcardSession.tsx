@@ -2,7 +2,7 @@
 
 import { Check, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { resetFlashcardsAction, reviewFlashcardAction } from "@/features/flashcards/server/actions";
@@ -139,49 +139,91 @@ export function FlashcardSession({
         </p>
       </div>
 
-      {/* The card is a button, not a div with a click handler: flipping is an
-          action, and a keyboard user reaching it by tab should be told so by the
-          browser rather than by an aria-label we remembered to write. */}
+      {/**
+       * The flip.
+       *
+       * **Two faces on one sheet, rotated about Y.** The alternative — swapping
+       * the text and cross-fading — is the animation a card does not have: a
+       * flashcard has a back, and the gesture a student already knows is turning
+       * it over. `preserve-3d` on the sheet and `backface-hidden` on each face
+       * is what makes the far side genuinely hide rather than show through
+       * mirrored.
+       *
+       * The perspective lives on the SCENE, not the sheet. On the sheet it is
+       * applied per element and a wide card flattens out; on the parent, every
+       * point of the card shares one vanishing point and it reads as one object
+       * turning.
+       *
+       * **The question is on the back too**, smaller and quieter. A card that
+       * hides what it asked leaves a student reading an answer to a question
+       * they are trying to remember, which tests the wrong thing.
+       *
+       * The button is still a button — flipping is an action, and a keyboard
+       * user arriving by tab should be told so by the browser. The global
+       * `prefers-reduced-motion` rule collapses the transition, so the flip
+       * becomes an instant cut for anyone who asked for that.
+       */}
       <button
         type="button"
         onClick={() => setRevealed(true)}
         aria-label={revealed ? "Answer shown" : "Show the answer"}
         className={cn(
-          "group relative flex flex-1 flex-col items-center justify-center gap-7 overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface px-6 py-14 text-center shadow-[var(--shadow-card)] transition-all sm:px-12",
-          !revealed && "cursor-pointer hover:border-rule-strong hover:shadow-[var(--shadow-pop)]",
+          "group relative flex min-h-0 flex-1 perspective-[1600px]",
+          !revealed && "cursor-pointer",
         )}
       >
-        {/* A wash from the top, so a very tall card does not read as an empty
-            sheet with one sentence lost in the middle of it. */}
+        {/**
+         * Keyed on the card, and that key is doing real work.
+         *
+         * Answering advances the index AND clears `revealed` in the same
+         * render. Without the key the same element would still be at 180deg and
+         * would rotate BACK over two thirds of a second — showing the next
+         * card's answer, face on, before its question. A flashcard that spoils
+         * itself on the way in is worse than one with no animation at all.
+         *
+         * A new key mounts a new element, already at 0deg, so there is nothing
+         * to transition from and the next card simply arrives.
+         */}
         <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-surface-sunken/60 to-transparent"
-        />
+          key={card.id}
+          className={cn(
+            "absolute inset-0 transition-transform duration-[650ms] [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] transform-3d",
+            revealed && "rotate-y-180",
+          )}
+        >
+          <CardFace
+            hoverable={!revealed}
+            /* Hidden from assistive tech once turned: a screen reader reading
+               the front and then the back would announce the question twice. */
+            hidden={revealed}
+          >
+            <p className="max-w-[46rem] font-display text-2xl leading-[1.25] font-semibold tracking-[-0.02em] text-balance sm:text-3xl lg:text-[2rem]">
+              {card.front}
+            </p>
+            <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-rule px-3 py-1.5 text-xs tracking-[0.06em] text-ink-subtle uppercase transition-colors group-hover:border-rule-strong group-hover:text-ink-muted">
+              Space to reveal
+            </span>
+          </CardFace>
 
-        <p className="relative max-w-[46rem] font-display text-2xl leading-[1.25] font-semibold tracking-[-0.02em] text-balance sm:text-3xl lg:text-[2rem]">
-          {card.front}
-        </p>
-
-        {revealed ? (
-          <>
-            <span className="relative h-px w-16 bg-rule-strong" aria-hidden />
-            <p className="relative max-w-[42rem] text-base leading-relaxed text-balance text-ink-muted sm:text-lg">
+          <CardFace back hidden={!revealed}>
+            <p className="max-w-[40rem] text-base leading-snug text-balance text-ink-subtle">
+              {card.front}
+            </p>
+            <span className="h-px w-16 bg-rule-strong" aria-hidden />
+            <p className="max-w-[42rem] font-display text-xl leading-snug font-semibold tracking-[-0.01em] text-balance sm:text-2xl">
               {card.back}
             </p>
-          </>
-        ) : (
-          <span className="relative inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-rule px-3 py-1.5 text-xs tracking-[0.06em] text-ink-subtle uppercase transition-colors group-hover:border-rule-strong group-hover:text-ink-muted">
-            Space to reveal
-          </span>
-        )}
 
-        {/* Only after the flip. Telling a student they got this right twice
-            BEFORE they try again hands them the confidence without the recall. */}
-        {revealed && card.timesSeen > 0 && (
-          <span className="absolute top-4 right-5 text-xs text-ink-subtle tabular-nums">
-            {card.timesKnown}/{card.timesSeen} correct so far
-          </span>
-        )}
+            {/* On the BACK only. Telling a student they got this right twice
+                before they try again hands them the confidence without the
+                recall. */}
+            {card.timesSeen > 0 && (
+              <span className="absolute top-4 right-5 text-xs text-ink-subtle tabular-nums">
+                {card.timesKnown}/{card.timesSeen} correct so far
+              </span>
+            )}
+          </CardFace>
+        </span>
       </button>
 
       {/* Held in the layout whether or not the card is flipped, so revealing
@@ -287,4 +329,43 @@ function shuffle<T>(items: readonly T[]): T[] {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+/**
+ * One side of the card.
+ *
+ * Both faces are absolutely positioned on the same sheet, because a flip needs
+ * them to occupy the same space — a back that sits below the front would
+ * double the card's height and the rotation would swing through nothing.
+ */
+function CardFace({
+  back = false,
+  hoverable = false,
+  hidden,
+  children,
+}: {
+  back?: boolean;
+  hoverable?: boolean;
+  hidden: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      aria-hidden={hidden}
+      className={cn(
+        "absolute inset-0 flex flex-col items-center justify-center gap-6 overflow-hidden rounded-[var(--radius-canvas)] border border-rule bg-surface px-6 py-14 text-center shadow-[var(--shadow-card)] backface-hidden sm:px-12",
+        hoverable &&
+          "transition-[border-color,box-shadow] group-hover:border-rule-strong group-hover:shadow-[var(--shadow-pop)]",
+        back && "rotate-y-180",
+      )}
+    >
+      {/* A wash from the top, so a very tall card does not read as an empty
+          sheet with one sentence lost in the middle of it. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-surface-sunken/60 to-transparent"
+      />
+      {children}
+    </span>
+  );
 }
