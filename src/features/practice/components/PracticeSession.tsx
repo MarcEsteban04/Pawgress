@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button, buttonStyles, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { markDeterministic } from "@/features/quizzes/marking";
 import { recordStudySessionAction } from "@/features/study/server/actions";
 import { type PracticeQuestion } from "@/server/practice/queries";
 
@@ -513,30 +514,18 @@ const TYPE_LABEL: Record<PracticeQuestion["type"], string> = {
 /**
  * Is this close enough?
  *
- * Choices are exact, because they were chosen from a list. An identification is
- * normalised — case, punctuation, a leading article — and then compared both
- * ways, so "the mitochondrion" matches "mitochondrion". That containment rule is
- * only safe because the expected value is ONE TERM; applied to a short answer it
- * would mark a single word right against a whole model sentence, which is why
- * short answers never reach this function.
+ * **Delegates to `markDeterministic`, which is shared with quizzes.** These
+ * rules used to live here as a private helper, which was safe only while
+ * practice was the one thing marking anything. A quiz score is recorded and
+ * feeds mastery, so the rules had to move somewhere the server could apply
+ * them — and two copies of "is this answer right" would have disagreed by the
+ * second change to either.
+ *
+ * Short answers still never reach it. It returns null for them, and this
+ * component asks the student instead; see the header.
  */
 function isCorrect(question: PracticeQuestion, given: string): boolean {
-  const expected = normalise(question.answer);
-  const actual = normalise(given);
-  if (!actual) return false;
-
-  if (question.type === "mcq" || question.type === "true_false") return actual === expected;
-
-  return actual === expected || expected.includes(actual) || actual.includes(expected);
-}
-
-function normalise(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/^(the|a|an)\s+/, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return markDeterministic(question, given)?.correct ?? false;
 }
 
 /** Seconds since the clock started, or 0 if it never did. */
