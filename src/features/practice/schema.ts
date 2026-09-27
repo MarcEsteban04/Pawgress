@@ -49,8 +49,18 @@ export const questionSetSchema = z.object({
         explanation: z.string().min(1).max(800),
       }),
     )
-    .min(4)
-    .max(20),
+    /**
+     * Widened for Sprint 49, where the student picks the length.
+     *
+     * The bound cannot BE the requested count: a schema demanding exactly
+     * twenty fails the whole generation when the model writes nineteen, and
+     * paying twice for an off-by-one is the worst possible trade. The target
+     * goes in the PROMPT and the handler trims the surplus; this only has to
+     * be wide enough to hold any legal request plus the overshoot that
+     * deduplication will eat.
+     */
+    .min(1)
+    .max(40),
 });
 
 export type GeneratedQuestion = z.infer<typeof questionSetSchema>["questions"][number];
@@ -111,10 +121,21 @@ const DIFFICULTY_RULES: Record<QuizDifficulty, string[]> = {
  * at all: shaping it afterwards is impossible, and asking for "some easy and
  * some hard" produces a set that is neither.
  */
-export function questionPrompt(difficulty: QuizDifficulty): string {
+export function questionPrompt(difficulty: QuizDifficulty, count?: number): string {
+  /* Asked for with HEADROOM, because the quality pass downstream throws
+     questions away — duplicates, unverifiable answers, prompts containing
+     their own answer. Requesting exactly N and losing three to dedupe leaves
+     a student short of the length they chose, and there is no cheap way to
+     top one up afterwards. */
+  const target = count ? Math.min(40, Math.round(count * 1.3)) : null;
+
   return [
-    "Write practice questions on the revision aid above.",
+    "Write practice questions on the material above.",
     "",
+    target
+      ? `Write ${target} questions. A quality check will discard some, so make
+every one of them worth keeping.`
+      : "",
     ...DIFFICULTY_RULES[difficulty],
     "",
     "Mix the four types, weighted toward multiple choice and identification:",
@@ -142,5 +163,7 @@ export function questionPrompt(difficulty: QuizDifficulty): string {
     "  same answer are one question.",
     "- Do not ask about the reviewer itself, its structure, or how many concepts",
     "  it lists. Ask about the subject.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

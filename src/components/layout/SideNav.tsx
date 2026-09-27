@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpen,
+  ClipboardCheck,
   House,
   Layers,
   MessageSquare,
@@ -59,6 +60,12 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
         label: "Ask",
         Icon: MessageSquare,
         hint: "Aki answers from your library",
+      },
+      {
+        href: "/quizzes",
+        label: "Quizzes",
+        Icon: ClipboardCheck,
+        hint: "Test yourself on a subject",
       },
       { href: "/progress", label: "Progress", Icon: BarChart3, hint: "Mastery and quiz history" },
     ],
