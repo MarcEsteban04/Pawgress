@@ -106,7 +106,7 @@ export function TopicDialog({
           </Field>
 
           {state.status === "saved" && !editing && (
-            <p className="text-ok text-sm" role="status">
+            <p className="text-sm text-good" role="status">
               Added. Type another, or close when you are done.
             </p>
           )}

@@ -838,7 +838,7 @@ function AnswerRating({ messageId }: { messageId: string }) {
         title="This helped"
         className={cn(
           "rounded-full p-1.5 transition-colors",
-          rating === "helpful" ? "text-ok" : "text-ink-subtle hover:text-ink",
+          rating === "helpful" ? "text-good" : "text-ink-subtle hover:text-ink",
         )}
       >
         <ThumbsUp className="size-3.5" aria-hidden />

@@ -157,12 +157,12 @@ export function MatchingSession({
                 key={pair.id}
                 className={cn(
                   "flex flex-col gap-2 rounded-[var(--radius-control)] border px-4 py-3 sm:flex-row sm:items-start sm:gap-4",
-                  right ? "border-ok/30 bg-ok-soft" : "border-bad/30 bg-bad-soft",
+                  right ? "border-good/30 bg-good-soft" : "border-bad/30 bg-bad-soft",
                 )}
               >
                 <span className="mt-0.5 shrink-0">
                   {right ? (
-                    <Check className="text-ok size-4" aria-hidden />
+                    <Check className="size-4 text-good" aria-hidden />
                   ) : (
                     <X className="size-4 text-bad" aria-hidden />
                   )}

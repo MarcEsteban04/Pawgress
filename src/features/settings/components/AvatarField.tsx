@@ -138,7 +138,7 @@ export function AvatarField({
           </p>
 
           {state.status === "saved" && resizeNote && (
-            <p className="text-ok text-sm" role="status">
+            <p className="text-sm text-good" role="status">
               {resizeNote}
             </p>
           )}

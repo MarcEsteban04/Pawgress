@@ -305,7 +305,7 @@ export function PracticeSession({
             <div
               className={cn(
                 "flex flex-col gap-2 rounded-[var(--radius-control)] border px-4 py-3",
-                verdict === "correct" && "border-ok/30 bg-ok-soft",
+                verdict === "correct" && "border-good/30 bg-good-soft",
                 verdict === "incorrect" && "border-bad/30 bg-bad-soft",
                 /* Neutral while a short answer waits to be marked. Colouring it
                  before the student has said whether they had it would be the
@@ -314,7 +314,9 @@ export function PracticeSession({
               )}
             >
               <p className="flex items-center gap-2 text-sm font-medium">
-                {verdict === "correct" && <Check className="text-ok size-4 shrink-0" aria-hidden />}
+                {verdict === "correct" && (
+                  <Check className="size-4 shrink-0 text-good" aria-hidden />
+                )}
                 {verdict === "incorrect" && <X className="size-4 shrink-0 text-bad" aria-hidden />}
                 {verdict === "correct" ? "Correct" : `Answer: ${question.answer}`}
               </p>
@@ -379,13 +381,13 @@ function Choices({
               "flex items-center gap-3 rounded-[var(--radius-control)] border px-4 py-3.5 text-left text-[0.9375rem] transition-all sm:text-base",
               !locked &&
                 "border-rule hover:-translate-y-px hover:border-rule-strong hover:bg-surface-sunken hover:shadow-[var(--shadow-pill)]",
-              locked && isAnswer && "border-ok/40 bg-ok-soft",
+              locked && isAnswer && "border-good/40 bg-good-soft",
               locked && isGiven && !isAnswer && "border-bad/40 bg-bad-soft",
               locked && !isAnswer && !isGiven && "border-rule opacity-50",
             )}
           >
             <span className="flex-1">{choice}</span>
-            {locked && isAnswer && <Check className="text-ok size-4 shrink-0" aria-hidden />}
+            {locked && isAnswer && <Check className="size-4 shrink-0 text-good" aria-hidden />}
             {locked && isGiven && !isAnswer && (
               <X className="size-4 shrink-0 text-bad" aria-hidden />
             )}

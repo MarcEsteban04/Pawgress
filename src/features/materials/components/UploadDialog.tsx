@@ -394,7 +394,7 @@ export function UploadDialog({
                   className="flex items-start gap-3 rounded-[var(--radius-tile)] bg-surface-sunken p-3"
                 >
                   {entry.status === "done" ? (
-                    <CircleCheck className="text-ok mt-0.5 size-4 shrink-0" aria-hidden />
+                    <CircleCheck className="mt-0.5 size-4 shrink-0 text-good" aria-hidden />
                   ) : (
                     <FileText className="mt-0.5 size-4 shrink-0 text-ink-subtle" aria-hidden />
                   )}
@@ -508,7 +508,7 @@ export function UploadDialog({
           )}
 
           {uploaded > 0 && (
-            <p className="text-ok text-sm" role="status">
+            <p className="text-sm text-good" role="status">
               {uploaded} {uploaded === 1 ? "file" : "files"} added. They are queued for processing —
               text extraction arrives in a later sprint.
             </p>
