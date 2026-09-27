@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { Card, CardBody } from "@/components/ui";
 import { GeneratingOverlay, Ghost } from "@/features/jobs/components/GeneratingOverlay";
 import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
+import { QuizAnalytics } from "@/features/quizzes/components/QuizAnalytics";
 import { QuizStage } from "@/features/quizzes/components/QuizStage";
 import { DIFFICULTY_LABELS, estimateMinutes } from "@/features/quizzes/schema";
 import { StudyShell } from "@/features/reviewers/components/StudyShell";
-import { getQuiz, getQuizQuestions } from "@/server/quizzes/queries";
+import { getQuiz, getQuizAttempts, getQuizQuestions } from "@/server/quizzes/queries";
 
 /**
  * One quiz (FR-Q1, US-G1, Sprint 49).
@@ -29,7 +30,11 @@ export async function generateMetadata({ params }: PageProps<"/quizzes/[quizId]"
 
 export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
   const { quizId } = await params;
-  const [quiz, questions] = await Promise.all([getQuiz(quizId), getQuizQuestions(quizId)]);
+  const [quiz, questions, attempts] = await Promise.all([
+    getQuiz(quizId),
+    getQuizQuestions(quizId),
+    getQuizAttempts(quizId),
+  ]);
 
   if (!quiz) notFound();
 
@@ -89,6 +94,9 @@ export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
           questions={questions}
           timeLimitSeconds={quiz.timeLimitSeconds}
           mock={quiz.isMockExam}
+          history={
+            attempts.length > 0 ? <QuizAnalytics quizId={quiz.id} attempts={attempts} /> : null
+          }
           estimatedMinutes={estimateMinutes(questions.length)}
         />
       )}

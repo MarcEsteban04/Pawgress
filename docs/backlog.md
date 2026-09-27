@@ -66,6 +66,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 52 | Quiz submission — hand in, mark, score, record the attempt, correct/incorrect states, overrule a model's mark | done | no migration. Blanks do not block submission. A quiz writes the same study session and mastery update as practice. **Known gap:** an overrule corrects the attempt and the session but not topic mastery — `record_practice` only adds; fixing it needs the migration waiting on `SUPABASE_ACCESS_TOKEN` |
 | 53 | Quiz results — score, missed/right filter, correct answers, explanations, weak topics | done | no migration. Answers and explanations are revealed only once an attempt is SUBMITTED. Whole-subject quizzes now tag each question with the file it came from (`source`), mapped back to the material and its topic — and `quiz_questions.source_material_id` is filled for the first time. Quizzes made before this have no topic breakdown |
 | 54 | Mock exams — 40/50/60 questions, exam clock with extra time, shuffled every sitting, auto hand-in, readiness band | done | no migration. Long papers are generated in slices of 20, each deduplicated against every earlier batch. Also fixed: the Sprint 50 countdown restarted on every keystroke and every trip to the review screen; and sliced jobs lost their retry budget after three slices (`attempts` now resets on progress) |
+| 55 | Quiz analytics — attempts, average, best, most recent, per quiz and across the library | done | no migration. Average is POOLED (right over asked), not a mean of percentages; best ties go to the most recent; practice attempts are excluded from quiz averages. `npm run analytics:test` pins all of it |
 | — | **Review your mistakes, and match the terms** | done | two more ways into a reviewer, beyond the roadmap's list. Mistakes are the questions whose most recent answer was wrong, so the list clears itself |
 | 47 | Reviewer library — one cross-subject `/reviewers`, URL-driven search/filter/sort, duplicate, counted delete | done | no migration. **Top level, not per-subject** — "filter by subject" only means something if the list spans them. "Save reviewer" needed no work: reviewers have persisted at generation since Sprint 43. The subject hub no longer previews them: it is subjects, topics and files, and a reviewer is generated from the library, which asks which subject |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
@@ -76,9 +77,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 55 | Quiz analytics — attempts, average, best, recent | 52 |
 | 56 | Topic mastery — the weighted formula, improvement, weak and strong | 55 |
 | 58 | Progress dashboard — overall, subject and topic progress in one place | 56 |
+| 59 | Weakness detection | 56 |
 
 ---
 

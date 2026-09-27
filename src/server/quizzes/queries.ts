@@ -354,3 +354,78 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
     answers,
   };
 });
+
+/* -------------------------------------------------------------------------- */
+/*  Analytics (Sprint 55)                                                      */
+/* -------------------------------------------------------------------------- */
+
+export type AttemptRecord = {
+  id: string;
+  correct: number;
+  total: number;
+  submittedAt: string;
+  durationSeconds: number | null;
+};
+
+/**
+ * Every scored attempt at one quiz, oldest first.
+ *
+ * Scored only. An attempt row exists from the moment a paper is handed in and
+ * gains its score a moment later (see `submitQuizAction`); one caught between
+ * the two, or left behind by a submission that died, has no score and must
+ * not be averaged in as a zero the student never earned.
+ */
+export const getQuizAttempts = cache(async (quizId: string): Promise<AttemptRecord[]> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("quiz_attempts")
+    .select("id, score_correct, score_total, submitted_at, duration_seconds")
+    .eq("quiz_id", quizId)
+    .not("submitted_at", "is", null)
+    .not("score_total", "is", null)
+    .order("submitted_at", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    correct: row.score_correct ?? 0,
+    total: row.score_total ?? 0,
+    submittedAt: row.submitted_at as string,
+    durationSeconds: row.duration_seconds,
+  }));
+});
+
+/**
+ * Every scored attempt across the student's quizzes — for the library summary.
+ *
+ * Practice sets excluded, through the inner join on `reviewer_id is null`.
+ * Practice is marked question by question and taken to learn; averaging it in
+ * would drag a quiz average down with first passes that were never meant as a
+ * measurement, which is the distinction Sprint 49 exists to keep.
+ */
+export const listAllQuizAttempts = cache(
+  async (): Promise<(AttemptRecord & { quizId: string })[]> => {
+    await requireSession();
+    const supabase = await createSupabaseServerClient();
+
+    const { data } = await supabase
+      .from("quiz_attempts")
+      .select(
+        "id, quiz_id, score_correct, score_total, submitted_at, duration_seconds, quizzes!inner(reviewer_id)",
+      )
+      .is("quizzes.reviewer_id", null)
+      .not("submitted_at", "is", null)
+      .not("score_total", "is", null)
+      .order("submitted_at", { ascending: true });
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      quizId: row.quiz_id,
+      correct: row.score_correct ?? 0,
+      total: row.score_total ?? 0,
+      submittedAt: row.submitted_at as string,
+      durationSeconds: row.duration_seconds,
+    }));
+  },
+);

@@ -36,12 +36,22 @@ export function QuizStage({
   timeLimitSeconds,
   estimatedMinutes,
   mock = false,
+  history,
 }: {
   quizId: string;
   questions: QuizQuestion[];
   timeLimitSeconds: number | null;
   estimatedMinutes: number;
   mock?: boolean;
+  /**
+   * Past attempts, rendered on the start screen and nowhere else (Sprint 55).
+   *
+   * A slot rather than data, so the server renders it and this client
+   * component only decides WHEN — which is before Start and never during. A
+   * student answering question fourteen should not have last week's score in
+   * the corner of their eye.
+   */
+  history?: React.ReactNode;
 }) {
   const router = useRouter();
   const [started, setStarted] = useState(false);
@@ -87,88 +97,92 @@ export function QuizStage({
 
   if (!started) {
     return (
-      <div className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col justify-center gap-6 py-8">
-        <div className="text-center">
-          <p className="font-display text-4xl font-semibold tracking-[-0.03em] tabular-nums">
-            {questions.length}
-          </p>
-          <p className="mt-1 text-sm text-ink-muted">
-            questions · about {estimatedMinutes} minutes
+      <div className="flex flex-1 flex-col items-center gap-10">
+        <div className="mx-auto flex w-full max-w-[34rem] flex-1 flex-col justify-center gap-6 py-8">
+          <div className="text-center">
+            <p className="font-display text-4xl font-semibold tracking-[-0.03em] tabular-nums">
+              {questions.length}
+            </p>
+            <p className="mt-1 text-sm text-ink-muted">
+              questions · about {estimatedMinutes} minutes
+            </p>
+          </div>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 flex w-full items-center gap-2 text-sm font-medium">
+              <Clock className="size-4 text-ink-subtle" aria-hidden />
+              {mock ? "Exam time" : "Timer"}
+            </legend>
+            <div className={cn("grid gap-2", mock ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4")}>
+              {(mock
+                ? [
+                    { label: `Standard · ${standard / 60} min`, seconds: standard },
+                    {
+                      label: `Extra time · ${Math.round((standard * EXTRA_TIME_FACTOR) / 60)} min`,
+                      seconds: Math.round(standard * EXTRA_TIME_FACTOR),
+                    },
+                  ]
+                : TIMER_OPTIONS
+              ).map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  aria-pressed={limit === option.seconds}
+                  /* A mock exam's choice is not saved. The stored clock is the
+                   STANDARD one, and remembering extra time would quietly make
+                   it the standard next time. */
+                  onClick={() => (mock ? setLimit(option.seconds) : choose(option.seconds))}
+                  className={cn(
+                    "rounded-[var(--radius-control)] border px-3 py-2.5 text-sm font-medium transition-colors",
+                    limit === option.seconds
+                      ? "border-accent bg-accent-soft"
+                      : "border-rule hover:border-rule-strong hover:bg-surface-sunken",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-ink-subtle">
+              {mock
+                ? "Exam conditions. When time runs out your paper is handed in as it stands. Extra time is here for anyone who has it in their real exams."
+                : limit === null
+                  ? "Untimed. Take as long as you need — this is the default, and it is the right one unless you are rehearsing an exam."
+                  : "When time runs out you go to your answers. Nothing is taken away."}
+            </p>
+          </fieldset>
+
+          <Button
+            size="lg"
+            onClick={() => {
+              /* Reading the clock and shuffling here, in the handler, rather than
+               during render — both are impure, and this is the moment they
+               genuinely belong to anyway. */
+              const now = Date.now();
+              startedAt.current = now;
+              setDeadline(limit !== null ? now + limit * 1000 : null);
+              if (mock) setOrder(shuffled(questions));
+              setStarted(true);
+            }}
+            block
+          >
+            <Play aria-hidden />
+            {mock ? "Start the exam" : "Start quiz"}
+          </Button>
+
+          <p className="flex items-center justify-center gap-1.5 text-center text-xs leading-relaxed text-ink-subtle">
+            {mock ? (
+              <>
+                <Shuffle className="size-3.5" aria-hidden />
+                Questions come in a new order every sitting. Nothing is marked until the end.
+              </>
+            ) : (
+              "Nothing is marked while you are in it. You can skip questions and come back to them."
+            )}
           </p>
         </div>
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 flex w-full items-center gap-2 text-sm font-medium">
-            <Clock className="size-4 text-ink-subtle" aria-hidden />
-            {mock ? "Exam time" : "Timer"}
-          </legend>
-          <div className={cn("grid gap-2", mock ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4")}>
-            {(mock
-              ? [
-                  { label: `Standard · ${standard / 60} min`, seconds: standard },
-                  {
-                    label: `Extra time · ${Math.round((standard * EXTRA_TIME_FACTOR) / 60)} min`,
-                    seconds: Math.round(standard * EXTRA_TIME_FACTOR),
-                  },
-                ]
-              : TIMER_OPTIONS
-            ).map((option) => (
-              <button
-                key={option.label}
-                type="button"
-                aria-pressed={limit === option.seconds}
-                /* A mock exam's choice is not saved. The stored clock is the
-                   STANDARD one, and remembering extra time would quietly make
-                   it the standard next time. */
-                onClick={() => (mock ? setLimit(option.seconds) : choose(option.seconds))}
-                className={cn(
-                  "rounded-[var(--radius-control)] border px-3 py-2.5 text-sm font-medium transition-colors",
-                  limit === option.seconds
-                    ? "border-accent bg-accent-soft"
-                    : "border-rule hover:border-rule-strong hover:bg-surface-sunken",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs leading-relaxed text-ink-subtle">
-            {mock
-              ? "Exam conditions. When time runs out your paper is handed in as it stands. Extra time is here for anyone who has it in their real exams."
-              : limit === null
-                ? "Untimed. Take as long as you need — this is the default, and it is the right one unless you are rehearsing an exam."
-                : "When time runs out you go to your answers. Nothing is taken away."}
-          </p>
-        </fieldset>
-
-        <Button
-          size="lg"
-          onClick={() => {
-            /* Reading the clock and shuffling here, in the handler, rather than
-               during render — both are impure, and this is the moment they
-               genuinely belong to anyway. */
-            const now = Date.now();
-            startedAt.current = now;
-            setDeadline(limit !== null ? now + limit * 1000 : null);
-            if (mock) setOrder(shuffled(questions));
-            setStarted(true);
-          }}
-          block
-        >
-          <Play aria-hidden />
-          {mock ? "Start the exam" : "Start quiz"}
-        </Button>
-
-        <p className="flex items-center justify-center gap-1.5 text-center text-xs leading-relaxed text-ink-subtle">
-          {mock ? (
-            <>
-              <Shuffle className="size-3.5" aria-hidden />
-              Questions come in a new order every sitting. Nothing is marked until the end.
-            </>
-          ) : (
-            "Nothing is marked while you are in it. You can skip questions and come back to them."
-          )}
-        </p>
+        {history && <div className="mx-auto w-full max-w-[48rem] pb-4">{history}</div>}
       </div>
     );
   }

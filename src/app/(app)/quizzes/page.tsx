@@ -1,11 +1,12 @@
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, Hash, Sigma, Star, Timer } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { buttonStyles, EmptyState, PanelBoundary, Skeleton } from "@/components/ui";
+import { buttonStyles, EmptyState, PanelBoundary, Skeleton, StatTile } from "@/components/ui";
+import { percent, summariseAttempts } from "@/features/quizzes/analytics";
 import { NewQuizDialog } from "@/features/quizzes/components/NewQuizDialog";
 import { QuizCard } from "@/features/quizzes/components/QuizCard";
-import { listQuizzes } from "@/server/quizzes/queries";
+import { listAllQuizAttempts, listQuizzes } from "@/server/quizzes/queries";
 import { listSubjects } from "@/server/subjects/queries";
 import { listTopics } from "@/server/topics/queries";
 
@@ -27,7 +28,7 @@ import { listTopics } from "@/server/topics/queries";
 export const metadata = { title: "Quizzes" };
 
 async function Library() {
-  const quizzes = await listQuizzes();
+  const [quizzes, attempts] = await Promise.all([listQuizzes(), listAllQuizAttempts()]);
 
   if (quizzes.length === 0) {
     return (
@@ -39,11 +40,48 @@ async function Library() {
     );
   }
 
+  const summary = summariseAttempts(attempts);
+  const quizzesTaken = new Set(attempts.map((attempt) => attempt.quizId)).size;
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {quizzes.map((quiz) => (
-        <QuizCard key={quiz.id} quiz={quiz} />
-      ))}
+    <div className="flex flex-col gap-5">
+      {/**
+       * Across every quiz — and only once there is something to summarise.
+       *
+       * The average here is POOLED: every question answered, over every
+       * question asked. A mean of percentages would let a five-question quiz
+       * count as much as a sixty-question mock exam, and report a student as
+       * stronger or weaker than the evidence says. See `summariseAttempts`.
+       */}
+      {summary.attempts > 0 && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatTile
+            label="Attempts"
+            value={summary.attempts}
+            Icon={Hash}
+            hint={`Across ${quizzesTaken} ${quizzesTaken === 1 ? "quiz" : "quizzes"}`}
+          />
+          <StatTile
+            label="Average"
+            value={percent(summary.average)}
+            Icon={Sigma}
+            hint="Every question you have answered"
+          />
+          <StatTile label="Best" value={percent(summary.best?.share)} Icon={Star} />
+          <StatTile
+            label="Most recent"
+            value={percent(summary.recent?.share)}
+            Icon={Timer}
+            tone="accent"
+          />
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {quizzes.map((quiz) => (
+          <QuizCard key={quiz.id} quiz={quiz} />
+        ))}
+      </div>
     </div>
   );
 }

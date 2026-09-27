@@ -29,7 +29,8 @@
     "md:test": "node scripts/markdown-test.mjs",
     "practice:test": "node scripts/practice-quality-test.mjs",
     "ai:eval": "node scripts/ai-eval.mjs",
-    "mark:test": "node scripts/marking-test.mjs"
+    "mark:test": "node scripts/marking-test.mjs",
+    "analytics:test": "node scripts/analytics-test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
