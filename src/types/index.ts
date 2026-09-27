@@ -47,13 +47,8 @@ export function isTerminalStatus(status: JobStatus): boolean {
 }
 
 /**
- * Mastery below this is "needs work" (FR-G3). Stated here rather than inline so
- * the threshold the UI shows and the threshold the engine uses cannot drift.
+ * The mastery thresholds, re-exported from the formula that uses them
+ * (Sprint 56). Defined there so the engine and the UI read one number, and so
+ * the formula stays import-free and testable straight from TypeScript.
  */
-export const WEAK_TOPIC_THRESHOLD = 0.6;
-
-/**
- * Below this many answered questions a mastery percentage is not trustworthy,
- * and the UI must say so instead of showing a confident number (US-H1).
- */
-export const LOW_EVIDENCE_QUESTIONS = 10;
+export { LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/features/mastery/formula";

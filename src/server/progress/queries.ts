@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { getTopicMastery } from "@/server/mastery/queries";
 
 /**
  * What a student has actually done, and what it shows (FR-P1, US-H1).
@@ -20,8 +21,10 @@ import { requireSession } from "@/server/auth/session";
 /** How long back the activity chart looks. Two weeks fits a revision run. */
 const ACTIVITY_DAYS = 14;
 
-/** Below this, a percentage is withheld rather than shown (US-H1). */
-export const LOW_EVIDENCE_QUESTIONS = 10;
+/* Re-exported so the Progress page can keep importing it from here. It is
+   the same constant the formula uses — this file used to define a copy of its
+   own, which is how two "tens" drift into a ten and a twelve. */
+export { LOW_EVIDENCE_QUESTIONS } from "@/types";
 
 export type ActivityDay = { date: string; label: string; minutes: number; sessions: number };
 
@@ -48,6 +51,9 @@ export type TopicMastery = {
   mastery: number;
   answered: number;
   lastPractisedAt: string | null;
+  /** Change over the last two weeks, when both ends had enough evidence. */
+  improvement: number | null;
+  band: "weak" | "developing" | "strong" | "unmeasured";
 };
 
 export type RecentSession = {
@@ -83,7 +89,7 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: sessionRows }, { data: progressRows }, { data: cardRows }] = await Promise.all([
+  const [{ data: sessionRows }, topicMastery, { data: cardRows }] = await Promise.all([
     /* Every session, not just the recent ones: the totals at the top are
        lifetime figures, and the chart filters to its own window below. RLS
        scopes this to the caller. */
@@ -94,12 +100,9 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
       )
       .order("started_at", { ascending: false })
       .limit(500),
-    supabase
-      .from("progress")
-      .select(
-        "id, mastery, questions_answered, last_practised_at, topics(name), subjects(name, color_slot)",
-      )
-      .order("mastery", { ascending: true }),
+    /* The Sprint 56 formula, from the same loader the dashboard and the
+       subject hub read — so this page cannot disagree with them. */
+    getTopicMastery(),
     /* Card recall lives on the cards themselves — Sprint 44 has been counting
        it correctly all along, and nothing has ever displayed it. */
     supabase.from("flashcards").select("times_seen, times_known, subject_id").gt("times_seen", 0),
@@ -191,15 +194,19 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     streak: streakFrom(sessions.map((row) => toDayKey(new Date(row.started_at)))),
     activity: [...buckets.values()],
     subjects: [...subjects.values()].sort((a, b) => b.minutes - a.minutes),
-    topics: (progressRows ?? []).map((row) => ({
-      id: row.id,
-      topic: row.topics?.name ?? "Untitled topic",
-      subject: row.subjects?.name ?? "",
-      colorSlot: slot(row.subjects?.color_slot),
-      mastery: Number(row.mastery),
-      answered: row.questions_answered,
-      lastPractisedAt: row.last_practised_at,
-    })),
+    topics: [...topicMastery.values()]
+      .sort((a, b) => a.mastery - b.mastery)
+      .map((row) => ({
+        id: row.topicId,
+        topic: row.topicName,
+        subject: row.subjectName,
+        colorSlot: row.colorSlot,
+        mastery: row.mastery,
+        answered: row.questions,
+        lastPractisedAt: row.lastAnsweredAt,
+        improvement: row.improvement,
+        band: row.band,
+      })),
     recent: sessions.slice(0, 12).map((row) => ({
       id: row.id,
       activity: row.activity,

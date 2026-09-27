@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 import { type JobStatus, LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/types";
 
 /**
@@ -28,53 +29,44 @@ export type SubjectProgress = {
   topicCount: number;
   /** Topics with enough answers to be quoted. Never more than `topicCount`. */
   measuredTopics: number;
-  /** Null when nothing under this subject has crossed the evidence bar. */
+  /** Null when this subject has not crossed the evidence bar. */
   mastery: number | null;
+  /** Distinct questions answered in this subject, tagged to a topic or not. */
   questionsAnswered: number;
-  questionsCorrect: number;
 };
 
+/**
+ * The subject's own mastery — from the Sprint 56 formula over EVERY answer in
+ * the subject, not a blend of its topics' figures.
+ *
+ * Two improvements over the old tally, and both change the number. Answers
+ * with no topic count: a whole-subject quiz written before questions were
+ * tagged is still evidence about the subject, and the tally could only file it
+ * under a topic, so it dropped it. And the subject is scored directly rather
+ * than averaged from topics, which would let a topic with three answers weigh
+ * as much as one with ninety.
+ */
 export const getSubjectProgress = cache(async (subjectId: string): Promise<SubjectProgress> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const [{ count: topicCount }, { data: rows }] = await Promise.all([
-    supabase
-      .from("topics")
-      .select("id", { count: "exact", head: true })
-      .eq("subject_id", subjectId),
-    supabase
-      .from("progress")
-      .select("mastery, questions_answered, questions_correct")
-      .eq("subject_id", subjectId),
+  const [{ data: topicRows }, subjects, topics] = await Promise.all([
+    supabase.from("topics").select("id").eq("subject_id", subjectId),
+    getSubjectMastery(),
+    getTopicMastery(),
   ]);
 
-  /**
-   * Weighted by questions answered, not a mean of percentages.
-   *
-   * Averaging the percentages lets a topic with three answers count as much as
-   * one with ninety, so a single lucky topic drags the subject's number up. The
-   * ratio of totals is the figure a student would get by counting every
-   * question they have ever answered in this subject, which is what they think
-   * the number means.
-   */
-  let answered = 0;
-  let correct = 0;
-  let measured = 0;
-  for (const row of rows ?? []) {
-    answered += row.questions_answered;
-    correct += row.questions_correct;
-    if (row.questions_answered >= LOW_EVIDENCE_QUESTIONS) measured += 1;
-  }
+  const ids = (topicRows ?? []).map((row) => row.id);
+  const subject = subjects.get(subjectId);
 
   return {
-    topicCount: topicCount ?? 0,
-    measuredTopics: measured,
+    topicCount: ids.length,
+    measuredTopics: ids.filter((id) => (topics.get(id)?.questions ?? 0) >= LOW_EVIDENCE_QUESTIONS)
+      .length,
     // Withheld below the evidence bar for the same reason MasteryBar withholds
     // it: a confident number from four answers is worse than no number (US-H1).
-    mastery: answered >= LOW_EVIDENCE_QUESTIONS ? correct / answered : null,
-    questionsAnswered: answered,
-    questionsCorrect: correct,
+    mastery: subject && subject.questions >= LOW_EVIDENCE_QUESTIONS ? subject.mastery : null,
+    questionsAnswered: subject?.questions ?? 0,
   };
 });
 
@@ -96,24 +88,23 @@ export type SubjectWeakTopic = {
  */
 export const listSubjectWeakTopics = cache(
   async (subjectId: string): Promise<SubjectWeakTopic[]> => {
-    await requireSession();
-    const supabase = await createSupabaseServerClient();
+    const topics = await getTopicMastery();
 
-    const { data } = await supabase
-      .from("progress")
-      .select("topic_id, mastery, questions_answered, topics(name)")
-      .eq("subject_id", subjectId)
-      .gte("questions_answered", LOW_EVIDENCE_QUESTIONS)
-      .lt("mastery", WEAK_TOPIC_THRESHOLD)
-      .order("mastery", { ascending: true })
-      .limit(5);
-
-    return (data ?? []).map((row) => ({
-      id: row.topic_id,
-      name: row.topics?.name ?? "Untitled topic",
-      mastery: Number(row.mastery),
-      questionsAnswered: row.questions_answered,
-    }));
+    return [...topics.values()]
+      .filter(
+        (topic) =>
+          topic.subjectId === subjectId &&
+          topic.questions >= LOW_EVIDENCE_QUESTIONS &&
+          topic.mastery < WEAK_TOPIC_THRESHOLD,
+      )
+      .sort((a, b) => a.mastery - b.mastery)
+      .slice(0, 5)
+      .map((topic) => ({
+        id: topic.topicId,
+        name: topic.topicName,
+        mastery: topic.mastery,
+        questionsAnswered: topic.questions,
+      }));
   },
 );
 

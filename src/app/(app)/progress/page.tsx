@@ -1,26 +1,8 @@
-import {
-  Brain,
-  CalendarCheck,
-  Flame,
-  Layers,
-  ListChecks,
-  Shuffle,
-  Target,
-  Timer,
-} from "lucide-react";
+import { CalendarCheck, Flame, Layers, ListChecks, Shuffle, Target, Timer } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  EmptyState,
-  MasteryBar,
-  SectionLabel,
-  StatTile,
-  buttonStyles,
-} from "@/components/ui";
+import { Card, CardBody, EmptyState, SectionLabel, StatTile, buttonStyles } from "@/components/ui";
+import { TopicMasteryPanel } from "@/features/mastery/components/TopicMasteryPanel";
 import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
 import {
   LOW_EVIDENCE_QUESTIONS,
@@ -77,8 +59,6 @@ export default async function Page() {
 
   const accuracy = data.answered > 0 ? data.correct / data.answered : null;
   const recall = data.cardsSeen > 0 ? data.cardsKnown / data.cardsSeen : null;
-  const measured = data.topics.filter((topic) => topic.answered >= LOW_EVIDENCE_QUESTIONS);
-  const weakest = measured.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-6">
@@ -141,7 +121,7 @@ export default async function Page() {
         </Card>
       </section>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:items-start">
+      <div className="flex flex-col gap-4">
         <section className="flex flex-col gap-3">
           <SectionLabel>By subject</SectionLabel>
           <Card className="overflow-hidden">
@@ -196,37 +176,12 @@ export default async function Page() {
             </CardBody>
           </Card>
         </section>
-
-        <section className="flex flex-col gap-3">
-          <SectionLabel>Topic mastery</SectionLabel>
-          <Card>
-            <CardHeader>
-              <CardTitle>Weakest first</CardTitle>
-            </CardHeader>
-            <CardBody className="flex flex-col gap-4 py-4">
-              {weakest.length === 0 ? (
-                /* The honest empty state, and it explains the two reasons it
-                   can be empty — neither of which is "you know nothing". */
-                <p className="flex items-start gap-2.5 text-sm leading-relaxed text-ink-muted">
-                  <Brain className="mt-0.5 size-4 shrink-0 text-ink-subtle" aria-hidden />
-                  {data.topics.length === 0
-                    ? "Mastery is measured per topic, and only practice sets built from a reviewer scoped to ONE topic can measure it. Generate a reviewer for a topic rather than a whole subject, then practise it."
-                    : `Not enough answers yet. A topic needs ${LOW_EVIDENCE_QUESTIONS} before a figure means anything, and showing one sooner would be guessing.`}
-                </p>
-              ) : (
-                weakest.map((topic) => (
-                  <MasteryBar
-                    key={topic.id}
-                    value={topic.mastery}
-                    questionCount={topic.answered}
-                    label={`${topic.topic} · ${topic.subject}`}
-                  />
-                ))
-              )}
-            </CardBody>
-          </Card>
-        </section>
       </div>
+
+      <section className="flex flex-col gap-3">
+        <SectionLabel>Topic mastery</SectionLabel>
+        <TopicMasteryPanel topics={data.topics} />
+      </section>
 
       <section className="flex flex-col gap-3">
         <SectionLabel>Recent sessions</SectionLabel>

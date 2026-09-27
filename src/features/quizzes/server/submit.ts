@@ -163,13 +163,10 @@ export async function submitQuizAction(input: {
     items_correct: correct,
   });
 
-  if (quiz.topic_id) {
-    await supabase.rpc("record_practice", {
-      p_topic_id: quiz.topic_id,
-      p_answered: graded.length,
-      p_correct: correct,
-    });
-  }
+  /* No mastery write: mastery is computed from the quiz_answers rows above
+     (Sprint 56). That is what lets a whole-subject quiz count toward the topics
+     its questions came from, where the old tally could only credit the quiz's
+     own topic — or none at all. */
 
   revalidatePath("/", "layout");
   return { status: "ok", attemptId: attempt.id, correct, total: graded.length };
@@ -256,11 +253,10 @@ export async function overrideAnswerAction(
    * writes both rows from the same timestamp, so there is one session that
    * began at that instant and it is this one.
    *
-   * Topic mastery is NOT corrected, and that is a known gap. `record_practice`
-   * only ever adds, and refuses a tally with nothing answered, so it cannot
-   * express "one of these was actually right". An overrule is rare and moves
-   * mastery by one answer in however many a topic has; the fix is the same
-   * migration.
+   * Topic mastery needs nothing here. It is computed from `quiz_answers` at
+   * read time (Sprint 56), and the `is_correct` just updated IS that evidence
+   * — so an overruled mark moves mastery the moment the page reloads. That
+   * closes the gap Sprint 52 left open.
    */
   if (attempt?.started_at) {
     await supabase

@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { getTopicMastery } from "@/server/mastery/queries";
 
 /**
  * Topic reads (FR-S3, US-B4).
@@ -22,40 +23,45 @@ export type Topic = {
   /**
    * Mastery, 0–1, and the evidence behind it.
    *
-   * Read from the `progress` table rather than computed, and absent until a
-   * quiz has actually been answered — which is Sprint 49 onward. Until then
-   * every topic is genuinely low-evidence, and `MasteryBar` says so instead of
-   * drawing a confident 0%.
+   * From the Sprint 56 formula over every answer filed under this topic —
+   * recency-weighted, difficulty-aware, one vote per question. Zero with no
+   * evidence, and `MasteryBar` withholds the figure below the evidence
+   * threshold rather than drawing a confident 0%.
    */
   mastery: number;
+  /** Distinct questions answered: the evidence the figure stands on. */
   questionsAnswered: number;
+  /** Change over the last two weeks, when both ends had enough evidence. */
+  improvement: number | null;
 };
 
 export const listTopics = cache(async (subjectId: string): Promise<Topic[]> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
-    .from("topics")
-    .select(
-      "id, name, position, created_at, materials(count), progress(mastery, questions_answered)",
-    )
-    .eq("subject_id", subjectId)
-    .order("position", { ascending: true })
-    .order("created_at", { ascending: true });
+  const [{ data, error }, mastery] = await Promise.all([
+    supabase
+      .from("topics")
+      .select("id, name, position, created_at, materials(count)")
+      .eq("subject_id", subjectId)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
+    getTopicMastery(),
+  ]);
 
   if (error || !data) return [];
 
   return data.map((row) => {
-    const progress = row.progress?.[0];
+    const measured = mastery.get(row.id);
     return {
       id: row.id,
       name: row.name,
       position: row.position,
       createdAt: row.created_at,
       materialCount: row.materials?.[0]?.count ?? 0,
-      mastery: progress ? Number(progress.mastery) : 0,
-      questionsAnswered: progress?.questions_answered ?? 0,
+      mastery: measured?.mastery ?? 0,
+      questionsAnswered: measured?.questions ?? 0,
+      improvement: measured?.improvement ?? null,
     };
   });
 });

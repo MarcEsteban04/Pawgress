@@ -135,16 +135,10 @@ export async function recordStudySessionAction(input: RecordSessionInput): Promi
     }
   }
 
-  /* Topic mastery, and only from practice. Through the RPC rather than a
-     read-then-write: PostgREST cannot express `answered = answered + $1`, and
-     two sessions finishing together would lose one of them. */
-  if (input.activity === "practice" && input.topicId) {
-    await supabase.rpc("record_practice", {
-      p_topic_id: input.topicId,
-      p_answered: input.total,
-      p_correct: correct,
-    });
-  }
+  /* No mastery write. Since Sprint 56 mastery is computed from the per-question
+     verdicts written above, at read time — see `src/features/mastery`. The
+     old `record_practice` tally could only ever add, so it could not forget an
+     old result, weigh a hard question, or follow a mark the student overruled. */
 
   /* The dashboard and the progress page both read this. Revalidated here
      rather than left to a reload, because the whole complaint was that

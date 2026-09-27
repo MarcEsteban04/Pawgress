@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/types";
+import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 
 /**
  * Everything the dashboard reads, from the real database (FR-D1, FR-D3).
@@ -107,19 +108,18 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
 
   const weekAgo = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
 
-  const [subjectRows, progressRows, eventRows, planRows, attemptRows, sessionRows, scoredRows] =
+  const [subjectRows, topicMastery, subjectMastery, eventRows, planRows, sessionRows, scoredRows] =
     await Promise.all([
       supabase
         .from("subjects")
         .select("id, name, color_slot, materials(count), topics(count)")
         .is("archived_at", null)
         .order("created_at", { ascending: false }),
-      supabase
-        .from("progress")
-        .select(
-          "id, mastery, questions_answered, subject_id, topics(name), subjects(name, color_slot)",
-        )
-        .order("mastery", { ascending: true }),
+      /* Mastery from the Sprint 56 formula over the answers themselves, not the
+         old running tally — the same loader the Progress page and the subject
+         hub read, so all three show the same number. */
+      getTopicMastery(),
+      getSubjectMastery(),
       supabase
         .from("planner_events")
         .select("id, title, kind, due_on, subjects(name, color_slot)")
@@ -134,14 +134,6 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
         )
         .eq("plan_date", today)
         .maybeSingle(),
-      /* Scored attempts only. An abandoned attempt has no score and would plot as
-       a hole in the line — or worse, as a zero the student never earned. */
-      supabase
-        .from("quiz_attempts")
-        .select("id, submitted_at, score_correct, score_total")
-        .not("submitted_at", "is", null)
-        .order("submitted_at", { ascending: true })
-        .limit(30),
       supabase
         .from("study_sessions")
         .select("started_at, duration_seconds")
@@ -166,7 +158,8 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
         .limit(30),
     ]);
 
-  const progress = progressRows.data ?? [];
+  /* Worst first, which is the order every consumer below wants. */
+  const progress = [...topicMastery.values()].sort((a, b) => a.mastery - b.mastery);
 
   /* Mastery bands. Topics with too few answers sit in "Not started" rather than
      being binned by a percentage that MasteryBar would refuse to print — the
@@ -180,11 +173,11 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
   };
 
   for (const row of progress) {
-    if (row.questions_answered < LOW_EVIDENCE_QUESTIONS) {
+    if (row.questions < LOW_EVIDENCE_QUESTIONS) {
       bands["Not started"] += 1;
       continue;
     }
-    const value = Number(row.mastery);
+    const value = row.mastery;
     if (value < 0.4) bands.Weak += 1;
     else if (value < 0.6) bands.Developing += 1;
     else if (value < 0.8) bands.Solid += 1;
@@ -202,22 +195,22 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
   /* Readiness is the mean mastery across topics that have enough evidence. With
      none, it is null — not zero. Zero would read as "you know nothing", when
      the truth is "nothing has been measured yet". */
-  const evidenced = progress.filter((row) => row.questions_answered >= LOW_EVIDENCE_QUESTIONS);
+  const evidenced = progress.filter((row) => row.questions >= LOW_EVIDENCE_QUESTIONS);
   const readiness =
     evidenced.length > 0
-      ? evidenced.reduce((sum, row) => sum + Number(row.mastery), 0) / evidenced.length
+      ? evidenced.reduce((sum, row) => sum + row.mastery, 0) / evidenced.length
       : null;
 
   const weakTopics: WeakTopic[] = evidenced
-    .filter((row) => Number(row.mastery) < WEAK_TOPIC_THRESHOLD)
+    .filter((row) => row.mastery < WEAK_TOPIC_THRESHOLD)
     .slice(0, 3)
     .map((row) => ({
-      id: row.id,
-      topic: row.topics?.name ?? "Untitled topic",
-      subject: row.subjects?.name ?? "",
-      colorSlot: (row.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
-      mastery: Number(row.mastery),
-      questionsAnswered: row.questions_answered,
+      id: row.topicId,
+      topic: row.topicName,
+      subject: row.subjectName,
+      colorSlot: row.colorSlot,
+      mastery: row.mastery,
+      questionsAnswered: row.questions,
     }));
 
   const planItems = (planRows.data?.study_plan_items ?? [])
@@ -238,27 +231,24 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
   /* Quiz score per attempt. One series, one unit, one axis — a second measure
      with a different scale would need its own chart, never a second y-scale
      (docs/design-system.md §3). */
-  const attempts = attemptRows.data ?? [];
   const scored = scoredRows.data ?? [];
 
-  /* Both sources, one series: a graded quiz attempt and a finished practice
-     set are the same measurement — proportion of questions answered correctly
-     — so they belong on the same line. Merged and re-sorted rather than
-     concatenated, because the two queries are ordered independently and a line
-     that jumps backwards in time is unreadable. */
-  const scoreTrend: ScorePoint[] = [
-    ...attempts
-      .filter((row) => (row.score_total ?? 0) > 0)
-      .map((row) => ({
-        at: row.submitted_at as string,
-        value: (row.score_correct ?? 0) / (row.score_total as number),
-      })),
-    ...scored.map((row) => ({
+  /**
+   * The trend, from STUDY SESSIONS alone.
+   *
+   * This used to merge `quiz_attempts` with scored sessions, on the reasoning
+   * that they were two sources of the same measurement. They are the same
+   * measurement of the same RUN: a quiz hand-in writes an attempt and a
+   * session, and since the mistakes list a finished practice set does too — so
+   * every run plotted twice and "quizzes taken" counted double. A session is
+   * written exactly once per finished run of either kind, which makes it the
+   * one source that cannot double-count.
+   */
+  const scoreTrend: ScorePoint[] = scored
+    .map((row) => ({
       at: row.started_at,
       value: (row.items_correct ?? 0) / (row.items_total as number),
-    })),
-  ]
-    .sort((a, b) => a.at.localeCompare(b.at))
+    }))
     .slice(-30)
     .map((point) => ({
       label: new Date(point.at).toLocaleDateString(undefined, {
@@ -288,29 +278,26 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
       subjects: subjectList.length,
       materials: subjectList.reduce((sum, row) => sum + (row.materials?.[0]?.count ?? 0), 0),
       topicsTracked: progress.length,
-      /* Practice counts. It is the only thing a student can currently sit, and
-         a dashboard reporting zero while they work through set after set was
-         the complaint that produced all of this. */
-      quizzesTaken: attempts.length + scored.length,
+      /* Every finished practice set and quiz, once each. See the trend above
+         for why this counts sessions and not attempts. */
+      quizzesTaken: scored.length,
       minutesThisWeek: studyByDay.reduce((sum, day) => sum + day.minutes, 0),
     },
     scoreTrend,
     studyByDay,
     subjects: subjectList.map((row) => {
-      const forSubject = progress.filter(
-        (p) => p.subject_id === row.id && p.questions_answered >= LOW_EVIDENCE_QUESTIONS,
-      );
+      /* Scored directly over the subject's own answers — untagged ones
+         included — rather than averaged from its topics. See
+         getSubjectMastery. */
+      const measured = subjectMastery.get(row.id);
       return {
         id: row.id,
         name: row.name,
         colorSlot: row.color_slot as 1 | 2 | 3 | 4 | 5,
         materialCount: row.materials?.[0]?.count ?? 0,
         topicCount: row.topics?.[0]?.count ?? 0,
-        mastery:
-          forSubject.length > 0
-            ? forSubject.reduce((sum, p) => sum + Number(p.mastery), 0) / forSubject.length
-            : null,
-        questionsAnswered: forSubject.reduce((sum, p) => sum + p.questions_answered, 0),
+        mastery: measured && measured.questions >= LOW_EVIDENCE_QUESTIONS ? measured.mastery : null,
+        questionsAnswered: measured?.questions ?? 0,
       };
     }),
     masteryBands,
