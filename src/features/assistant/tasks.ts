@@ -44,14 +44,50 @@ export function isAssistantTask(value: unknown): value is AssistantTask {
 export const TASK_MODES: {
   task: AssistantTask;
   label: string;
+  /**
+   * What the mode does, in a student's words, shown under its name in the
+   * picker. "Tutor me" and "Hint" are not self-explanatory, and a student who
+   * has to try each one to find out what it does will just use Ask.
+   */
+  hint: string;
   placeholder: (scope: string) => string;
 }[] = [
-  { task: "ask", label: "Ask", placeholder: (scope) => `Ask Aki about ${scope}…` },
-  { task: "explain", label: "Explain", placeholder: () => "What should Aki explain?" },
-  { task: "tutor", label: "Tutor me", placeholder: () => "What are you working through?" },
-  { task: "hint", label: "Hint", placeholder: () => "What are you stuck on?" },
-  { task: "summarize", label: "Summarise", placeholder: (scope) => `Summarise what, in ${scope}?` },
-  { task: "quiz", label: "Quiz me", placeholder: () => "What should Aki test you on?" },
+  {
+    task: "ask",
+    label: "Ask",
+    hint: "A straight answer.",
+    placeholder: (scope) => `Ask Aki about ${scope}…`,
+  },
+  {
+    task: "explain",
+    label: "Explain",
+    hint: "Taught from the start, with an example.",
+    placeholder: () => "What should Aki explain?",
+  },
+  {
+    task: "tutor",
+    label: "Tutor me",
+    hint: "Guided questions — you do the thinking.",
+    placeholder: () => "What are you working through?",
+  },
+  {
+    task: "hint",
+    label: "Hint",
+    hint: "A nudge towards the answer, not the answer.",
+    placeholder: () => "What are you stuck on?",
+  },
+  {
+    task: "summarize",
+    label: "Summarise",
+    hint: "The key points, kept short.",
+    placeholder: (scope) => `Summarise what, in ${scope}?`,
+  },
+  {
+    task: "quiz",
+    label: "Quiz me",
+    hint: "Practice questions in chat. Not recorded.",
+    placeholder: () => "What should Aki test you on?",
+  },
 ];
 
 /**

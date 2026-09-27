@@ -8,11 +8,12 @@ import {
   ThumbsDown,
   ThumbsUp,
   TriangleAlert,
+  Library,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, useTransition } from "react";
 import { AcadifyMark } from "@/components/shared/Logo";
-import { Button, Select, SourceChip } from "@/components/ui";
+import { Button, Picker, SourceChip } from "@/components/ui";
 import { Markdown } from "@/features/assistant/markdown";
 import { ConversationRail } from "@/features/assistant/components/ConversationRail";
 import {
@@ -439,35 +440,29 @@ export function AssistantChat({
               </span>
             </button>
 
-            <label htmlFor="assistant-scope" className="sr-only">
-              Asking about
-            </label>
             {/* Disabled rather than hidden when material is off: a control that
                 vanishes makes the row jump, and it needs to stay visible so a
                 student can see it will apply again when they switch back. */}
-            <Select
-              id="assistant-scope"
+            <Picker
+              label="Asking about"
+              variant="bare"
+              align="end"
+              heading="Search in"
               value={subjectId}
               disabled={!useMaterial}
-              onChange={(event) => {
-                setSubjectId(event.target.value);
+              onValueChange={(next) => {
+                setSubjectId(next);
                 /* The topic belonged to the old subject. Keeping it would
                    filter to a topic that is not in the subject being searched,
                    which matches nothing and looks like a broken assistant. */
                 setTopicId("");
               }}
-              className={cn(
-                "h-10 w-auto rounded-none border-0 border-l border-rule bg-transparent pr-8 pl-3.5 text-sm shadow-none",
-                !useMaterial && "opacity-50",
-              )}
-            >
-              <option value="">All your subjects</option>
-              {subjects.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.name}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: "", label: "All your subjects", icon: <Library className="size-4" /> },
+                ...subjects.map((entry) => ({ value: entry.id, label: entry.name })),
+              ]}
+              className="max-w-[14rem] border-l border-rule"
+            />
 
             {/* Appears only once a subject is chosen AND that subject has
                 topics. A topic filter over "all your subjects" has nothing to
@@ -475,22 +470,19 @@ export function AssistantChat({
                 narrow to nothing. */}
             {useMaterial && topics.length > 0 && (
               <>
-                <label htmlFor="assistant-topic" className="sr-only">
-                  Narrow to a topic
-                </label>
-                <Select
-                  id="assistant-topic"
+                <Picker
+                  label="Narrow to a topic"
+                  variant="bare"
+                  align="end"
+                  heading="Topic"
                   value={topicId}
-                  onChange={(event) => setTopicId(event.target.value)}
-                  className="h-10 w-auto rounded-none border-0 border-l border-rule bg-transparent pr-8 pl-3.5 text-sm shadow-none"
-                >
-                  <option value="">Every topic</option>
-                  {topics.map((entry) => (
-                    <option key={entry.id} value={entry.id}>
-                      {entry.name}
-                    </option>
-                  ))}
-                </Select>
+                  onValueChange={setTopicId}
+                  options={[
+                    { value: "", label: "Every topic" },
+                    ...topics.map((entry) => ({ value: entry.id, label: entry.name })),
+                  ]}
+                  className="max-w-[12rem] border-l border-rule"
+                />
               </>
             )}
           </div>
@@ -529,21 +521,22 @@ export function AssistantChat({
                   in it. A mode selector up in the header would sit beside the
                   SCOPE controls, which are properties of the conversation —
                   this is a property of the next message. */}
-              <label htmlFor="assistant-mode" className="sr-only">
-                What Aki should do
-              </label>
-              <Select
-                id="assistant-mode"
+              {/* Each mode carries its one-line meaning in the list. The
+                  composer sits at the bottom of the screen, so the list opens
+                  UPWARD on its own — Radix flips it away from the edge. */}
+              <Picker
+                label="What Aki should do"
+                variant="bare"
+                heading="Aki should"
                 value={mode}
-                onChange={(event) => setMode(event.target.value as AssistantTask)}
-                className="h-9 w-auto shrink-0 rounded-[var(--radius-pill)] bg-surface-sunken pr-7 pl-3 text-xs font-medium shadow-none"
-              >
-                {TASK_MODES.map((entry) => (
-                  <option key={entry.task} value={entry.task}>
-                    {entry.label}
-                  </option>
-                ))}
-              </Select>
+                onValueChange={(next) => setMode(next as AssistantTask)}
+                options={TASK_MODES.map((entry) => ({
+                  value: entry.task,
+                  label: entry.label,
+                  hint: entry.hint,
+                }))}
+                className="h-9 shrink-0 rounded-[var(--radius-pill)] bg-surface-sunken px-3 text-xs font-medium hover:bg-surface-sunken/70"
+              />
 
               <label htmlFor="assistant-question" className="sr-only">
                 Ask about {scopeLabel}

@@ -435,6 +435,26 @@
     animation: pw-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* A list opening out of its trigger. Short — 140ms — because a picker is
+     something people open forty times a session, and a flourish that is
+     charming once is a delay on the fortieth. Grown from Radix's own transform
+     origin, so it opens FROM the trigger whichever side it lands on. */
+  @keyframes pw-pop {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -4px, 0) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .picker-pop[data-state="open"] {
+    transform-origin: var(--radix-select-content-transform-origin);
+    animation: pw-pop 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
   /**
    * Scrollbars, app-wide: a rounded pill floating inside a transparent track.
    *

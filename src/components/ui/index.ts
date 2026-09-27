@@ -40,6 +40,7 @@ export {
   type AvatarProps,
 } from "./Nav";
 export { Field, Input, Textarea, Select, SearchField, type FieldProps } from "./Field";
+export { Picker, type PickerOption, type PickerProps } from "./Picker";
 export {
   EmptyState,
   ErrorState,
