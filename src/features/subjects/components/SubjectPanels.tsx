@@ -1,13 +1,4 @@
-import {
-  ArrowRight,
-  CalendarDays,
-  FileText,
-  Gauge,
-  History,
-  Target,
-  TrendingUp,
-  Upload,
-} from "lucide-react";
+import { ArrowRight, CalendarDays, FileText, Gauge, History, Target, Upload } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode } from "react";
 import {
@@ -21,12 +12,13 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { PanelEmpty } from "@/features/dashboard/components/PanelEmpty";
+import { AttentionList } from "@/features/mastery/components/AttentionList";
+import { type AttentionItem } from "@/server/mastery/queries";
 import {
   type SubjectActivityItem,
   type SubjectMaterial,
   type SubjectProgress,
   type SubjectUpcoming,
-  type SubjectWeakTopic,
 } from "@/server/subjects/detail";
 import { LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/types";
 import { formatPercent } from "@/lib/utils";
@@ -115,55 +107,46 @@ export function ProgressPanel({ progress }: { progress: SubjectProgress }) {
 
 /* --------------------------------------------------------------- weak topics */
 
+/**
+ * What to practise next in THIS subject (Sprint 59).
+ *
+ * Every reason a topic needs work — weak, slipping, stale, untested — rather
+ * than only "below 60%", with a button that writes a quiz on that topic. The
+ * subject is already on the page, so rows do not repeat it.
+ */
 export function WeakTopicsPanel({
-  topics,
+  items,
   measuredTopics,
 }: {
-  topics: SubjectWeakTopic[];
+  items: AttentionItem[];
   measuredTopics: number;
 }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Needs attention</CardTitle>
+        <CardTitle>Practise next</CardTitle>
       </CardHeader>
       <CardBody>
-        {topics.length === 0 ? (
-          <PanelEmpty
-            Icon={TrendingUp}
-            title={measuredTopics > 0 ? "Nothing flagged" : "Nothing measured yet"}
-            description={
-              measuredTopics > 0
-                ? `Every topic with enough evidence is above ${formatPercent(WEAK_TOPIC_THRESHOLD)}. Nothing here is holding you back.`
-                : "The weakest topics are listed here once you have answered enough questions on them to tell them apart."
-            }
-            awaiting={
-              measuredTopics > 0
-                ? undefined
-                : `Needs ${LOW_EVIDENCE_QUESTIONS} answers on a topic before it can be ranked.`
-            }
-          />
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* The threshold is stated, not implied (US-H1). A list called
-                "weak" with no stated line is an opinion presented as a fact. */}
-            <p className="text-sm text-ink-muted">
-              Below {formatPercent(WEAK_TOPIC_THRESHOLD)}, weakest first.
-            </p>
-            <ul className="flex flex-col gap-3.5">
-              {topics.map((topic) => (
-                <li key={topic.id}>
-                  <MasteryBar
-                    value={topic.mastery}
-                    questionCount={topic.questionsAnswered}
-                    label={topic.name}
-                    dense
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <AttentionList
+          items={items}
+          showSubject={false}
+          empty={
+            measuredTopics > 0 ? (
+              <>
+                <p className="font-medium text-ink">Nothing needs you right now.</p>
+                <p className="mt-0.5">
+                  Every tested topic is above {formatPercent(WEAK_TOPIC_THRESHOLD)} and none has
+                  gone quiet for long.
+                </p>
+              </>
+            ) : (
+              <p>
+                File a document under a topic, or take a quiz on this subject, and the topics that
+                need work will appear here.
+              </p>
+            )
+          }
+        />
       </CardBody>
     </Card>
   );

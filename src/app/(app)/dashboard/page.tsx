@@ -8,6 +8,7 @@ import { ReadinessPanel } from "@/features/dashboard/components/ReadinessPanel";
 import { UpcomingPanel } from "@/features/dashboard/components/UpcomingPanel";
 import { WeakTopicsPanel } from "@/features/dashboard/components/WeakTopicsPanel";
 import { getDashboardData } from "@/server/dashboard/queries";
+import { getAttention } from "@/server/mastery/queries";
 import { getProfile } from "@/server/profile/queries";
 import { formatPercent } from "@/lib/utils";
 
@@ -27,7 +28,11 @@ export const metadata = { title: "Home" };
  * order, so the answer stays first on a phone.
  */
 export default async function Page() {
-  const [data, profile] = await Promise.all([getDashboardData(), getProfile()]);
+  const [data, profile, attention] = await Promise.all([
+    getDashboardData(),
+    getProfile(),
+    getAttention({ limit: 4 }),
+  ]);
 
   const firstName = profile?.displayName.split(" ")[0] ?? "there";
   const hasSubjects = data.stats.subjects > 0;
@@ -105,7 +110,7 @@ export default async function Page() {
 
         <div className="flex flex-col gap-4">
           <UpcomingPanel items={data.upcoming} />
-          <WeakTopicsPanel topics={data.weakTopics} />
+          <WeakTopicsPanel items={attention} />
         </div>
       </div>
     </div>

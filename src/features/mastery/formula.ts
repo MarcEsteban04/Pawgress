@@ -185,3 +185,166 @@ export function masteryBy(
   }
   return result;
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Weakness detection (Sprint 59)                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Four reasons a topic needs practice, and a low score is only one of them.
+ *
+ *  - **weak** — measured, and below `WEAK_TOPIC_THRESHOLD`. The obvious one,
+ *    and the only one the product flagged before this.
+ *  - **slipping** — measured, and down `SLIPPING_DROP` or more on a fortnight
+ *    ago. A topic falling from 85% to 68% is invisible to a threshold until it
+ *    crosses it, which is too late to be useful.
+ *  - **stale** — measured, not yet strong, and untouched for `STALE_DAYS`. The
+ *    formula already discounts old answers; this says out loud that a 72%
+ *    nobody has looked at in five weeks is a 72% about the past.
+ *  - **untested** — there are files for it and not enough answers to know.
+ *    Leaving these out made an untested topic look exactly like a fine one,
+ *    and before an exam that is the most dangerous kind of silence.
+ *
+ * One reason per topic — the most urgent — so the list is a list of topics,
+ * not a list of complaints about the same topic.
+ */
+export type AttentionKind = "weak" | "slipping" | "stale" | "untested";
+
+/**
+ * What the wrong answers have in common, when the evidence says.
+ *
+ *  - **fundamentals** — easy questions are being missed. Hard practice would
+ *    only add frustration; the basics come first.
+ *  - **harder** — the easy questions are fine and the hard ones are not. More
+ *    easy practice would feel productive and teach nothing.
+ *
+ * Null when there are too few answers at either difficulty to tell, which is
+ * often. Guessing a pattern from two answers would be worse than not saying.
+ */
+export type Pattern = "fundamentals" | "harder" | null;
+
+export type Attention = {
+  topicId: string;
+  kind: AttentionKind;
+  mastery: number | null;
+  questions: number;
+  improvement: number | null;
+  /** Days since the last answer, or null if never answered. */
+  daysSince: number | null;
+  pattern: Pattern;
+  /** The difficulty a practice quiz for this topic should be set at. */
+  difficulty: Difficulty;
+};
+
+export const SLIPPING_DROP = 0.1;
+export const STALE_DAYS = 21;
+
+/** Answers needed at a difficulty before a pattern is read from it. */
+const PATTERN_MIN = 3;
+
+function accuracy(answers: Evidence[]): number | null {
+  if (answers.length < PATTERN_MIN) return null;
+  return answers.filter((answer) => answer.correct).length / answers.length;
+}
+
+function patternOf(evidence: Evidence[], now: number): Pattern {
+  const latest = latestPerQuestion(evidence, now);
+  const easy = accuracy(latest.filter((answer) => answer.difficulty === "easy"));
+  const hard = accuracy(latest.filter((answer) => answer.difficulty === "hard"));
+
+  if (easy !== null && easy < 0.6) return "fundamentals";
+  if (easy !== null && hard !== null && easy >= 0.75 && hard < 0.5) return "harder";
+  return null;
+}
+
+/**
+ * Which topics need practice, most urgent first.
+ *
+ * `topics` is every topic the student has — not only those with answers —
+ * because "untested" can only be found among the ones with none.
+ */
+export function detectAttention(input: {
+  evidence: Evidence[];
+  topics: { id: string; hasMaterial: boolean }[];
+  now: number;
+}): Attention[] {
+  const byTopic = new Map<string, Evidence[]>();
+  for (const answer of input.evidence) {
+    if (!answer.topicId) continue;
+    const list = byTopic.get(answer.topicId);
+    if (list) list.push(answer);
+    else byTopic.set(answer.topicId, [answer]);
+  }
+
+  const found: (Attention & { priority: number })[] = [];
+
+  for (const topic of input.topics) {
+    const evidence = byTopic.get(topic.id) ?? [];
+    const scored = masteryOf(evidence, input.now);
+
+    if (!scored || scored.questions < LOW_EVIDENCE_QUESTIONS) {
+      /* No files, no quiz can be written for it — flagging it would be a
+         button that can only fail. */
+      if (!topic.hasMaterial) continue;
+      found.push({
+        topicId: topic.id,
+        kind: "untested",
+        mastery: null,
+        questions: scored?.questions ?? 0,
+        improvement: null,
+        daysSince: scored ? daysBetween(scored.lastAnsweredAt, input.now) : null,
+        pattern: null,
+        difficulty: "medium",
+        priority: 1,
+      });
+      continue;
+    }
+
+    const daysSince = daysBetween(scored.lastAnsweredAt, input.now);
+    const pattern = patternOf(evidence, input.now);
+
+    let kind: AttentionKind | null = null;
+    let priority = 0;
+
+    /* In order of urgency. The first that applies is the one reported. */
+    if (scored.mastery < WEAK_TOPIC_THRESHOLD) {
+      kind = "weak";
+      priority = 4 + (WEAK_TOPIC_THRESHOLD - scored.mastery);
+    } else if (scored.improvement !== null && scored.improvement <= -SLIPPING_DROP) {
+      kind = "slipping";
+      priority = 3 - scored.improvement;
+    } else if (daysSince >= STALE_DAYS && scored.mastery < STRONG_TOPIC_THRESHOLD) {
+      kind = "stale";
+      priority = 2 + Math.min(daysSince, 90) / 100;
+    }
+
+    if (!kind) continue;
+
+    found.push({
+      topicId: topic.id,
+      kind,
+      mastery: scored.mastery,
+      questions: scored.questions,
+      improvement: scored.improvement,
+      daysSince,
+      pattern,
+      difficulty:
+        pattern === "fundamentals"
+          ? "easy"
+          : pattern === "harder"
+            ? "hard"
+            : kind === "weak" && scored.mastery < 0.4
+              ? "easy"
+              : "medium",
+      priority,
+    });
+  }
+
+  return found
+    .sort((a, b) => b.priority - a.priority)
+    .map(({ priority: _priority, ...attention }) => attention);
+}
+
+function daysBetween(iso: string, now: number): number {
+  return Math.max(0, Math.floor((now - Date.parse(iso)) / DAY));
+}

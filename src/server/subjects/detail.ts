@@ -4,7 +4,7 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
-import { type JobStatus, LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/types";
+import { type JobStatus, LOW_EVIDENCE_QUESTIONS } from "@/types";
 
 /**
  * Everything the subject page reads (FR-S5, US-B5).
@@ -69,44 +69,6 @@ export const getSubjectProgress = cache(async (subjectId: string): Promise<Subje
     questionsAnswered: subject?.questions ?? 0,
   };
 });
-
-/* --------------------------------------------------------------- weak topics */
-
-export type SubjectWeakTopic = {
-  id: string;
-  name: string;
-  mastery: number;
-  questionsAnswered: number;
-};
-
-/**
- * The topics inside this subject that are holding a student back (FR-G3).
- *
- * Two rules, both from US-H1, and both about not sending someone to study the
- * wrong thing: only topics with at least `LOW_EVIDENCE_QUESTIONS` answers are
- * eligible, and the threshold is stated in the UI rather than left implicit.
- */
-export const listSubjectWeakTopics = cache(
-  async (subjectId: string): Promise<SubjectWeakTopic[]> => {
-    const topics = await getTopicMastery();
-
-    return [...topics.values()]
-      .filter(
-        (topic) =>
-          topic.subjectId === subjectId &&
-          topic.questions >= LOW_EVIDENCE_QUESTIONS &&
-          topic.mastery < WEAK_TOPIC_THRESHOLD,
-      )
-      .sort((a, b) => a.mastery - b.mastery)
-      .slice(0, 5)
-      .map((topic) => ({
-        id: topic.topicId,
-        name: topic.topicName,
-        mastery: topic.mastery,
-        questionsAnswered: topic.questions,
-      }));
-  },
-);
 
 /* ----------------------------------------------------------------- materials */
 

@@ -12,6 +12,8 @@ import assert from "node:assert/strict";
 import {
   HALF_LIFE_DAYS,
   LOW_EVIDENCE_QUESTIONS,
+  STALE_DAYS,
+  detectAttention,
   masteryBy,
   masteryOf,
 } from "../src/features/mastery/formula.ts";
@@ -148,6 +150,104 @@ check("grouping by topic keeps topics apart and skips untagged answers", () => {
   );
   assert.equal(groups.size, 2);
   assert.ok(groups.get("a").mastery > groups.get("b").mastery);
+});
+
+console.log("\nWeakness detection\n");
+
+/* The same twelve questions, answered at two different times. */
+const retaken = (topic, before, after) => [
+  ...Array.from({ length: 12 }, (_, i) =>
+    answer(i < before.right, { question: `${topic}-${i}`, topic, daysAgo: before.daysAgo }),
+  ),
+  ...(after
+    ? Array.from({ length: 12 }, (_, i) =>
+        answer(i < after.right, { question: `${topic}-${i}`, topic, daysAgo: 0 }),
+      )
+    : []),
+];
+
+const detect = (evidence, topics) =>
+  detectAttention({
+    evidence,
+    topics: topics.map((id) => (typeof id === "string" ? { id, hasMaterial: true } : id)),
+    now: NOW,
+  });
+
+check("a weak topic is flagged as weak", () => {
+  const [flag] = detect(many(12, false, { topic: "w" }), ["w"]);
+  assert.equal(flag.kind, "weak");
+});
+
+check("a topic still above the line but falling is SLIPPING", () => {
+  /* All right three weeks ago; 9 of 12 today. Still ~71%, down ~20 points. */
+  const [flag] = detect(retaken("s", { right: 12, daysAgo: 20 }, { right: 9 }), ["s"]);
+  assert.equal(flag.kind, "slipping");
+  assert.ok(flag.mastery >= 0.6);
+});
+
+check(`a middling topic untouched for ${STALE_DAYS}+ days is STALE`, () => {
+  const [flag] = detect(retaken("o", { right: 9, daysAgo: 30 }), ["o"]);
+  assert.equal(flag.kind, "stale");
+  assert.ok(flag.daysSince >= STALE_DAYS);
+});
+
+check("a strong, recent topic is not flagged", () => {
+  assert.equal(detect(many(12, true, { topic: "g" }), ["g"]).length, 0);
+});
+
+check("a topic with files and no answers is UNTESTED", () => {
+  const [flag] = detect([], ["new"]);
+  assert.equal(flag.kind, "untested");
+});
+
+check("a topic with no files is not flagged — no quiz could be written", () => {
+  assert.equal(detect([], [{ id: "empty", hasMaterial: false }]).length, 0);
+});
+
+check("one reason per topic, the most urgent", () => {
+  /* Weak AND stale: reported as weak, once. */
+  const flags = detect(many(12, false, { topic: "x", daysAgo: 40 }), ["x"]);
+  assert.equal(flags.length, 1);
+  assert.equal(flags[0].kind, "weak");
+});
+
+check("weak outranks slipping, which outranks stale, which outranks untested", () => {
+  const evidence = [
+    ...many(12, false, { topic: "weak" }),
+    ...retaken("slip", { right: 12, daysAgo: 20 }, { right: 9 }),
+    ...retaken("stale", { right: 9, daysAgo: 30 }),
+  ];
+  const order = detect(evidence, ["untested", "stale", "slip", "weak"]).map((flag) => flag.kind);
+  assert.deepEqual(order, ["weak", "slipping", "stale", "untested"]);
+});
+
+check("missing EASY questions reads as fundamentals, and suggests easy practice", () => {
+  const evidence = [
+    ...many(4, false, { topic: "f", difficulty: "easy" }),
+    ...many(8, false, { topic: "f", difficulty: "medium" }),
+  ];
+  const [flag] = detect(evidence, ["f"]);
+  assert.equal(flag.pattern, "fundamentals");
+  assert.equal(flag.difficulty, "easy");
+});
+
+check("easy right but hard wrong reads as harder, and suggests hard practice", () => {
+  const evidence = [
+    ...many(3, true, { topic: "h", difficulty: "easy" }),
+    ...many(5, false, { topic: "h", difficulty: "hard" }),
+    ...many(4, false, { topic: "h", difficulty: "medium" }),
+  ];
+  const [flag] = detect(evidence, ["h"]);
+  assert.equal(flag.pattern, "harder");
+  assert.equal(flag.difficulty, "hard");
+});
+
+check("too few answers at a difficulty reads as no pattern, not a guess", () => {
+  const evidence = [
+    ...many(2, false, { topic: "n", difficulty: "easy" }),
+    ...many(10, false, { topic: "n", difficulty: "medium" }),
+  ];
+  assert.equal(detect(evidence, ["n"])[0].pattern, null);
 });
 
 console.log(failures === 0 ? "\nall mastery rules hold\n" : `\n${failures} failing\n`);

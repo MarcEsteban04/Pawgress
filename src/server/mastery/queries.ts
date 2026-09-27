@@ -4,8 +4,10 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import {
+  detectAttention,
   masteryBy,
   masteryOf,
+  type Attention,
   type Difficulty,
   type Evidence,
   type Mastery,
@@ -148,3 +150,69 @@ export const getOverallMastery = cache(async (): Promise<Mastery | null> => {
   const { evidence, now } = await load();
   return masteryOf(evidence, now);
 });
+
+/* -------------------------------------------------------------------------- */
+/*  What needs practice (Sprint 59)                                            */
+/* -------------------------------------------------------------------------- */
+
+export type AttentionItem = Attention & {
+  topicName: string;
+  subjectId: string;
+  subjectName: string;
+  colorSlot: 1 | 2 | 3 | 4 | 5;
+};
+
+/**
+ * The topics that need practice, most urgent first.
+ *
+ * Reads EVERY topic, not only the ones with answers, because "untested" can
+ * only be found among the ones with none. Archived subjects are left out:
+ * archiving is how a student says a class is over, and being told to revise it
+ * would undo that.
+ */
+export const getAttention = cache(
+  async ({ subjectId, limit = 5 }: { subjectId?: string; limit?: number } = {}): Promise<
+    AttentionItem[]
+  > => {
+    const supabase = await createSupabaseServerClient();
+    const [{ evidence, now }, { data: rows }] = await Promise.all([
+      load(),
+      (() => {
+        let query = supabase
+          .from("topics")
+          .select(
+            "id, name, subject_id, materials(count), subjects!inner(name, color_slot, archived_at)",
+          )
+          .is("subjects.archived_at", null);
+        if (subjectId) query = query.eq("subject_id", subjectId);
+        return query;
+      })(),
+    ]);
+
+    const topics = rows ?? [];
+    const named = new Map(topics.map((row) => [row.id, row]));
+
+    return detectAttention({
+      evidence,
+      topics: topics.map((row) => ({
+        id: row.id,
+        hasMaterial: (row.materials?.[0]?.count ?? 0) > 0,
+      })),
+      now,
+    })
+      .slice(0, limit)
+      .flatMap((attention) => {
+        const row = named.get(attention.topicId);
+        if (!row) return [];
+        return [
+          {
+            ...attention,
+            topicName: row.name,
+            subjectId: row.subject_id,
+            subjectName: row.subjects?.name ?? "",
+            colorSlot: (row.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
+          },
+        ];
+      });
+  },
+);

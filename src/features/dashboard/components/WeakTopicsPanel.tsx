@@ -1,64 +1,42 @@
-import { ChevronRight, TrendingUp } from "lucide-react";
-import Link from "next/link";
-import { Avatar, Card, CardBody, CardHeader, CardTitle } from "@/components/ui";
-import { PanelEmpty } from "./PanelEmpty";
-import { type WeakTopic } from "@/server/dashboard/queries";
-import { formatPercent } from "@/lib/utils";
+import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui";
+import { AttentionList } from "@/features/mastery/components/AttentionList";
+import { type AttentionItem } from "@/server/mastery/queries";
 
 /**
- * The topics holding a student back.
+ * What to practise next, across every subject (Sprint 59).
  *
- * Only topics with enough answered questions appear — a 20% from three
- * questions is noise, and putting it at the top of "needs attention" would
- * send someone to study the wrong thing (US-H1).
+ * This panel used to list topics under 60% and link each to the subject list —
+ * the one place that did not help, since the student then had to find the
+ * topic again and decide what "study this" meant. It now carries every reason
+ * a topic needs practice (weak, slipping, stale, untested), the evidence for
+ * each, and a button that writes the quiz. See `detectAttention`.
  */
 export function WeakTopicsPanel({
-  topics,
+  items,
   className,
 }: {
-  topics: WeakTopic[];
+  items: AttentionItem[];
   className?: string;
 }) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>Needs attention</CardTitle>
+        <CardTitle>Practise next</CardTitle>
       </CardHeader>
 
       <CardBody>
-        {topics.length === 0 ? (
-          <PanelEmpty
-            Icon={TrendingUp}
-            title="Nothing flagged"
-            description="Once you have answered enough questions on a topic, the weakest ones are listed here with what you got wrong."
-            awaiting="Needs at least 10 answers on a topic."
-          />
-        ) : (
-          <ul className="flex flex-col gap-2.5">
-            {topics.map((topic) => (
-              <li key={topic.id} className="rounded-[var(--radius-tile)] bg-surface-sunken p-3.5">
-                <div className="flex items-start gap-3">
-                  <Avatar name={topic.subject} tone={topic.colorSlot} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="leading-snug font-medium">{topic.topic}</p>
-                    <p className="mt-0.5 text-xs text-ink-muted">
-                      {topic.subject} ·{" "}
-                      <span className="tabular">{formatPercent(topic.mastery)}</span> from{" "}
-                      <span className="tabular">{topic.questionsAnswered}</span> questions
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/subjects"
-                  className="mt-3 inline-flex h-8 items-center gap-1 rounded-[var(--radius-pill)] border border-rule bg-surface px-3 text-sm font-medium transition-colors hover:border-rule-strong"
-                >
-                  Study this
-                  <ChevronRight className="size-3.5" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <AttentionList
+          items={items}
+          empty={
+            <>
+              <p className="font-medium text-ink">Nothing needs you right now.</p>
+              <p className="mt-0.5">
+                Every topic you have tested is holding up, and none has gone quiet for long. Topics
+                you have files for but have not tested will appear here too.
+              </p>
+            </>
+          }
+        />
       </CardBody>
     </Card>
   );

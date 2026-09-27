@@ -30,8 +30,8 @@ import {
   listSubjectActivity,
   listSubjectMaterials,
   listSubjectUpcoming,
-  listSubjectWeakTopics,
 } from "@/server/subjects/detail";
+import { getAttention } from "@/server/mastery/queries";
 import { getSubject } from "@/server/subjects/queries";
 import { formatAcademicYear } from "@/lib/validation/subject";
 import { listTopics } from "@/server/topics/queries";
@@ -104,11 +104,11 @@ async function Progress({ subjectId }: { subjectId: string }) {
  * stay independent instead of being merged to share a fetch.
  */
 async function WeakTopics({ subjectId }: { subjectId: string }) {
-  const [topics, progress] = await Promise.all([
-    listSubjectWeakTopics(subjectId),
+  const [items, progress] = await Promise.all([
+    getAttention({ subjectId, limit: 5 }),
     getSubjectProgress(subjectId),
   ]);
-  return <WeakTopicsPanel topics={topics} measuredTopics={progress.measuredTopics} />;
+  return <WeakTopicsPanel items={items} measuredTopics={progress.measuredTopics} />;
 }
 
 /**

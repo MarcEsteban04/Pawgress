@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
-import { LOW_EVIDENCE_QUESTIONS, WEAK_TOPIC_THRESHOLD } from "@/types";
+import { LOW_EVIDENCE_QUESTIONS } from "@/types";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 
 /**
@@ -34,15 +34,6 @@ export type DashboardSubject = {
 };
 
 export type MasteryBand = { label: string; value: number; step: 1 | 2 | 3 | 4 | "none" };
-
-export type WeakTopic = {
-  id: string;
-  topic: string;
-  subject: string;
-  colorSlot: 1 | 2 | 3 | 4 | 5;
-  mastery: number;
-  questionsAnswered: number;
-};
 
 export type UpcomingItem = {
   id: string;
@@ -87,7 +78,6 @@ export type DashboardData = {
   topicsTracked: number;
   /** Overall readiness, or null when there is not enough evidence for one. */
   readiness: number | null;
-  weakTopics: WeakTopic[];
   upcoming: UpcomingItem[];
   planToday: PlanBlock[];
   planMinutesRemaining: number;
@@ -201,18 +191,6 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
       ? evidenced.reduce((sum, row) => sum + row.mastery, 0) / evidenced.length
       : null;
 
-  const weakTopics: WeakTopic[] = evidenced
-    .filter((row) => row.mastery < WEAK_TOPIC_THRESHOLD)
-    .slice(0, 3)
-    .map((row) => ({
-      id: row.topicId,
-      topic: row.topicName,
-      subject: row.subjectName,
-      colorSlot: row.colorSlot,
-      mastery: row.mastery,
-      questionsAnswered: row.questions,
-    }));
-
   const planItems = (planRows.data?.study_plan_items ?? [])
     .slice()
     .sort((a, b) => a.position - b.position);
@@ -303,7 +281,6 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
     masteryBands,
     topicsTracked: progress.length,
     readiness,
-    weakTopics,
     upcoming: (eventRows.data ?? []).map((row) => ({
       id: row.id,
       title: row.title,
