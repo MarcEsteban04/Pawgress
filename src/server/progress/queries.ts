@@ -3,15 +3,19 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
-import { getTopicMastery } from "@/server/mastery/queries";
+import { type Mastery } from "@/features/mastery/formula";
+import { summariseAttempts, type AttemptSummary } from "@/features/quizzes/analytics";
+import { getOverallMastery, getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
+import { listAllQuizAttempts } from "@/server/quizzes/queries";
+import { LOW_EVIDENCE_QUESTIONS as EVIDENCE } from "@/types";
 
 /**
- * What a student has actually done, and what it shows (FR-P1, US-H1).
+ * Everything the Progress page shows (FR-P1–P3, US-H1, Sprints 57–58).
  *
- * **Every number here is counted, not modelled.** Sessions finished, questions
- * answered, cards recalled. The weighted mastery formula — recency, difficulty,
- * decay — is Sprint 56's job, and inventing half of it now would put the
- * "mastery misleads students" risk on screen ahead of schedule.
+ * **Two kinds of number, kept apart.** Activity is COUNTED — sessions, minutes,
+ * days in a row, cards recalled. Mastery is MODELLED, by the Sprint 56 formula
+ * over the answers themselves, and read from the same cached loader the
+ * dashboard and the subject hub use, so no two screens can disagree about it.
  *
  * **Recall and accuracy are reported separately and never averaged.** A student
  * pressing "I had it" on a flashcard is not the same evidence as answering a
@@ -32,6 +36,15 @@ export type SubjectProgress = {
   id: string;
   name: string;
   colorSlot: 1 | 2 | 3 | 4 | 5;
+  /**
+   * The subject's own mastery, from every answer in it (Sprint 56). Null when
+   * nothing has been answered; the page withholds the figure below the
+   * evidence threshold rather than showing a confident number.
+   */
+  mastery: Mastery | null;
+  /** Topics in this subject, and how many have enough answers to be scored. */
+  topicCount: number;
+  measuredTopics: number;
   /** Practice questions answered, and how many were right. */
   answered: number;
   correct: number;
@@ -69,6 +82,22 @@ export type RecentSession = {
 };
 
 export type ProgressOverview = {
+  /** Mastery across everything answered, plus how much of the syllabus it covers. */
+  overall: {
+    mastery: Mastery | null;
+    measuredTopics: number;
+    topicCount: number;
+  };
+  /**
+   * The last seven days against the seven before them, in minutes.
+   *
+   * Rolling windows rather than calendar weeks. "This week" on a Monday
+   * morning is almost empty and would read as a collapse; the last seven days
+   * are always a full week, whichever day it is.
+   */
+  week: { recent: number; before: number };
+  /** Quizzes and mock exams only — never practice. See `listAllQuizAttempts`. */
+  quizzes: AttemptSummary & { trend: { label: string; value: number }[]; distinct: number };
   totalSessions: number;
   totalMinutes: number;
   answered: number;
@@ -89,26 +118,39 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: sessionRows }, topicMastery, { data: cardRows }] = await Promise.all([
-    /* Every session, not just the recent ones: the totals at the top are
-       lifetime figures, and the chart filters to its own window below. RLS
-       scopes this to the caller. */
-    supabase
-      .from("study_sessions")
-      .select(
-        "id, activity, started_at, duration_seconds, items_total, items_correct, topic_id, subject_id, topics(name), subjects(id, name, color_slot)",
-      )
-      .order("started_at", { ascending: false })
-      .limit(500),
+  const [
+    sessions,
+    topicMastery,
+    { data: cardRows },
+    overallMastery,
+    subjectMastery,
+    { data: topicRows },
+    quizAttempts,
+  ] = await Promise.all([
+    /* Every session, read in pages. The totals at the top are LIFETIME
+       figures, and this used to be one read capped at 500 rows — so past 500
+       sessions "Studied" silently stopped counting, which is exactly the
+       student who studies most. */
+    readAllSessions(supabase),
     /* The Sprint 56 formula, from the same loader the dashboard and the
        subject hub read — so this page cannot disagree with them. */
     getTopicMastery(),
     /* Card recall lives on the cards themselves — Sprint 44 has been counting
        it correctly all along, and nothing has ever displayed it. */
     supabase.from("flashcards").select("times_seen, times_known, subject_id").gt("times_seen", 0),
+    getOverallMastery(),
+    getSubjectMastery(),
+    supabase.from("topics").select("id, subject_id"),
+    listAllQuizAttempts(),
   ]);
 
-  const sessions = sessionRows ?? [];
+  const topicsBySubject = new Map<string, string[]>();
+  for (const row of topicRows ?? []) {
+    const list = topicsBySubject.get(row.subject_id);
+    if (list) list.push(row.id);
+    else topicsBySubject.set(row.subject_id, [row.id]);
+  }
+  const isMeasured = (topicId: string) => (topicMastery.get(topicId)?.questions ?? 0) >= EVIDENCE;
 
   /* One bucket per day, pre-seeded, so a day with no studying is a gap in the
      chart rather than a missing bar that silently shortens the window. */
@@ -129,11 +171,18 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
   let answered = 0;
   let correct = 0;
 
+  const now = Date.now();
+  const week = { recent: 0, before: 0 };
+
   for (const row of sessions) {
     const minutes = Math.round((row.duration_seconds ?? 0) / 60);
     totalMinutes += minutes;
     answered += row.items_total ?? 0;
     correct += row.items_correct ?? 0;
+
+    const age = now - Date.parse(row.started_at);
+    if (age < 7 * 86_400_000) week.recent += minutes;
+    else if (age < 14 * 86_400_000) week.before += minutes;
 
     const bucket = buckets.get(toDayKey(new Date(row.started_at)));
     if (bucket) {
@@ -148,6 +197,9 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
       id: subject.id,
       name: subject.name,
       colorSlot: slot(subject.color_slot),
+      mastery: subjectMastery.get(subject.id) ?? null,
+      topicCount: topicsBySubject.get(subject.id)?.length ?? 0,
+      measuredTopics: (topicsBySubject.get(subject.id) ?? []).filter(isMeasured).length,
       answered: 0,
       correct: 0,
       cardsSeen: 0,
@@ -184,7 +236,25 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     }
   }
 
+  const quizSummary = summariseAttempts(quizAttempts);
+
   return {
+    overall: {
+      mastery: overallMastery,
+      measuredTopics: (topicRows ?? []).filter((row) => isMeasured(row.id)).length,
+      topicCount: topicRows?.length ?? 0,
+    },
+    week,
+    quizzes: {
+      ...quizSummary,
+      /* The last twenty, oldest first. More than that and a line chart of
+         percentages turns into a hedge, with no single attempt legible. */
+      trend: quizAttempts.slice(-20).map((attempt, index, list) => ({
+        label: `#${quizAttempts.length - list.length + index + 1}`,
+        value: attempt.total > 0 ? attempt.correct / attempt.total : 0,
+      })),
+      distinct: new Set(quizAttempts.map((attempt) => attempt.quizId)).size,
+    },
     totalSessions: sessions.length,
     totalMinutes,
     answered,
@@ -220,6 +290,33 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     })),
   };
 });
+
+/** PostgREST's default row cap, and so the page size. */
+const PAGE = 1000;
+
+/**
+ * Every study session, newest first, a page at a time.
+ *
+ * Bounded at fifty thousand so a runaway loop cannot hang a page render — a
+ * student logging a session every day for a century would not reach it.
+ */
+async function readAllSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const rows = [];
+  for (let page = 0; page < 50; page++) {
+    const { data } = await supabase
+      .from("study_sessions")
+      .select(
+        "id, activity, started_at, duration_seconds, items_total, items_correct, topic_id, subject_id, topics(name), subjects(id, name, color_slot)",
+      )
+      .order("started_at", { ascending: false })
+      .range(page * PAGE, page * PAGE + PAGE - 1);
+
+    const batch = data ?? [];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return rows;
+}
 
 /** Local calendar day, not UTC: a session at 11pm belongs to that evening. */
 function toDayKey(date: Date): string {

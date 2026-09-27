@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import {
   masteryBy,
+  masteryOf,
   type Difficulty,
   type Evidence,
   type Mastery,
@@ -134,4 +135,16 @@ export const getTopicMastery = cache(async (): Promise<Map<string, TopicMastery>
 export const getSubjectMastery = cache(async (): Promise<Map<string, Mastery>> => {
   const { evidence, now } = await load();
   return masteryBy(evidence, (answer) => answer.subjectId, now);
+});
+
+/**
+ * Mastery across everything the student has answered.
+ *
+ * Scored over the whole body of evidence directly, not averaged from subjects
+ * or topics: an average of subjects would let a subject with twelve answers
+ * weigh as much as one with four hundred. One formula, one pool of answers.
+ */
+export const getOverallMastery = cache(async (): Promise<Mastery | null> => {
+  const { evidence, now } = await load();
+  return masteryOf(evidence, now);
 });
