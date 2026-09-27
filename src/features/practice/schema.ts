@@ -47,6 +47,22 @@ export const questionSetSchema = z.object({
          * learn from is a question that only told them they are behind.
          */
         explanation: z.string().min(1).max(800),
+        /**
+         * The file the question was drawn from, as its bracketed title in the
+         * source (Sprint 53). Empty when the source has no files — a practice
+         * set is written from a reviewer, which is one document.
+         *
+         * **A title we GAVE the model, not a topic it names.** Asking "which
+         * topic is this about" would invite it to invent one; asking which of
+         * the labelled files it was reading is a lookup against a list it was
+         * shown. The handler maps the title back to a material, and the
+         * material's own topic is a fact we already hold. That is what lets a
+         * quiz over a whole subject say which chapter a student is weak on.
+         *
+         * Not optional, for the reason `choices` is not: strict JSON schema
+         * treats an absent key as an error, and an empty string says the same.
+         */
+        source: z.string().max(300),
       }),
     )
     /**
@@ -154,6 +170,9 @@ every one of them worth keeping.`
     "- be answerable from understanding rather than from recognising a phrase;",
     "- carry an `explanation` that says WHY the answer is right, not just what it",
     "  is. A student reads this after getting it wrong.",
+    "- set `source` to the title of the file the question came from, copied",
+    "  EXACTLY as it appears in square brackets above, without the brackets. If",
+    "  the material above has no bracketed titles, leave `source` empty.",
     "",
     /* Three rules added in Sprint 48, each for a failure seen in real output. */
     "Never do these:",

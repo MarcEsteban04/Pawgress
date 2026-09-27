@@ -245,7 +245,7 @@ async function generateFromMaterial(quiz: {
      tell them that had happened. */
   let query = supabase
     .from("materials")
-    .select("id, title, extracted_text")
+    .select("id, title, topic_id, extracted_text")
     .eq("subject_id", quiz.subject_id)
     .not("extracted_text", "is", null)
     .order("created_at", { ascending: true });
@@ -335,13 +335,39 @@ async function generateFromMaterial(quiz: {
        what the material could honestly support. */
     const questions = kept.slice(0, wanted);
 
+    /**
+     * Which file, and so which topic, each question came from.
+     *
+     * The model names a file by the bracketed title it was shown; this maps
+     * that back to a material we hold, and the material's topic is a fact
+     * rather than a guess. Matched case-insensitively and trimmed, because a
+     * model that copies "Week 3 - Cells " with a trailing space has still
+     * named the right file.
+     *
+     * A title that matches nothing falls back to the quiz's own scope — the
+     * chosen topic, or none for a whole-subject quiz. That is the honest
+     * answer to "we do not know which chapter this was", and it is the same
+     * answer every question got before this existed.
+     */
+    const byTitle = new Map(
+      usableMaterials.map((material) => [material.title.trim().toLowerCase(), material]),
+    );
+    const origin = (source: string) => byTitle.get(source.trim().toLowerCase());
+
     await supabase.from("quiz_questions").delete().eq("quiz_id", quiz.id);
 
     const { error } = await supabase.from("quiz_questions").insert(
       questions.map((question, index) => ({
         user_id: quiz.user_id,
         quiz_id: quiz.id,
-        topic_id: quiz.topic_id,
+        /* A topic-scoped quiz keeps its topic whatever the model says: every
+           file it read was filed under that topic, so the answer is already
+           known and a model-supplied one could only be wrong. */
+        topic_id: quiz.topic_id ?? origin(question.source)?.topic_id ?? null,
+        /* The citation FR-C2 asked for in the Sprint 13 schema and nothing has
+           filled until now: every question points back at the file it came
+           from. */
+        source_material_id: origin(question.source)?.id ?? null,
         position: index,
         type: question.type,
         prompt: question.prompt,

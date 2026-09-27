@@ -224,6 +224,21 @@ export type AttemptAnswer = {
   gradedByAi: boolean;
   /** Whether they already did. */
   overridden: boolean;
+  /**
+   * The answer and the reason — null until the attempt is SUBMITTED.
+   *
+   * Everywhere else in this file the key is kept from the browser, because a
+   * student in the middle of a quiz must not be able to read it. Once the
+   * paper is handed in there is nothing left to protect and everything to
+   * teach, so this is the one query that selects them — and it still returns
+   * null for an attempt with no `submitted_at`, so a half-finished row cannot
+   * be used to fish the answers out.
+   */
+  correctAnswer: string | null;
+  explanation: string | null;
+  /** The chapter it came from, when we know. See the Sprint 53 `source` field. */
+  topicId: string | null;
+  topicName: string | null;
 };
 
 export type Attempt = {
@@ -254,12 +269,14 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
   const { data } = await supabase
     .from("quiz_attempts")
     .select(
-      "id, quiz_id, score_correct, score_total, duration_seconds, submitted_at, quizzes(title, subjects(name, color_slot)), quiz_answers(id, question_id, given_answer, is_correct, graded_by_ai, student_override, quiz_questions(position, type, prompt))",
+      "id, quiz_id, score_correct, score_total, duration_seconds, submitted_at, quizzes(title, subjects(name, color_slot)), quiz_answers(id, question_id, given_answer, is_correct, graded_by_ai, student_override, quiz_questions(position, type, prompt, correct_answer, explanation, topic_id, topics(name)))",
     )
     .eq("id", attemptId)
     .maybeSingle();
 
   if (!data) return null;
+
+  const submitted = data.submitted_at !== null;
 
   const answers: AttemptAnswer[] = (data.quiz_answers ?? [])
     .map((row) => ({
@@ -272,6 +289,10 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
       correct: row.is_correct === true,
       gradedByAi: row.graded_by_ai,
       overridden: row.student_override !== null,
+      correctAnswer: submitted ? (row.quiz_questions?.correct_answer ?? null) : null,
+      explanation: submitted ? (row.quiz_questions?.explanation ?? null) : null,
+      topicId: row.quiz_questions?.topic_id ?? null,
+      topicName: row.quiz_questions?.topics?.name ?? null,
     }))
     /* Back into the order they were asked. PostgREST returns an embedded set
        in no guaranteed order, and a results list that shuffles between reloads

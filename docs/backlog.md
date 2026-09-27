@@ -64,6 +64,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 50 | Quiz interface — start screen, free navigation, progress, timer, exit guard, review | done | no migration: `time_limit_seconds` has been on `quizzes` since Sprint 13. **The runner never receives the answers** — `QuizQuestion` has no `answer` field, so the key cannot reach the page source. Marking is Sprint 52 |
 | 51 | Question types — marking all four, server-side | done | no migration: `graded_by_ai` and `student_override` have been on `quiz_answers` since Sprint 13. Three types compare, short answers are judged by a model in ONE call per paper, and `npm run mark:test` pins the comparison rules |
 | 52 | Quiz submission — hand in, mark, score, record the attempt, correct/incorrect states, overrule a model's mark | done | no migration. Blanks do not block submission. A quiz writes the same study session and mastery update as practice. **Known gap:** an overrule corrects the attempt and the session but not topic mastery — `record_practice` only adds; fixing it needs the migration waiting on `SUPABASE_ACCESS_TOKEN` |
+| 53 | Quiz results — score, missed/right filter, correct answers, explanations, weak topics | done | no migration. Answers and explanations are revealed only once an attempt is SUBMITTED. Whole-subject quizzes now tag each question with the file it came from (`source`), mapped back to the material and its topic — and `quiz_questions.source_material_id` is filled for the first time. Quizzes made before this have no topic breakdown |
 | — | **Review your mistakes, and match the terms** | done | two more ways into a reviewer, beyond the roadmap's list. Mistakes are the questions whose most recent answer was wrong, so the list clears itself |
 | 47 | Reviewer library — one cross-subject `/reviewers`, URL-driven search/filter/sort, duplicate, counted delete | done | no migration. **Top level, not per-subject** — "filter by subject" only means something if the list spans them. "Save reviewer" needed no work: reviewers have persisted at generation since Sprint 43. The subject hub no longer previews them: it is subjects, topics and files, and a reviewer is generated from the library, which asks which subject |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
@@ -74,9 +75,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 53 | Quiz results — score, right, wrong, weak topics, explanations | 52 |
 | 54 | Mock exams — larger sets, exam timer, randomised, readiness | 53 |
 | 55 | Quiz analytics — attempts, average, best, recent | 52 |
+| 56 | Topic mastery — the weighted formula, improvement, weak and strong | 55 |
 
 ---
 
