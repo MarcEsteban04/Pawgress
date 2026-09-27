@@ -99,6 +99,12 @@
   --shadow-float:
     0 1px 1px rgb(16 20 32 / 0.05), 0 6px 12px -4px rgb(16 20 32 / 0.08),
     0 22px 40px -12px rgb(16 20 32 / 0.16);
+
+  /* The layer that dims the page behind a dialog or the mobile nav. Its own
+     token rather than a mix of --ink, because a scrim must DARKEN in both
+     themes — and --ink is near-white in dark mode, so a scrim built from it
+     washed the page out to grey instead of dimming it. */
+  --scrim: rgb(16 20 32 / 0.45);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -159,6 +165,9 @@
     --shadow-float:
       0 1px 1px rgb(0 0 0 / 0.4), 0 6px 12px -4px rgb(0 0 0 / 0.5),
       0 22px 40px -12px rgb(0 0 0 / 0.7);
+    /* Heavier than light mode: a dark page is already low-contrast, so a
+       dialog needs more separation from it to read as in front. */
+    --scrim: rgb(0 0 0 / 0.6);
   }
 }
 
@@ -218,6 +227,7 @@
   --shadow-pop: 0 4px 8px -4px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.7);
   --shadow-float:
     0 1px 1px rgb(0 0 0 / 0.4), 0 6px 12px -4px rgb(0 0 0 / 0.5), 0 22px 40px -12px rgb(0 0 0 / 0.7);
+  --scrim: rgb(0 0 0 / 0.6);
 }
 
 @theme inline {

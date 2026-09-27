@@ -97,7 +97,7 @@ export function AppShell({ children, toolbar, user, quota, initialSidebar }: App
           <div className="fixed inset-0 z-50 md:hidden">
             <button
               aria-label="Close navigation"
-              className="absolute inset-0 bg-[color-mix(in_oklab,var(--ink)_50%,transparent)]"
+              className="absolute inset-0 bg-[var(--scrim)]"
               onClick={() => setDrawerOpen(false)}
             />
             <div className="absolute inset-y-0 left-0 shadow-[var(--shadow-pop)]">

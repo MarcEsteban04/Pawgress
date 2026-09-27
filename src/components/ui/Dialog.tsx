@@ -29,7 +29,7 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[color-mix(in_oklab,var(--ink)_45%,transparent)]" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[var(--scrim)]" />
       <DialogPrimitive.Content
         className={cn(
           "fixed z-50 flex flex-col gap-4 border border-rule bg-surface shadow-lg",
