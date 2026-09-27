@@ -34,12 +34,19 @@ export function QuizRunner({
   questions,
   timeLimitSeconds,
   onExit,
+  onSubmit,
+  submitting,
+  submitError,
 }: {
   questions: QuizQuestion[];
   /** Null is untimed, which is the default. */
   timeLimitSeconds: number | null;
   /** Asks to leave. The page owns the confirmation, because it owns the route. */
   onExit: (hasAnswers: boolean) => void;
+  /** Hands the paper in. The page owns this, because it owns the navigation after. */
+  onSubmit: (answers: Answers) => void;
+  submitting: boolean;
+  submitError: string | null;
 }) {
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
@@ -77,11 +84,14 @@ export function QuizRunner({
         questions={questions}
         answers={answers}
         expired={expired}
+        submitting={submitting}
+        submitError={submitError}
         onJump={(target) => {
           setIndex(target);
           setReviewing(false);
         }}
         onBack={() => setReviewing(false)}
+        onSubmit={() => onSubmit(answers)}
       />
     );
   }
@@ -206,14 +216,20 @@ function ReviewScreen({
   questions,
   answers,
   expired,
+  submitting,
+  submitError,
   onJump,
   onBack,
+  onSubmit,
 }: {
   questions: QuizQuestion[];
   answers: Answers;
   expired: boolean;
+  submitting: boolean;
+  submitError: string | null;
   onJump: (index: number) => void;
   onBack: () => void;
+  onSubmit: () => void;
 }) {
   const blanks = questions.filter((entry) => !(answers[entry.id] ?? "").trim());
 
@@ -265,14 +281,27 @@ function ReviewScreen({
         })}
       </ol>
 
+      {submitError && (
+        <p role="alert" className="text-sm text-bad">
+          {submitError}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-        <Button variant="subtle" onClick={onBack}>
+        <Button variant="subtle" disabled={submitting} onClick={onBack}>
           <ArrowLeft aria-hidden />
           Back to the questions
         </Button>
-        {/* Deliberately not a disabled Submit. A greyed-out button invites
-            someone to hunt for what unlocks it; a sentence says what is true. */}
-        <p className="text-xs text-ink-subtle">Marking and scoring arrive with quiz submission.</p>
+
+        {/* **Blanks do not block it.** A student who decided not to answer four
+            questions has made a decision, and a Submit that refused until every
+            box was full would force guesses — worse data than a blank and worse
+            revision than an honest gap. The count above already says what is
+            missing. */}
+        <Button disabled={submitting} onClick={onSubmit}>
+          <Check aria-hidden />
+          {submitting ? "Marking…" : "Hand it in"}
+        </Button>
       </div>
     </div>
   );

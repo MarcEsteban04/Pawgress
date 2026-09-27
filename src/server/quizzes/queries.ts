@@ -206,3 +206,88 @@ export const getQuizQuestions = cache(async (quizId: string): Promise<QuizQuesti
       : [],
   }));
 });
+
+/* -------------------------------------------------------------------------- */
+/*  A finished attempt                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type AttemptAnswer = {
+  /** The answer row, which is what an override targets. */
+  id: string;
+  questionId: string;
+  position: number;
+  type: QuestionType;
+  prompt: string;
+  given: string | null;
+  correct: boolean;
+  /** True when a model decided it — the only marks a student may overrule. */
+  gradedByAi: boolean;
+  /** Whether they already did. */
+  overridden: boolean;
+};
+
+export type Attempt = {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  colorSlot: 1 | 2 | 3 | 4 | 5;
+  subjectName: string;
+  correct: number;
+  total: number;
+  durationSeconds: number | null;
+  submittedAt: string | null;
+  answers: AttemptAnswer[];
+};
+
+/**
+ * One attempt, with every question marked.
+ *
+ * **Reads the answers from `quiz_answers`, not by re-marking.** The verdict was
+ * decided once, at submission, and re-deriving it here would make a student's
+ * score depend on when they happened to open the page — and would silently
+ * discard any mark they had overruled.
+ */
+export const getAttempt = cache(async (attemptId: string): Promise<Attempt | null> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("quiz_attempts")
+    .select(
+      "id, quiz_id, score_correct, score_total, duration_seconds, submitted_at, quizzes(title, subjects(name, color_slot)), quiz_answers(id, question_id, given_answer, is_correct, graded_by_ai, student_override, quiz_questions(position, type, prompt))",
+    )
+    .eq("id", attemptId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const answers: AttemptAnswer[] = (data.quiz_answers ?? [])
+    .map((row) => ({
+      id: row.id,
+      questionId: row.question_id,
+      position: row.quiz_questions?.position ?? 0,
+      type: (row.quiz_questions?.type ?? "mcq") as QuestionType,
+      prompt: row.quiz_questions?.prompt ?? "",
+      given: row.given_answer,
+      correct: row.is_correct === true,
+      gradedByAi: row.graded_by_ai,
+      overridden: row.student_override !== null,
+    }))
+    /* Back into the order they were asked. PostgREST returns an embedded set
+       in no guaranteed order, and a results list that shuffles between reloads
+       is one nobody can check against the paper they just sat. */
+    .sort((a, b) => a.position - b.position);
+
+  return {
+    id: data.id,
+    quizId: data.quiz_id,
+    quizTitle: data.quizzes?.title ?? "Quiz",
+    colorSlot: slot(data.quizzes?.subjects?.color_slot),
+    subjectName: data.quizzes?.subjects?.name ?? "",
+    correct: data.score_correct ?? 0,
+    total: data.score_total ?? answers.length,
+    durationSeconds: data.duration_seconds,
+    submittedAt: data.submitted_at,
+    answers,
+  };
+});

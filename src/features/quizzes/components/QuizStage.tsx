@@ -2,11 +2,12 @@
 
 import { Clock, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button, ConfirmDialog } from "@/components/ui";
 import { QuizRunner } from "@/features/quizzes/components/QuizRunner";
 import { TIMER_OPTIONS } from "@/features/quizzes/schema";
 import { setQuizTimeLimitAction } from "@/features/quizzes/server/actions";
+import { submitQuizAction } from "@/features/quizzes/server/submit";
 import { type QuizQuestion } from "@/server/quizzes/queries";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,19 @@ export function QuizStage({
   const [started, setStarted] = useState(false);
   const [limit, setLimit] = useState<number | null>(timeLimitSeconds);
   const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, startSubmitting] = useTransition();
   const [, startSaving] = useTransition();
+
+  /**
+   * When the sitting began.
+   *
+   * Zero until the Start button is pressed — reading the clock during render
+   * is what the React Compiler lint forbids, and the honest start is the press
+   * anyway. The duration goes on the attempt, so a paper handed in after two
+   * minutes is visibly different from one that took twenty.
+   */
+  const startedAt = useRef(0);
 
   function choose(seconds: number | null) {
     setLimit(seconds);
@@ -93,7 +106,14 @@ export function QuizStage({
           </p>
         </fieldset>
 
-        <Button size="lg" onClick={() => setStarted(true)} block>
+        <Button
+          size="lg"
+          onClick={() => {
+            startedAt.current = Date.now();
+            setStarted(true);
+          }}
+          block
+        >
           <Play aria-hidden />
           Start quiz
         </Button>
@@ -110,6 +130,29 @@ export function QuizStage({
       <QuizRunner
         questions={questions}
         timeLimitSeconds={limit}
+        submitting={submitting}
+        submitError={error}
+        onSubmit={(answers) => {
+          setError(null);
+          startSubmitting(async () => {
+            const result = await submitQuizAction({
+              quizId,
+              answers,
+              durationSeconds:
+                startedAt.current === 0 ? 0 : Math.round((Date.now() - startedAt.current) / 1000),
+            });
+
+            if (result.status === "error") {
+              /* Kept on the review screen with the answers intact. A failed
+                 submission must never cost a student the paper they just
+                 sat — they press it again. */
+              setError(`${result.message} ${result.nextStep}`);
+              return;
+            }
+
+            router.push(`/quizzes/${quizId}/attempts/${result.attemptId}`);
+          });
+        }}
         onExit={(hasAnswers) => {
           /* Straight out when there is nothing to lose. Asking someone to
              confirm discarding an empty sitting is a dialog that only ever
