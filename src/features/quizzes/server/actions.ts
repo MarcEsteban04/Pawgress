@@ -177,3 +177,29 @@ export async function deleteQuizAction(quizId: string): Promise<QuizResult> {
   revalidatePath("/", "layout");
   return { status: "ok", quizId };
 }
+
+/**
+ * Turn the timer on or off for a quiz.
+ *
+ * Stored on the QUIZ rather than held for one sitting: a student who wants
+ * exam conditions wants them every time they open it, and `quizzes` has
+ * carried `time_limit_seconds` since the Sprint 13 schema for exactly this.
+ *
+ * No revalidation. The runner already knows what was chosen — it is the thing
+ * that chose it — and re-rendering the page under someone about to start would
+ * throw away the start screen they are standing on.
+ */
+export async function setQuizTimeLimitAction(
+  quizId: string,
+  seconds: number | null,
+): Promise<void> {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  await supabase
+    .from("quizzes")
+    .update({ time_limit_seconds: seconds && seconds > 0 ? seconds : null })
+    .eq("id", quizId)
+    /* Never a practice set: those have no start screen and no timer. */
+    .is("reviewer_id", null);
+}

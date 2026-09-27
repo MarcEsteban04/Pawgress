@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { type QuestionType } from "@/features/practice/schema";
 import { type QuizDifficulty } from "@/features/quizzes/schema";
 import { type JobStatus } from "@/types";
 
@@ -31,11 +32,13 @@ export type QuizSummary = {
   /** The most recent scored attempt, if there is one. */
   lastScore: { correct: number; total: number } | null;
   createdAt: string;
+  /** Null means untimed, which is the default. */
+  timeLimitSeconds: number | null;
   failureMessage: string | null;
 };
 
 const SELECT =
-  "id, title, status, difficulty, question_count, subject_id, topic_id, created_at, topics(name), subjects(name, color_slot), quiz_attempts(id, submitted_at, score_correct, score_total)";
+  "id, title, status, difficulty, question_count, time_limit_seconds, subject_id, topic_id, created_at, topics(name), subjects(name, color_slot), quiz_attempts(id, submitted_at, score_correct, score_total)";
 
 const slot = (value: number | null | undefined) => (value ?? 1) as 1 | 2 | 3 | 4 | 5;
 
@@ -52,6 +55,7 @@ function summarise(row: {
   status: string;
   difficulty: string;
   question_count: number;
+  time_limit_seconds: number | null;
   subject_id: string;
   created_at: string;
   topics: { name: string } | null;
@@ -81,6 +85,7 @@ function summarise(row: {
       ? { correct: latest.score_correct ?? 0, total: latest.score_total ?? 0 }
       : null,
     createdAt: row.created_at,
+    timeLimitSeconds: row.time_limit_seconds,
   };
 }
 
@@ -155,4 +160,49 @@ export const listQuizSubjects = cache(async (): Promise<{ id: string; name: stri
   return [...seen.entries()]
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
+});
+
+/* -------------------------------------------------------------------------- */
+/*  Taking a quiz                                                              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A question as the BROWSER is allowed to see it.
+ *
+ * **No `answer`, and no `explanation`.** `PracticeQuestion` carries both,
+ * because practice marks each answer the moment it is given and has to. A quiz
+ * is marked at the end, server-side, and sending the answers down with the
+ * questions would put the whole key in the page source — one devtools tab away
+ * from a score that means nothing. This is not a hypothetical: the two types
+ * differ by exactly the two fields worth protecting, which is why this is its
+ * own type rather than a comment asking future code to be careful.
+ */
+export type QuizQuestion = {
+  id: string;
+  type: QuestionType;
+  prompt: string;
+  choices: string[];
+};
+
+export const getQuizQuestions = cache(async (quizId: string): Promise<QuizQuestion[]> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data } = await supabase
+    .from("quiz_questions")
+    /* The columns are the allow-list. `correct_answer` and `explanation` are
+       not selected at all, so they cannot reach a serialised prop by accident
+       — a filter applied after the fact is one refactor away from being lost. */
+    .select("id, type, prompt, choices")
+    .eq("quiz_id", quizId)
+    .order("position", { ascending: true });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    type: row.type as QuestionType,
+    prompt: row.prompt,
+    choices: Array.isArray(row.choices)
+      ? row.choices.filter((choice): choice is string => typeof choice === "string")
+      : [],
+  }));
 });

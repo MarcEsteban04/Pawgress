@@ -84,7 +84,17 @@ export function DialogFooter({ className, ...props }: ComponentProps<"div">) {
 }
 
 export type ConfirmDialogProps = {
-  trigger: React.ReactNode;
+  /**
+   * What opens it. Optional, because some confirmations have no button.
+   *
+   * "You are about to leave with unsaved answers" is provoked by a navigation,
+   * not by a control a student can point at — so that caller drives `open`
+   * instead. A trigger invented for it would be a button nobody presses.
+   */
+  trigger?: React.ReactNode;
+  /** Controlled mode. Pass both, or neither and use `trigger`. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title: string;
   /**
    * What will be destroyed, with counts. "Delete Biology?" is not enough —
@@ -99,14 +109,18 @@ export type ConfirmDialogProps = {
 /** Destructive confirmation. The consequence line is required, not optional. */
 export function ConfirmDialog({
   trigger,
+  open,
+  onOpenChange,
   title,
   consequences,
   confirmLabel,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    /* Uncontrolled unless `open` is passed. Radix treats `open={undefined}` as
+       uncontrolled, so the existing trigger-based callers are untouched. */
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{consequences}</DialogDescription>

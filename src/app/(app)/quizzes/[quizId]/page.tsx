@@ -1,20 +1,21 @@
-import { ClipboardCheck, Clock, FileText, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Card, CardBody } from "@/components/ui";
 import { GeneratingOverlay, Ghost } from "@/features/jobs/components/GeneratingOverlay";
 import { ProgressWatcher } from "@/features/jobs/components/ProgressWatcher";
+import { QuizStage } from "@/features/quizzes/components/QuizStage";
 import { DIFFICULTY_LABELS, estimateMinutes } from "@/features/quizzes/schema";
 import { StudyShell } from "@/features/reviewers/components/StudyShell";
-import { getQuiz } from "@/server/quizzes/queries";
+import { getQuiz, getQuizQuestions } from "@/server/quizzes/queries";
 
 /**
  * One quiz (FR-Q1, US-G1, Sprint 49).
  *
- * **Creation is this sprint; taking it is the next one.** A ready quiz shows
- * what was written and what it covers, and says plainly that the question
- * screen is not built yet. A page that hid the distinction — a Start button
- * that did nothing, or a quiz that silently never opened — would be worse than
- * one sentence of honesty.
+ * **The page is the whole sitting** (Sprint 50): a start screen that sets the
+ * timer, the questions themselves, and the review before handing in. A dialog
+ * would have been wrong for all three — this is content a student will reload,
+ * link to and come back to, which is the line `docs/navigation.md` §1 draws
+ * between a page and a dialog.
  *
  * It reuses `StudyShell` because it IS a study screen: same full-width frame,
  * same subject colour, same back-to-the-library bar as a reviewer or a deck.
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: PageProps<"/quizzes/[quizId]"
 
 export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
   const { quizId } = await params;
-  const quiz = await getQuiz(quizId);
+  const [quiz, questions] = await Promise.all([getQuiz(quizId), getQuizQuestions(quizId)]);
 
   if (!quiz) notFound();
 
@@ -62,71 +63,27 @@ export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
             </p>
           </CardBody>
         </Card>
+      ) : questions.length === 0 ? (
+        /* Ready, with nothing under it. A bug rather than a state a student
+           caused, so it says so plainly instead of pretending to be empty. */
+        <Card>
+          <CardBody className="flex items-start gap-3 py-5">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden />
+            <p className="text-sm leading-relaxed">
+              This quiz is marked as ready but has no questions saved. Delete it and make another —
+              your files are untouched.
+            </p>
+          </CardBody>
+        </Card>
       ) : (
-        <div className="mx-auto flex w-full max-w-[42rem] flex-col gap-4">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Fact
-              Icon={ClipboardCheck}
-              label="Questions"
-              value={String(quiz.questionCount)}
-              /* Said only when it matters. A student who asked for twenty and
-                 got seventeen deserves to know the material ran out rather
-                 than wondering whether we lost three. */
-              hint="Written from your files"
-            />
-            <Fact
-              Icon={Clock}
-              label="Takes about"
-              value={`${estimateMinutes(quiz.questionCount)} min`}
-              hint="Untimed"
-            />
-            <Fact
-              Icon={FileText}
-              label="Difficulty"
-              value={DIFFICULTY_LABELS[quiz.difficulty]?.label ?? quiz.difficulty}
-              hint={DIFFICULTY_LABELS[quiz.difficulty]?.blurb}
-            />
-          </div>
-
-          {/* The honest note, not a dead button. */}
-          <Card>
-            <CardBody className="flex items-start gap-3 py-5">
-              <ClipboardCheck className="mt-0.5 size-4 shrink-0 text-ink-subtle" aria-hidden />
-              <p className="text-sm leading-relaxed text-ink-muted">
-                Your questions are written and saved. The screen for actually sitting a quiz — one
-                question at a time, with a progress bar and a score at the end — is the next thing
-                being built. Until then, practice questions on a reviewer work today.
-              </p>
-            </CardBody>
-          </Card>
-        </div>
+        <QuizStage
+          quizId={quiz.id}
+          questions={questions}
+          timeLimitSeconds={quiz.timeLimitSeconds}
+          estimatedMinutes={estimateMinutes(questions.length)}
+        />
       )}
     </StudyShell>
-  );
-}
-
-function Fact({
-  Icon,
-  label,
-  value,
-  hint,
-}: {
-  Icon: typeof ClipboardCheck;
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div className="rounded-[var(--radius-card)] border border-rule bg-surface p-4 shadow-[var(--shadow-card)]">
-      <p className="flex items-center gap-1.5 text-xs tracking-[0.06em] text-ink-subtle uppercase">
-        <Icon className="size-3.5" aria-hidden />
-        {label}
-      </p>
-      <p className="mt-2 font-display text-xl font-semibold tracking-[-0.01em] tabular-nums">
-        {value}
-      </p>
-      {hint && <p className="mt-0.5 text-xs leading-snug text-ink-subtle">{hint}</p>}
-    </div>
   );
 }
 

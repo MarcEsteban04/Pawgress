@@ -74,3 +74,18 @@ export function defaultQuizTitle(input: {
   const scope = input.topicName ?? input.subjectName;
   return `${scope} · ${input.count} questions · ${DIFFICULTY_LABELS[input.difficulty].label}`;
 }
+
+/**
+ * The timer choices on the start screen.
+ *
+ * **Untimed first, and it is the default.** A timer is for rehearsing an exam,
+ * and most revision is not that — leading with a countdown would make a
+ * pressure test out of something a student opened to learn from. The others are
+ * round numbers because nobody wants a 13-minute quiz.
+ */
+export const TIMER_OPTIONS: { label: string; seconds: number | null }[] = [
+  { label: "Untimed", seconds: null },
+  { label: "10 min", seconds: 600 },
+  { label: "20 min", seconds: 1200 },
+  { label: "30 min", seconds: 1800 },
+];
