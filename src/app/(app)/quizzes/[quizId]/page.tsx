@@ -49,8 +49,16 @@ export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
 
       {working ? (
         <GeneratingOverlay
-          title="Aki is writing your quiz"
-          detail={`Reading your material and writing ${quiz.questionCount} ${DIFFICULTY_LABELS[quiz.difficulty]?.label.toLowerCase()} questions. Usually under a minute.`}
+          title={quiz.isMockExam ? "Aki is writing your mock exam" : "Aki is writing your quiz"}
+          detail={
+            /* A long paper is written in slices, and says how far it has got.
+               "Usually under a minute" would be false for sixty questions, and a
+               student watching a static line for three minutes assumes it
+               stalled. The count comes from the job itself, not an estimate. */
+            quiz.written !== null && quiz.written > 0
+              ? `${quiz.written} of ${quiz.questionCount} questions written. Long papers are written in batches — this keeps going on its own.`
+              : `Reading your material and writing ${quiz.questionCount} ${DIFFICULTY_LABELS[quiz.difficulty]?.label.toLowerCase()} questions. ${quiz.questionCount > 20 ? "A long paper takes a few minutes." : "Usually under a minute."}`
+          }
           skeleton={<QuizSkeleton />}
         />
       ) : quiz.status === "failed" ? (
@@ -80,6 +88,7 @@ export default async function Page({ params }: PageProps<"/quizzes/[quizId]">) {
           quizId={quiz.id}
           questions={questions}
           timeLimitSeconds={quiz.timeLimitSeconds}
+          mock={quiz.isMockExam}
           estimatedMinutes={estimateMinutes(questions.length)}
         />
       )}

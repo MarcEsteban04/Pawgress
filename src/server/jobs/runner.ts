@@ -198,6 +198,15 @@ async function runOne(job: Job, summary: RunSummary): Promise<void> {
           total_slices: result.totalSlices ?? job.totalSlices,
           // Release the lease so the next invocation can pick it straight up.
           leased_until: null,
+          /* **Progress resets the retry budget.** `claim_jobs` counts every
+             claim, continuations included, so without this a job's attempts
+             climb one per slice — and by the third slice of a long document or
+             a sixty-question mock exam, one transient provider error would be
+             terminal with no retry at all. `attempts` is meant to count
+             failures of the work in hand; a slice that just advanced the
+             cursor has proved the job is healthy. The stall guard above, not
+             this counter, is what stops a job looping for ever. */
+          attempts: 0,
         })
         .eq("id", job.id);
       summary.requeued += 1;

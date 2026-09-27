@@ -32,15 +32,34 @@ type Answers = Record<string, string>;
 
 export function QuizRunner({
   questions,
+  deadline,
   timeLimitSeconds,
+  mock = false,
   onExit,
   onSubmit,
   submitting,
   submitError,
 }: {
   questions: QuizQuestion[];
-  /** Null is untimed, which is the default. */
+  /**
+   * When time runs out, as an absolute timestamp fixed at the moment Start was
+   * pressed. Null is untimed.
+   *
+   * Absolute rather than a duration, and that is the fix for a real bug. The
+   * countdown used to set its own deadline when it mounted — so it restarted
+   * every time the review screen swapped it out and back, and (because its
+   * effect depended on an inline callback) every time a student typed a
+   * letter. A clock that resets on use is not a clock.
+   */
+  deadline: number | null;
+  /** The full limit, for the first frame before the countdown's first tick. */
   timeLimitSeconds: number | null;
+  /**
+   * Exam conditions (Sprint 54). When time runs out the paper is handed in,
+   * not merely closed — a quiz sends a student to review their answers, a mock
+   * exam takes them, because that is what an exam does.
+   */
+  mock?: boolean;
   /** Asks to leave. The page owns the confirmation, because it owns the route. */
   onExit: (hasAnswers: boolean) => void;
   /** Hands the paper in. The page owns this, because it owns the navigation after. */
@@ -52,6 +71,28 @@ export function QuizRunner({
   const [answers, setAnswers] = useState<Answers>({});
   const [reviewing, setReviewing] = useState(false);
   const [expired, setExpired] = useState(false);
+
+  /* Fires once per sitting. The countdown is rendered on both the question
+     screen and the review screen, so it mounts more than once — and each mount
+     that finds the deadline passed would otherwise hand the paper in again. */
+  const expiredRef = useRef(false);
+
+  function handleExpire() {
+    if (expiredRef.current) return;
+    expiredRef.current = true;
+    setExpired(true);
+    setReviewing(true);
+    if (mock) onSubmit(answers);
+  }
+
+  const clock =
+    deadline !== null && timeLimitSeconds !== null ? (
+      <Timer deadline={deadline} totalSeconds={timeLimitSeconds} onExpire={handleExpire} />
+    ) : null;
+
+  /* After a mock exam's time is up the paper is closed. Going back to change
+     an answer would be the one thing an exam does not allow. */
+  const locked = mock && expired;
 
   const question = questions[index];
   const answered = useMemo(
@@ -84,6 +125,8 @@ export function QuizRunner({
         questions={questions}
         answers={answers}
         expired={expired}
+        locked={locked}
+        clock={clock}
         submitting={submitting}
         submitError={submitError}
         onJump={(target) => {
@@ -128,18 +171,7 @@ export function QuizRunner({
           {answered}/{questions.length} answered
         </p>
 
-        {timeLimitSeconds !== null && (
-          <Timer
-            seconds={timeLimitSeconds}
-            onExpire={() => {
-              /* Time up sends them to review rather than submitting for them.
-                 Nothing is scored yet in this sprint, and even once it is, a
-                 student deserves to see what they are handing in. */
-              setExpired(true);
-              setReviewing(true);
-            }}
-          />
-        )}
+        {clock}
       </div>
 
       <div className="flex flex-1 flex-col rounded-[var(--radius-canvas)] border border-rule bg-surface px-5 py-7 shadow-[var(--shadow-card)] sm:px-8 sm:py-9">
@@ -216,6 +248,8 @@ function ReviewScreen({
   questions,
   answers,
   expired,
+  locked,
+  clock,
   submitting,
   submitError,
   onJump,
@@ -225,6 +259,10 @@ function ReviewScreen({
   questions: QuizQuestion[];
   answers: Answers;
   expired: boolean;
+  /** A mock exam past its time: nothing may be changed, only handed in. */
+  locked: boolean;
+  /** The countdown keeps running here — review is not a pause button. */
+  clock: React.ReactNode;
   submitting: boolean;
   submitError: string | null;
   onJump: (index: number) => void;
@@ -236,13 +274,18 @@ function ReviewScreen({
   return (
     <div className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col gap-4">
       <div>
-        <h2 className="font-display text-xl font-semibold tracking-[-0.015em]">Your answers</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-semibold tracking-[-0.015em]">Your answers</h2>
+          {!expired && clock}
+        </div>
         <p className="mt-1 text-sm leading-relaxed text-ink-muted">
-          {expired
-            ? "Time is up. Nothing was marked — here is what you had."
-            : blanks.length === 0
-              ? "Everything is answered. Check anything you want to change before you hand it in."
-              : `${blanks.length} ${blanks.length === 1 ? "question is" : "questions are"} still blank.`}
+          {locked
+            ? "Time is up. Your paper has been handed in exactly as it stood."
+            : expired
+              ? "Time is up. Nothing was marked — here is what you had."
+              : blanks.length === 0
+                ? "Everything is answered. Check anything you want to change before you hand it in."
+                : `${blanks.length} ${blanks.length === 1 ? "question is" : "questions are"} still blank.`}
         </p>
       </div>
 
@@ -253,8 +296,9 @@ function ReviewScreen({
             <li key={question.id}>
               <button
                 type="button"
+                disabled={locked}
                 onClick={() => onJump(position)}
-                className="flex w-full items-start gap-3 rounded-[var(--radius-control)] border border-rule bg-surface px-4 py-3 text-left transition-colors hover:border-rule-strong hover:bg-surface-sunken"
+                className="flex w-full items-start gap-3 rounded-[var(--radius-control)] border border-rule bg-surface px-4 py-3 text-left transition-colors hover:border-rule-strong hover:bg-surface-sunken disabled:pointer-events-none"
               >
                 <span className="mt-0.5 w-6 shrink-0 text-xs text-ink-subtle tabular-nums">
                   {position + 1}
@@ -271,7 +315,7 @@ function ReviewScreen({
                   </span>
                 </span>
                 {given ? (
-                  <Check className="text-ok mt-0.5 size-4 shrink-0" aria-hidden />
+                  <Check className="mt-0.5 size-4 shrink-0 text-good" aria-hidden />
                 ) : (
                   <CircleAlert className="mt-0.5 size-4 shrink-0 text-warn" aria-hidden />
                 )}
@@ -288,10 +332,16 @@ function ReviewScreen({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-        <Button variant="subtle" disabled={submitting} onClick={onBack}>
-          <ArrowLeft aria-hidden />
-          Back to the questions
-        </Button>
+        {locked ? (
+          /* Nothing to go back to — but a failed hand-in must still be
+             retryable, so the Submit button below stays. */
+          <span />
+        ) : (
+          <Button variant="subtle" disabled={submitting} onClick={onBack}>
+            <ArrowLeft aria-hidden />
+            Back to the questions
+          </Button>
+        )}
 
         {/* **Blanks do not block it.** A student who decided not to answer four
             questions has made a decision, and a Submit that refused until every
@@ -391,30 +441,52 @@ function AnswerField({
  *
  * **Quiet until it matters.** A clock ticking in red from minute one is a
  * stress machine; this is plain text until the last minute, then it turns and
- * says so. The deadline is computed once at mount and compared against the
- * real clock each tick, so a backgrounded tab — where browsers throttle
- * timers — resumes showing the truth rather than however many ticks it missed.
+ * says so.
+ *
+ * **Display only — it owns no time.** The deadline is an absolute timestamp
+ * fixed when the sitting began, so this component can mount, unmount and
+ * remount (it does, every time the review screen swaps in) without the clock
+ * moving. Each tick compares against the real clock, so a backgrounded tab —
+ * where browsers throttle timers — shows the truth when it comes back.
+ *
+ * `onExpire` is read through a ref. The caller passes a fresh function every
+ * render, and depending on it directly is what used to restart the whole
+ * countdown on every keystroke.
  */
-function Timer({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
-  const [remaining, setRemaining] = useState(seconds);
-  const deadline = useRef(0);
-  const fired = useRef(false);
+function Timer({
+  deadline,
+  totalSeconds,
+  onExpire,
+}: {
+  deadline: number;
+  totalSeconds: number;
+  onExpire: () => void;
+}) {
+  const [remaining, setRemaining] = useState(totalSeconds);
+  const expire = useRef(onExpire);
 
   useEffect(() => {
-    deadline.current = Date.now() + seconds * 1000;
+    expire.current = onExpire;
+  }, [onExpire]);
 
+  useEffect(() => {
     const tick = () => {
-      const left = Math.max(0, Math.round((deadline.current - Date.now()) / 1000));
+      const left = Math.max(0, Math.round((deadline - Date.now()) / 1000));
       setRemaining(left);
-      if (left === 0 && !fired.current) {
-        fired.current = true;
-        onExpire();
-      }
+      if (left === 0) expire.current();
     };
 
+    /* The first reading straight away rather than a second from now, so a
+       remount after the review screen does not flash the full limit. Deferred
+       a tick because a synchronous setState in an effect body is exactly what
+       the React Compiler lint forbids. */
+    const first = setTimeout(tick, 0);
     const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [seconds, onExpire]);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [deadline]);
 
   const urgent = remaining <= 60;
 
@@ -430,7 +502,9 @@ function Timer({ seconds, onExpire }: { seconds: number; onExpire: () => void })
       )}
     >
       <Clock className="size-3.5" aria-hidden />
-      {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+      {Math.floor(remaining / 3600) > 0 ? `${Math.floor(remaining / 3600)}:` : ""}
+      {String(Math.floor((remaining % 3600) / 60)).padStart(remaining >= 3600 ? 2 : 1, "0")}:
+      {String(remaining % 60).padStart(2, "0")}
     </p>
   );
 }

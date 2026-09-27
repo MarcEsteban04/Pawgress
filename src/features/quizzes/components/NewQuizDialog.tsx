@@ -18,11 +18,14 @@ import {
 } from "@/components/ui";
 import { type QuizDifficulty } from "@/features/practice/schema";
 import {
+  DEFAULT_MOCK_EXAM_LENGTH,
   DEFAULT_QUIZ_LENGTH,
   DIFFICULTY_LABELS,
+  MOCK_EXAM_LENGTHS,
   QUIZ_DIFFICULTIES,
   QUIZ_LENGTHS,
   estimateMinutes,
+  mockExamSeconds,
 } from "@/features/quizzes/schema";
 import { createQuizAction } from "@/features/quizzes/server/actions";
 import { cn } from "@/lib/utils";
@@ -46,6 +49,12 @@ export type QuizTarget = {
  * The topic list is reset by KEYING the select on the chosen subject rather
  * than clearing it in an effect. The render that follows a subject change
  * already knows the old topic is no longer valid.
+ *
+ * **A mock exam is a mode of this dialog, not a second one** (Sprint 54). It
+ * asks the same four questions — what, how much, how hard, how many — and
+ * differs only in the answers it allows: longer papers, and a clock that is
+ * set rather than chosen. Two dialogs would drift apart the first time one of
+ * those questions changed.
  */
 export function NewQuizDialog({
   subjects,
@@ -58,6 +67,7 @@ export function NewQuizDialog({
   const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
   const [topicId, setTopicId] = useState("");
   const [difficulty, setDifficulty] = useState<QuizDifficulty>("medium");
+  const [mock, setMock] = useState(false);
   const [count, setCount] = useState(DEFAULT_QUIZ_LENGTH);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +90,7 @@ export function NewQuizDialog({
         difficulty,
         count,
         title,
+        mock,
       });
       if (result.status === "error") {
         setError(`${result.message} ${result.nextStep}`);
@@ -101,13 +112,47 @@ export function NewQuizDialog({
       </DialogTrigger>
 
       <DialogContent>
-        <DialogTitle>New quiz</DialogTitle>
+        <DialogTitle>{mock ? "New mock exam" : "New quiz"}</DialogTitle>
         <DialogDescription>
-          Aki writes questions from the files you uploaded — not from a reviewer, so this can ask
-          about anything in the material.
+          {mock
+            ? "A full-length paper under exam conditions: timed, shuffled, and marked at the end — with a readiness verdict when you finish."
+            : "Aki writes questions from the files you uploaded — not from a reviewer, so this can ask about anything in the material."}
         </DialogDescription>
 
         <div className="mt-4 flex flex-col gap-4">
+          <div
+            role="group"
+            aria-label="Kind"
+            className="grid grid-cols-2 gap-1 rounded-[var(--radius-control)] border border-rule bg-surface-sunken p-1"
+          >
+            {(
+              [
+                [false, "Quiz", "Short, untimed, for revision"],
+                [true, "Mock exam", "Long, timed, for rehearsal"],
+              ] as const
+            ).map(([value, label, blurb]) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={mock === value}
+                onClick={() => {
+                  setMock(value);
+                  /* The length follows the kind. Keeping a quiz's ten when
+                     switching to a mock exam would submit a length the server
+                     rejects for it, and silently correct. */
+                  setCount(value ? DEFAULT_MOCK_EXAM_LENGTH : DEFAULT_QUIZ_LENGTH);
+                }}
+                className={cn(
+                  "flex flex-col items-start gap-0.5 rounded-[calc(var(--radius-control)-0.25rem)] px-3 py-2 text-left transition-colors",
+                  mock === value ? "bg-surface shadow-[var(--shadow-pill)]" : "hover:bg-surface/60",
+                )}
+              >
+                <span className="text-sm font-medium">{label}</span>
+                <span className="text-xs text-ink-muted">{blurb}</span>
+              </button>
+            ))}
+          </div>
+
           <Field label="Subject" htmlFor={subjectFieldId}>
             <Select
               id={subjectFieldId}
@@ -176,14 +221,18 @@ export function NewQuizDialog({
             htmlFor={countFieldId}
             /* The time estimate is the point of this hint. "20" means nothing;
                "about 15 minutes" is the number someone actually decides on. */
-            hint={`About ${estimateMinutes(count)} minutes.`}
+            hint={
+              mock
+                ? `${mockExamSeconds(count) / 60} minutes on the clock, or more with extra time.`
+                : `About ${estimateMinutes(count)} minutes.`
+            }
           >
             <Select
               id={countFieldId}
               value={String(count)}
               onChange={(event) => setCount(Number(event.target.value))}
             >
-              {QUIZ_LENGTHS.map((length) => (
+              {(mock ? MOCK_EXAM_LENGTHS : QUIZ_LENGTHS).map((length) => (
                 <option key={length} value={length}>
                   {length} questions
                 </option>
@@ -219,7 +268,7 @@ export function NewQuizDialog({
           </DialogClose>
           <Button variant="accent" onClick={create} disabled={isPending || !subjectId}>
             <ClipboardCheck aria-hidden />
-            {isPending ? "Starting…" : "Create quiz"}
+            {isPending ? "Starting…" : mock ? "Create mock exam" : "Create quiz"}
           </Button>
         </DialogFooter>
       </DialogContent>

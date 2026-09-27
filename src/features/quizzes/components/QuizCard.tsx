@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Timer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -58,7 +58,18 @@ export function QuizCard({ quiz }: { quiz: QuizSummary }) {
           </p>
         </div>
 
-        {!ready && <StatusBadge status={quiz.status} />}
+        {/* Status first when there is one — "still being written" matters more
+            than what kind of paper it will be. */}
+        {!ready ? (
+          <StatusBadge status={quiz.status} />
+        ) : (
+          quiz.isMockExam && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-pill)] bg-ink px-2 py-0.5 text-[0.6875rem] font-semibold tracking-[0.04em] text-on-ink uppercase">
+              <Timer className="size-3" aria-hidden />
+              Mock exam
+            </span>
+          )
+        )}
       </div>
 
       <div className="flex items-end gap-3">

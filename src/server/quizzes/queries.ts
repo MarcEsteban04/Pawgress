@@ -34,11 +34,19 @@ export type QuizSummary = {
   createdAt: string;
   /** Null means untimed, which is the default. */
   timeLimitSeconds: number | null;
+  /** Longer, always timed, shuffled every sitting (Sprint 54). */
+  isMockExam: boolean;
+  /**
+   * How many questions are saved so far, while a long paper is being written
+   * in slices. Null when the job has not reported progress — which is the
+   * normal case for anything that fits one slice.
+   */
+  written: number | null;
   failureMessage: string | null;
 };
 
 const SELECT =
-  "id, title, status, difficulty, question_count, time_limit_seconds, subject_id, topic_id, created_at, topics(name), subjects(name, color_slot), quiz_attempts(id, submitted_at, score_correct, score_total)";
+  "id, title, status, difficulty, question_count, time_limit_seconds, is_mock_exam, subject_id, topic_id, created_at, topics(name), subjects(name, color_slot), quiz_attempts(id, submitted_at, score_correct, score_total)";
 
 const slot = (value: number | null | undefined) => (value ?? 1) as 1 | 2 | 3 | 4 | 5;
 
@@ -56,12 +64,13 @@ function summarise(row: {
   difficulty: string;
   question_count: number;
   time_limit_seconds: number | null;
+  is_mock_exam: boolean;
   subject_id: string;
   created_at: string;
   topics: { name: string } | null;
   subjects: { name: string; color_slot: number } | null;
   quiz_attempts: AttemptRow[] | null;
-}): Omit<QuizSummary, "failureMessage"> {
+}): Omit<QuizSummary, "failureMessage" | "written"> {
   /* Scored attempts only, newest first. An abandoned attempt has no score and
      must not be reported as a zero the student never earned. */
   const scored = (row.quiz_attempts ?? [])
@@ -86,6 +95,7 @@ function summarise(row: {
       : null,
     createdAt: row.created_at,
     timeLimitSeconds: row.time_limit_seconds,
+    isMockExam: row.is_mock_exam,
   };
 }
 
@@ -107,7 +117,7 @@ export const listQuizzes = cache(
     /* No failure message on a list row. It would cost one extra query per quiz
        to fetch, and a list is not where a student reads WHY something broke —
        the badge says it failed and the detail page says what happened. */
-    return (data ?? []).map((row) => ({ ...summarise(row), failureMessage: null }));
+    return (data ?? []).map((row) => ({ ...summarise(row), failureMessage: null, written: null }));
   },
 );
 
@@ -126,13 +136,14 @@ export const getQuiz = cache(async (id: string): Promise<QuizSummary | null> => 
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("failure_message")
+    .select("failure_message, slice_cursor")
     .eq("kind", "generate_quiz")
     .eq("target_id", id)
     .maybeSingle();
 
   return {
     ...summarise(data),
+    written: job?.slice_cursor ?? null,
     /* Read from the JOB: no foreign key links a quiz to the job that produced
        it, so PostgREST cannot join them and asking it to would be a 400 at
        runtime rather than a compile error. */
@@ -251,6 +262,17 @@ export type Attempt = {
   total: number;
   durationSeconds: number | null;
   submittedAt: string | null;
+  /** A mock exam gets a readiness verdict; a quiz does not (Sprint 54). */
+  isMockExam: boolean;
+  /**
+   * The attempt before this one at the same paper, if there was one.
+   *
+   * The single most useful comparison a student can make — "am I getting
+   * better at THIS" — and the only one that is fair: same questions, same
+   * difficulty, same material. Comparing across different quizzes would be
+   * comparing papers, not progress.
+   */
+  previous: { correct: number; total: number } | null;
   answers: AttemptAnswer[];
 };
 
@@ -269,7 +291,7 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
   const { data } = await supabase
     .from("quiz_attempts")
     .select(
-      "id, quiz_id, score_correct, score_total, duration_seconds, submitted_at, quizzes(title, subjects(name, color_slot)), quiz_answers(id, question_id, given_answer, is_correct, graded_by_ai, student_override, quiz_questions(position, type, prompt, correct_answer, explanation, topic_id, topics(name)))",
+      "id, quiz_id, score_correct, score_total, duration_seconds, submitted_at, quizzes(title, is_mock_exam, subjects(name, color_slot)), quiz_answers(id, question_id, given_answer, is_correct, graded_by_ai, student_override, quiz_questions(position, type, prompt, correct_answer, explanation, topic_id, topics(name)))",
     )
     .eq("id", attemptId)
     .maybeSingle();
@@ -277,6 +299,21 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
   if (!data) return null;
 
   const submitted = data.submitted_at !== null;
+
+  /* The attempt immediately before this one. Only submitted ones: an abandoned
+     sitting has no score, and comparing against a zero the student never
+     earned would invent an improvement. */
+  const { data: before } = submitted
+    ? await supabase
+        .from("quiz_attempts")
+        .select("score_correct, score_total")
+        .eq("quiz_id", data.quiz_id)
+        .not("submitted_at", "is", null)
+        .lt("submitted_at", data.submitted_at as string)
+        .order("submitted_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
   const answers: AttemptAnswer[] = (data.quiz_answers ?? [])
     .map((row) => ({
@@ -309,6 +346,11 @@ export const getAttempt = cache(async (attemptId: string): Promise<Attempt | nul
     total: data.score_total ?? answers.length,
     durationSeconds: data.duration_seconds,
     submittedAt: data.submitted_at,
+    isMockExam: data.quizzes?.is_mock_exam ?? false,
+    previous:
+      before && before.score_total
+        ? { correct: before.score_correct ?? 0, total: before.score_total }
+        : null,
     answers,
   };
 });

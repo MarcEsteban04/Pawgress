@@ -5,7 +5,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/enqueue";
 import { isQuizDifficulty, type QuizDifficulty } from "@/features/practice/schema";
-import { defaultQuizTitle, isQuizLength, DEFAULT_QUIZ_LENGTH } from "@/features/quizzes/schema";
+import {
+  DEFAULT_MOCK_EXAM_LENGTH,
+  DEFAULT_QUIZ_LENGTH,
+  defaultMockExamTitle,
+  defaultQuizTitle,
+  isMockExamLength,
+  isQuizLength,
+  mockExamSeconds,
+} from "@/features/quizzes/schema";
 
 /**
  * Making a quiz (FR-Q1, US-G1, Sprint 49).
@@ -32,6 +40,12 @@ export type CreateQuizInput = {
   count: number;
   /** Blank means "name it for me" — see `defaultQuizTitle`. */
   title?: string;
+  /**
+   * A mock exam rather than a quiz (Sprint 54): longer, always timed, and
+   * shuffled every sitting. Same table and the same generator — it differs in
+   * the rules of the sitting, not in what a question is.
+   */
+  mock?: boolean;
 };
 
 export async function createQuizAction(input: CreateQuizInput): Promise<QuizResult> {
@@ -43,7 +57,17 @@ export async function createQuizAction(input: CreateQuizInput): Promise<QuizResu
      constraint violation as "we could not start that quiz" — a message about
      our problem, wearing the student's name. */
   const difficulty = isQuizDifficulty(input.difficulty) ? input.difficulty : "medium";
-  const count = isQuizLength(input.count) ? input.count : DEFAULT_QUIZ_LENGTH;
+  const mock = input.mock === true;
+  /* Each kind validated against its OWN lengths. A quiz of fifty would skip
+     the exam clock, and a mock exam of five could not support a readiness
+     label at all. */
+  const count = mock
+    ? isMockExamLength(input.count)
+      ? input.count
+      : DEFAULT_MOCK_EXAM_LENGTH
+    : isQuizLength(input.count)
+      ? input.count
+      : DEFAULT_QUIZ_LENGTH;
 
   const { data: subject } = await supabase
     .from("subjects")
@@ -104,7 +128,9 @@ export async function createQuizAction(input: CreateQuizInput): Promise<QuizResu
 
   const title = (
     input.title?.trim() ||
-    defaultQuizTitle({ subjectName: subject.name, topicName, difficulty, count })
+    (mock
+      ? defaultMockExamTitle(subject.name, topicName, count)
+      : defaultQuizTitle({ subjectName: subject.name, topicName, difficulty, count }))
   ).slice(0, 300);
 
   const { data, error } = await supabase
@@ -120,8 +146,11 @@ export async function createQuizAction(input: CreateQuizInput): Promise<QuizResu
       /* The REQUEST, until the generator replaces it with what it managed to
          write. Safe because every reader checks `status === "ready"` first. */
       question_count: count,
-      /* Timed mock exams are Sprint 54. A quiz is untimed. */
-      is_mock_exam: false,
+      is_mock_exam: mock,
+      /* A mock exam is timed from the moment it exists — that is what makes it
+         one. The clock can be lengthened for extra time at the start screen,
+         never switched off. A quiz stays untimed until someone asks. */
+      time_limit_seconds: mock ? mockExamSeconds(count) : null,
       status: "queued",
     })
     .select("id")
@@ -196,10 +225,19 @@ export async function setQuizTimeLimitAction(
   await requireSession();
   const supabase = await createSupabaseServerClient();
 
-  await supabase
+  const untimed = !seconds || seconds <= 0;
+
+  let update = supabase
     .from("quizzes")
-    .update({ time_limit_seconds: seconds && seconds > 0 ? seconds : null })
+    .update({ time_limit_seconds: untimed ? null : seconds })
     .eq("id", quizId)
     /* Never a practice set: those have no start screen and no timer. */
     .is("reviewer_id", null);
+
+  /* A mock exam cannot be made untimed, from here or from anywhere. The start
+     screen offers no such option, and the server does not take the page's
+     word for it. */
+  if (untimed) update = update.eq("is_mock_exam", false);
+
+  await update;
 }

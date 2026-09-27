@@ -89,3 +89,96 @@ export const TIMER_OPTIONS: { label: string; seconds: number | null }[] = [
   { label: "20 min", seconds: 1200 },
   { label: "30 min", seconds: 1800 },
 ];
+
+/* -------------------------------------------------------------------------- */
+/*  Mock exams (Sprint 54)                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * How long a mock exam may be.
+ *
+ * Longer than any quiz on purpose, because that is the thing a quiz cannot
+ * rehearse: holding concentration for an hour. Sixty is the ceiling because it
+ * is already three sliced generations, and a paper nobody finishes measures
+ * stamina rather than knowledge.
+ */
+export const MOCK_EXAM_LENGTHS = [40, 50, 60] as const;
+export const DEFAULT_MOCK_EXAM_LENGTH = 50;
+
+export function isMockExamLength(value: number): boolean {
+  return (MOCK_EXAM_LENGTHS as readonly number[]).includes(value);
+}
+
+/**
+ * Questions written per generation call.
+ *
+ * A mock exam is written in slices of this size, and so is any quiz longer
+ * than it. Twenty questions with explanations is roughly 4–6k output tokens:
+ * inside Gemini's budget, and small enough that one slice finishing inside a
+ * serverless function's time limit is not in doubt.
+ */
+export const QUESTIONS_PER_SLICE = 20;
+
+/**
+ * The exam clock: a minute and a quarter a question, rounded to five minutes.
+ *
+ * Real papers run closer to a minute a mark. The extra quarter is for reading
+ * and checking, and for the short answers — which take longer than a click —
+ * without which a mock would be harder than the exam it rehearses.
+ */
+export function mockExamSeconds(count: number): number {
+  const minutes = Math.max(10, Math.round((count * 1.25) / 5) * 5);
+  return minutes * 60;
+}
+
+/**
+ * Extra time, as a multiple of the standard clock.
+ *
+ * Offered on every mock exam, not hidden behind a setting. Students with
+ * access arrangements sit their real exams with it, and a rehearsal at a pace
+ * they will never actually sit is not a rehearsal.
+ */
+export const EXTRA_TIME_FACTOR = 1.5;
+
+/**
+ * What a mock-exam score says about readiness.
+ *
+ * **Three bands, not a percentage dressed as a prediction.** Nobody can say
+ * from one paper that a student will score 72% on the real exam, and a product
+ * that implied it would be making a promise it cannot keep. The bands say what
+ * the score supports: ready, close, or not yet — against the material the mock
+ * was written from, at the difficulty it was set.
+ *
+ * Withheld entirely below twenty answered questions. A readiness label from a
+ * handful of answers is noise with a verdict attached.
+ */
+export type Readiness = "ready" | "close" | "not_yet";
+
+export const READINESS_MIN_QUESTIONS = 20;
+
+export function readinessFor(correct: number, total: number): Readiness | null {
+  if (total < READINESS_MIN_QUESTIONS) return null;
+  const share = correct / total;
+  if (share >= 0.8) return "ready";
+  if (share >= 0.6) return "close";
+  return "not_yet";
+}
+
+export const READINESS_COPY: Record<Readiness, { label: string; line: string }> = {
+  ready: {
+    label: "Ready",
+    line: "You would pass this comfortably. Sit another in a few days to check it holds.",
+  },
+  close: {
+    label: "Close",
+    line: "Most of it is there. The topics below are where the remaining marks are.",
+  },
+  not_yet: {
+    label: "Not yet",
+    line: "There is ground to cover. Start with the weakest topic below — that is where the most marks are.",
+  },
+};
+
+export function defaultMockExamTitle(subjectName: string, topicName: string | null, count: number) {
+  return `Mock exam · ${topicName ?? subjectName} · ${count} questions`;
+}

@@ -1,9 +1,25 @@
 "use client";
 
-import { Check, ChevronDown, Lightbulb, Sparkles, X } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  Gauge,
+  Lightbulb,
+  Minus,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui";
+import {
+  READINESS_COPY,
+  READINESS_MIN_QUESTIONS,
+  readinessFor,
+  type Readiness,
+} from "@/features/quizzes/schema";
 import { overrideAnswerAction } from "@/features/quizzes/server/submit";
 import { type Attempt, type AttemptAnswer } from "@/server/quizzes/queries";
 import { cn } from "@/lib/utils";
@@ -56,6 +72,8 @@ export function AttemptResult({ attempt }: { attempt: Attempt }) {
           {skipped > 0 ? ` · ${skipped} left blank` : ""}
         </p>
       </div>
+
+      {attempt.isMockExam && <ReadinessPanel attempt={attempt} />}
 
       <TopicBreakdown answers={attempt.answers} />
 
@@ -189,7 +207,7 @@ function TopicBreakdown({ answers }: { answers: AttemptAnswer[] }) {
                   key={i}
                   className={cn(
                     "h-2 max-w-10 flex-1 rounded-full",
-                    i < topic.right ? "bg-ok" : "bg-bad/30",
+                    i < topic.right ? "bg-good" : "bg-bad/30",
                   )}
                 />
               ))}
@@ -224,7 +242,7 @@ function AnswerRow({ answer, position }: { answer: AttemptAnswer; position: numb
     <li
       className={cn(
         "flex flex-col gap-3 rounded-[var(--radius-control)] border bg-surface px-4 py-3.5 transition-colors",
-        answer.correct ? "border-ok/30" : "border-bad/30",
+        answer.correct ? "border-good/30" : "border-bad/30",
         isSaving && "opacity-60",
       )}
     >
@@ -232,7 +250,7 @@ function AnswerRow({ answer, position }: { answer: AttemptAnswer; position: numb
         <span
           className={cn(
             "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full",
-            answer.correct ? "bg-ok-soft text-ok" : "bg-bad-soft text-bad",
+            answer.correct ? "bg-good-soft text-good" : "bg-bad-soft text-bad",
           )}
         >
           {answer.correct ? (
@@ -263,7 +281,7 @@ function AnswerRow({ answer, position }: { answer: AttemptAnswer; position: numb
                 <dt className="w-24 shrink-0 text-ink-subtle">
                   {answer.type === "short_answer" ? "A good answer" : "Answer"}
                 </dt>
-                <dd className="text-ok min-w-0 font-medium">{answer.correctAnswer}</dd>
+                <dd className="min-w-0 font-medium text-good">{answer.correctAnswer}</dd>
               </div>
             )}
           </dl>
@@ -323,4 +341,100 @@ function AnswerRow({ answer, position }: { answer: AttemptAnswer; position: numb
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s`;
+}
+
+const READINESS_TONE: Record<Readiness, string> = {
+  ready: "border-good/35 bg-good-soft text-good",
+  close: "border-warn/35 bg-warn-soft text-warn",
+  not_yet: "border-bad/35 bg-bad-soft text-bad",
+};
+
+/**
+ * The exam readiness indicator (Sprint 54).
+ *
+ * **A band, not a prediction.** Nobody can say from one paper that a student
+ * will score 72% on the real exam, and a product that implied it would be
+ * making a promise it cannot keep. Three bands say what the score supports,
+ * against the material this mock was written from, at the difficulty it was
+ * set — and the panel says so, rather than letting "Ready" stand as a
+ * guarantee.
+ *
+ * **Movement since last time, when there was a last time.** The same paper
+ * sat twice is the fairest comparison a student can make: same questions, same
+ * difficulty. A change of a question or two is called steady rather than
+ * celebrated or mourned — on fifty questions that is noise, and reading a trend
+ * into it would be exactly the overconfidence the bands exist to avoid.
+ */
+function ReadinessPanel({ attempt }: { attempt: Attempt }) {
+  const band = readinessFor(attempt.correct, attempt.total);
+
+  if (!band) {
+    return (
+      <p className="rounded-[var(--radius-control)] border border-rule bg-surface-sunken px-4 py-3 text-sm leading-relaxed text-ink-muted">
+        A readiness verdict needs at least {READINESS_MIN_QUESTIONS} questions, and this paper had{" "}
+        {attempt.total}. The score above still counts.
+      </p>
+    );
+  }
+
+  const now = attempt.correct / attempt.total;
+  const then = attempt.previous ? attempt.previous.correct / attempt.previous.total : null;
+  const change = then === null ? null : Math.round((now - then) * 100);
+  /* Two questions in fifty is four points. Inside that, it is the same score. */
+  const steady = change !== null && Math.abs(change) < 5;
+
+  return (
+    <section
+      className={cn(
+        "flex flex-col gap-3 rounded-[var(--radius-card)] border p-5 sm:flex-row sm:items-center sm:gap-5",
+        READINESS_TONE[band],
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface">
+          <Gauge className="size-5" aria-hidden />
+        </span>
+        <div>
+          <p className="text-xs font-semibold tracking-[0.08em] uppercase opacity-80">
+            Exam readiness
+          </p>
+          <p className="font-display text-2xl leading-tight font-semibold tracking-[-0.02em]">
+            {READINESS_COPY[band].label}
+          </p>
+        </div>
+      </div>
+
+      <div className="min-w-0 flex-1 text-ink">
+        <p className="text-sm leading-relaxed">{READINESS_COPY[band].line}</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+          Based on this paper — the material it was written from, at the difficulty it was set. It
+          is not a prediction of your exam mark.
+        </p>
+      </div>
+
+      {change !== null && (
+        <p
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-[var(--radius-pill)] bg-surface px-3 py-1.5 text-sm font-medium text-ink tabular-nums sm:self-center"
+          title="Compared with your last attempt at this paper"
+        >
+          {steady ? (
+            <>
+              <Minus className="size-4 text-ink-subtle" aria-hidden />
+              Steady
+            </>
+          ) : change > 0 ? (
+            <>
+              <ArrowUpRight className="size-4 text-good" aria-hidden />+{change} pts
+            </>
+          ) : (
+            <>
+              <ArrowDownRight className="size-4 text-bad" aria-hidden />
+              {change} pts
+            </>
+          )}
+          <span className="font-normal text-ink-subtle">vs last</span>
+        </p>
+      )}
+    </section>
+  );
 }

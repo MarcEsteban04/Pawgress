@@ -325,11 +325,25 @@ export function orderChoices(question: GeneratedQuestion): GeneratedQuestion {
 export function selectQuestions(
   questions: GeneratedQuestion[],
   source: string,
+  /**
+   * Questions already saved from an EARLIER batch (Sprint 54).
+   *
+   * A mock exam is written in slices, because fifty questions do not fit one
+   * model response. Each slice is deduplicated against itself by the rules
+   * below — and, without this, not against the slices before it, so batch two
+   * would happily re-ask what batch one already asked. These seed the same two
+   * checks. They are never returned: only new questions come back.
+   */
+  already: Pick<GeneratedQuestion, "type" | "prompt" | "answer">[] = [],
 ): { kept: GeneratedQuestion[]; dropped: Rejection[] } {
   const sourceTokens = contentTokens(source);
   const kept: GeneratedQuestion[] = [];
   const dropped: Rejection[] = [];
-  const seenAnswers = new Set<string>();
+  const seenAnswers = new Set<string>(
+    already
+      .filter((question) => question.type === "identification" || question.type === "mcq")
+      .map((question) => `${question.type}:${normalize(question.answer)}`),
+  );
 
   for (const question of questions) {
     const reject = (reason: RejectionReason) => dropped.push({ reason, prompt: question.prompt });
@@ -363,7 +377,10 @@ export function selectQuestions(
       continue;
     }
 
-    if (kept.some((existing) => isDuplicatePrompt(existing.prompt, question.prompt))) {
+    if (
+      kept.some((existing) => isDuplicatePrompt(existing.prompt, question.prompt)) ||
+      already.some((existing) => isDuplicatePrompt(existing.prompt, question.prompt))
+    ) {
       reject("duplicate");
       continue;
     }
