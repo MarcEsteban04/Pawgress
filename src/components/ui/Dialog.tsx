@@ -22,29 +22,62 @@ export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
+/**
+ * How wide a dialog is from 640px up. Below that every size is the same
+ * full-width bottom sheet.
+ *
+ * `sm` is the default and suits what most dialogs are: a name, a confirm, a
+ * rename. A FORM with several choices side by side — difficulty tiles, a kind
+ * switch — needs `lg`, or its tiles wrap into three-word lines and the whole
+ * thing becomes a scroll. Sized per dialog rather than widened everywhere,
+ * because a confirmation stretched to 42rem reads as a page, not a question.
+ */
+const DIALOG_WIDTH = {
+  sm: "sm:w-[26rem]",
+  md: "sm:w-[34rem]",
+  lg: "sm:w-[42rem]",
+} as const;
+
 export function DialogContent({
   className,
   children,
+  size = "sm",
   ...props
-}: ComponentProps<typeof DialogPrimitive.Content>) {
+}: ComponentProps<typeof DialogPrimitive.Content> & { size?: keyof typeof DIALOG_WIDTH }) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-[var(--scrim)]" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed z-50 flex flex-col gap-4 border border-rule bg-surface shadow-lg",
+          /* The frame. It clips, and does NOT scroll: scrolling here put the
+             scrollbar on the rounded edge, where the corner cut it off. */
+          "fixed z-50 flex flex-col overflow-hidden border border-rule bg-surface shadow-lg",
+          /* No focus ring on the frame. Radix moves focus into the dialog when
+             it opens, and when it lands on the container itself the global
+             :focus-visible outline drew a white box around the whole panel —
+             a ring that points at nothing a student can act on. Every control
+             inside keeps its own. */
+          "outline-none",
           // Sheet on narrow viewports, centred dialog from 640px up.
-          "inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-2xl p-5",
-          "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-[26rem]",
-          "sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-card)] sm:p-6",
+          "inset-x-0 bottom-0 max-h-[85dvh] rounded-t-2xl",
+          "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[min(88dvh,52rem)] sm:max-w-[calc(100vw-2rem)]",
+          "sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--radius-card)]",
+          DIALOG_WIDTH[size],
           className,
         )}
         {...props}
       >
-        {children}
+        {/* The scroller, inside the frame's padding-free edge. `min-h-0` lets
+            it shrink below its content inside the flex column, which is what
+            makes it scroll rather than push the frame past the viewport. */}
+        <div className="thin-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-5 sm:p-6">
+          {children}
+        </div>
+        {/* Outside the scroller, so it stays put while a long form scrolls
+            under it. */}
         <DialogPrimitive.Close
           aria-label="Close"
-          className="absolute top-4 right-4 rounded-[var(--radius-control)] p-1 text-ink-subtle transition-colors hover:text-ink"
+          className="absolute top-4 right-4 rounded-[var(--radius-control)] bg-surface p-1 text-ink-subtle transition-colors hover:text-ink"
         >
           <X className="size-5" aria-hidden />
         </DialogPrimitive.Close>

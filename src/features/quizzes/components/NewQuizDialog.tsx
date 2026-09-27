@@ -111,7 +111,7 @@ export function NewQuizDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent size="lg">
         <DialogTitle>{mock ? "New mock exam" : "New quiz"}</DialogTitle>
         <DialogDescription>
           {mock

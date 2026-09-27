@@ -105,6 +105,18 @@
      themes — and --ink is near-white in dark mode, so a scrim built from it
      washed the page out to grey instead of dimming it. */
   --scrim: rgb(16 20 32 / 0.45);
+
+  /* Scrollbar thumb, at rest and under the pointer. Mixed from --ink so it is
+     a darker grey on a light page and a lighter grey on a dark one without a
+     second definition. */
+  --scrollbar: color-mix(in oklab, var(--ink) 18%, transparent);
+  --scrollbar-hover: color-mix(in oklab, var(--ink) 34%, transparent);
+
+  /* Tells the browser which palette its OWN controls should use: scrollbars,
+     the option list a <select> drops down, date and number widgets. Without
+     it every one of them stayed light in dark mode — a white scrollbar and a
+     white dropdown on a near-black page. */
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -168,6 +180,7 @@
     /* Heavier than light mode: a dark page is already low-contrast, so a
        dialog needs more separation from it to read as in front. */
     --scrim: rgb(0 0 0 / 0.6);
+    color-scheme: dark;
   }
 }
 
@@ -228,6 +241,7 @@
   --shadow-float:
     0 1px 1px rgb(0 0 0 / 0.4), 0 6px 12px -4px rgb(0 0 0 / 0.5), 0 22px 40px -12px rgb(0 0 0 / 0.7);
   --scrim: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -421,10 +435,60 @@
     animation: pw-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Keeps a scrolling panel from cutting a grey channel through the canvas. */
-  .thin-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: var(--rule-strong) transparent;
+  /**
+   * Scrollbars, app-wide: a rounded pill floating inside a transparent track.
+   *
+   * **WebKit pseudo-elements for Chrome, Edge and Safari; the standard
+   * properties for Firefox only.** The order matters and it is not obvious:
+   * in Chrome, setting `scrollbar-color` or `scrollbar-width` on an element
+   * switches OFF its `::-webkit-scrollbar` styling. The old `.thin-scroll`
+   * utility set both, which is why dialogs showed the browser's plain
+   * scrollbar with arrow buttons. The standard properties are fenced to
+   * Firefox, which has no WebKit pseudo-elements to lose.
+   *
+   * The thumb is inset from the edge with a transparent border and
+   * `background-clip: content-box`, so it never touches a rounded corner and
+   * reads as part of the panel rather than a strip bolted to its side.
+   */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar);
+    background-clip: content-box;
+    border: 3px solid transparent;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-hover);
+  }
+
+  /* No arrow buttons. They are a desktop relic, too small to hit, and nobody
+     scrolls a dialog one click at a time. */
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  @supports (-moz-appearance: none) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar) transparent;
+    }
+  }
+
+  /* Narrower still inside panels and dialogs, where the scrollbar sits beside
+     content rather than at the edge of the window. */
+  .thin-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
   }
 }
 
