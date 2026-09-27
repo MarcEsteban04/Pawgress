@@ -4,6 +4,9 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { LOW_EVIDENCE_QUESTIONS } from "@/types";
+import { addDays, dateKeyAt, weekdayLabel } from "@/features/planner/dates";
+import { getStudentToday } from "@/server/planner/queries";
+import { getProfile } from "@/server/profile/queries";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 
 /**
@@ -94,9 +97,16 @@ function daysUntil(dueOn: string): number {
 export const getDashboardData = cache(async (): Promise<DashboardData> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
-  const today = new Date().toISOString().slice(0, 10);
+  /* The student's today, from their profile timezone. It was UTC's, which
+     put yesterday's deadlines in "upcoming" every morning east of Greenwich
+     and dropped today's every evening west of it. */
+  const [today, profile] = await Promise.all([getStudentToday(), getProfile()]);
+  const timezone = profile?.timezone;
 
-  const weekAgo = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
+  /* A day earlier than the seven days shown, because sessions are bucketed by
+     the student's LOCAL date and the query compares instants — a session at
+     1am local can sit on the far side of UTC midnight. */
+  const weekAgo = addDays(today, -7);
 
   const [subjectRows, topicMastery, subjectMastery, eventRows, planRows, sessionRows, scoredRows] =
     await Promise.all([
@@ -241,12 +251,11 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
      like a consistent one. */
   const sessions = sessionRows.data ?? [];
   const studyByDay = Array.from({ length: 7 }, (_, offset) => {
-    const day = new Date(Date.now() - (6 - offset) * 86_400_000);
-    const key = day.toISOString().slice(0, 10);
+    const key = addDays(today, offset - 6);
     const minutes = sessions
-      .filter((row) => (row.started_at as string).slice(0, 10) === key)
+      .filter((row) => dateKeyAt(Date.parse(row.started_at as string), timezone) === key)
       .reduce((sum, row) => sum + Math.round((row.duration_seconds ?? 0) / 60), 0);
-    return { label: day.toLocaleDateString(undefined, { weekday: "narrow" }), minutes };
+    return { label: weekdayLabel(key, "narrow"), minutes };
   });
 
   const subjectList = subjectRows.data ?? [];

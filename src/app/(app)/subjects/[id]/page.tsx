@@ -32,6 +32,7 @@ import {
   listSubjectUpcoming,
 } from "@/server/subjects/detail";
 import { getAttention } from "@/server/mastery/queries";
+import { getStudentToday } from "@/server/planner/queries";
 import { getSubject } from "@/server/subjects/queries";
 import { formatAcademicYear } from "@/lib/validation/subject";
 import { listTopics } from "@/server/topics/queries";
@@ -165,9 +166,10 @@ export default async function Page({ params }: PageProps<"/subjects/[id]">) {
   const tone = SUBJECT_TONE[subject.colorSlot];
   const archived = subject.archivedAt !== null;
 
-  /* One clock reading for the whole render. Two panels computing "days until"
-     from their own `new Date()` can straddle midnight and disagree by a day. */
-  const today = new Date().toISOString().slice(0, 10);
+  /* One clock reading for the whole render, and the STUDENT's clock — see
+     getStudentToday. UTC's date is wrong for most of the world for part of
+     every day, and a planner that is a day out is a missed deadline. */
+  const today = await getStudentToday();
 
   /* The header's upload dialog needs the topics to offer. Awaited here rather
      than suspended because the header is not a panel — it renders once, whole.

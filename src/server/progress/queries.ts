@@ -8,6 +8,8 @@ import { summariseAttempts, type AttemptSummary } from "@/features/quizzes/analy
 import { getOverallMastery, getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 import { listAllQuizAttempts } from "@/server/quizzes/queries";
 import { LOW_EVIDENCE_QUESTIONS as EVIDENCE } from "@/types";
+import { getProfile } from "@/server/profile/queries";
+import { addDays, dateKeyAt, todayIn, weekdayLabel, type DateKey } from "@/features/planner/dates";
 
 /**
  * Everything the Progress page shows (FR-P1–P3, US-H1, Sprints 57–58).
@@ -144,6 +146,13 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     listAllQuizAttempts(),
   ]);
 
+  /* The student's days, not the server's. The server runs in UTC, so a
+     session at 10pm in Manila was being drawn on the NEXT day's bar and
+     counted toward the next day's streak. */
+  const timezone = (await getProfile())?.timezone;
+  const today = todayIn(timezone);
+  const dayOf = (iso: string) => dateKeyAt(Date.parse(iso), timezone);
+
   const topicsBySubject = new Map<string, string[]>();
   for (const row of topicRows ?? []) {
     const list = topicsBySubject.get(row.subject_id);
@@ -156,14 +165,8 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
      chart rather than a missing bar that silently shortens the window. */
   const buckets = new Map<string, ActivityDay>();
   for (let i = ACTIVITY_DAYS - 1; i >= 0; i--) {
-    const day = new Date(Date.now() - i * 86_400_000);
-    const key = toDayKey(day);
-    buckets.set(key, {
-      date: key,
-      label: day.toLocaleDateString(undefined, { weekday: "short" }),
-      minutes: 0,
-      sessions: 0,
-    });
+    const key = addDays(today, -i);
+    buckets.set(key, { date: key, label: weekdayLabel(key), minutes: 0, sessions: 0 });
   }
 
   const subjects = new Map<string, SubjectProgress>();
@@ -184,7 +187,7 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     if (age < 7 * 86_400_000) week.recent += minutes;
     else if (age < 14 * 86_400_000) week.before += minutes;
 
-    const bucket = buckets.get(toDayKey(new Date(row.started_at)));
+    const bucket = buckets.get(dayOf(row.started_at));
     if (bucket) {
       bucket.minutes += minutes;
       bucket.sessions += 1;
@@ -261,7 +264,10 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     correct,
     cardsSeen,
     cardsKnown,
-    streak: streakFrom(sessions.map((row) => toDayKey(new Date(row.started_at)))),
+    streak: streakFrom(
+      sessions.map((row) => dayOf(row.started_at)),
+      today,
+    ),
     activity: [...buckets.values()],
     subjects: [...subjects.values()].sort((a, b) => b.minutes - a.minutes),
     topics: [...topicMastery.values()]
@@ -318,30 +324,24 @@ async function readAllSessions(supabase: Awaited<ReturnType<typeof createSupabas
   return rows;
 }
 
-/** Local calendar day, not UTC: a session at 11pm belongs to that evening. */
-function toDayKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
 /**
- * Consecutive days studied, counting back from today.
+ * Consecutive days studied, counting back from the student's today.
  *
  * **Yesterday still counts as alive.** A streak that breaks the moment midnight
  * passes punishes someone who has not studied *yet today*, which is most of the
  * day for most people — and a counter that resets while you are asleep is a
  * counter nobody trusts.
  */
-function streakFrom(dayKeys: string[]): number {
+function streakFrom(dayKeys: DateKey[], today: DateKey): number {
   const days = new Set(dayKeys);
   if (days.size === 0) return 0;
 
-  const today = toDayKey(new Date());
-  const yesterday = toDayKey(new Date(Date.now() - 86_400_000));
+  const yesterday = addDays(today, -1);
   if (!days.has(today) && !days.has(yesterday)) return 0;
 
   let streak = 0;
   for (let i = days.has(today) ? 0 : 1; ; i++) {
-    if (!days.has(toDayKey(new Date(Date.now() - i * 86_400_000)))) break;
+    if (!days.has(addDays(today, -i))) break;
     streak += 1;
   }
   return streak;
