@@ -72,6 +72,7 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 | 59 | Weakness detection — weak, slipping, stale and untested topics, why, and one click to a targeted quiz | done | no migration. Scope widened on purpose: "below 60%" was already built in Sprint 56. Detection reads the pattern of mistakes (fundamentals vs harder) to pick the practice difficulty. Dashboard "Study this" linked to the subject list; it now writes the quiz. `npm run mastery:test` |
 | 60 | Planner database — the six event kinds, validation, queries, create/edit/complete/delete | done | **no migration: the table, enum, RLS and indexes have existed since Sprint 13.** This is the application layer, and there is nothing to click until Sprint 61. Fixed on the way: every "today" in the app was UTC's date — dashboard upcoming, the subject hub, the study chart and the streak — so deadlines were a day out for part of every day outside UTC. `npm run planner:test` |
 | 61 | Calendar UI — month, week and day views, add, edit, mark done, delete | done | no migration: Sprint 60 built the whole data layer and nothing could reach it. **No hour grid** — a student's planner holds deadlines, which are days with an optional time and no duration; a time axis would be 95% empty and would invent a length for every exam. The range math moved into the import-free `dates.ts` so `npm run planner:test` can cover it — now 23 checks. The rail grew a **Schedule** group rather than a seventh Study item |
+| 62 | Deadlines — upcoming list, exam countdown, overdue flagging, priority | done | no migration. **Priority is COMPUTED, not settable, and that is a decision to argue with.** US-I2 asks for a settable field; a settable field is High on everything by week three, and a student under pressure is the worst-placed person to rank their own pressure. Urgency instead comes from what the product already observes — days remaining, the lead time the KIND needs, and the Sprint 56 mastery band for the topic or subject — so an exam in 9 days you are weak on outranks one in 4 days you are strong on. A stored `priority` column is a one-migration change if the manual control is wanted as well; `SUPABASE_ACCESS_TOKEN` is still expired, so it could not have shipped this sprint regardless. `npm run planner:test`, now 34 checks. **Two dashboard bugs fixed on the way:** `inDays` was computed from the SERVER's midnight rather than the student's, and the panel's query dropped overdue work silently |
 | — | **Review your mistakes, and match the terms** | done | two more ways into a reviewer, beyond the roadmap's list. Mistakes are the questions whose most recent answer was wrong, so the list clears itself |
 | 47 | Reviewer library — one cross-subject `/reviewers`, URL-driven search/filter/sort, duplicate, counted delete | done | no migration. **Top level, not per-subject** — "filter by subject" only means something if the list spans them. "Save reviewer" needed no work: reviewers have persisted at generation since Sprint 43. The subject hub no longer previews them: it is subjects, topics and files, and a reviewer is generated from the library, which asks which subject |
 | 40 | Conversation history — new chat, save, resume, rename, delete | done | pulled forward at the product owner’s request; migration `20260829150000`. Turns are saved AFTER streaming, never during |
@@ -82,9 +83,9 @@ Status values: `todo` · `in progress` · `done` · `blocked` · `deferred`
 
 | Sprint | Item | Depends on |
 |---|---|---|
-| 62 | Deadlines — upcoming, overdue, exam countdown, priority | 60 |
 | 63 | Study sessions — schedule, start, finish, record duration | 61 |
 | 64 | Smart scheduling — sessions suggested around exams and weak topics | 62, 63 |
+| 65 | Study plan engine — exams, weak topics, quiz results, available time | 62, 64 |
 
 ---
 
@@ -246,7 +247,7 @@ The highest-risk epic. Nothing downstream works if this is wrong.
 |---|---|---|---|---|
 | 1 | Planner schema and event CRUD | V1 | 60 | US-I1 |
 | 2 | Calendar month/week/day views with inline editing | V1 | 61 | **done** — US-I1 |
-| 3 | Deadlines, exam countdown, overdue flagging, priority | V1 | 62 | US-I2 |
+| 3 | Deadlines, exam countdown, overdue flagging, priority | V1 | 62 | **done** — US-I2; priority computed, not settable |
 | 4 | Study session start/finish with duration capping | V1 | 63 | US-I3 |
 | 5 | Smart scheduling suggestions | L | 64 | — |
 

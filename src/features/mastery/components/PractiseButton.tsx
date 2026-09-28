@@ -19,6 +19,12 @@ import { createQuizAction } from "@/features/quizzes/server/actions";
  *
  * It navigates to the quiz straight away, where the generation overlay takes
  * over. Staying here with a spinner would leave a student watching a button.
+ *
+ * **`topicId` may be null (Sprint 62).** The deadline countdown offers this
+ * against an exam that is filed under a whole subject rather than one chapter,
+ * and a whole-subject quiz is the right answer there — narrowing it to a topic
+ * nobody chose would examine the wrong third of the course. `createQuizAction`
+ * has accepted a null topic since Sprint 49; only this prop was stricter.
  */
 export function PractiseButton({
   subjectId,
@@ -27,7 +33,8 @@ export function PractiseButton({
   label,
 }: {
   subjectId: string;
-  topicId: string;
+  /** Null scopes the quiz to the whole subject. */
+  topicId: string | null;
   difficulty: Difficulty;
   label: string;
 }) {

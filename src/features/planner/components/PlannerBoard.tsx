@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui";
 import { type DateKey } from "@/features/planner/dates";
-import { plannerHref, type PlannerView } from "@/features/planner/view";
+import { asCalendarSpan, plannerHref, type PlannerView } from "@/features/planner/view";
 import { setEventCompletedAction } from "@/features/planner/server/actions";
 import { DayView } from "./DayView";
 import { EventDialog, type PlannerSubject } from "./EventDialog";
 import { MonthGrid } from "./MonthGrid";
 import { PlannerNav } from "./PlannerNav";
+import { UpcomingView } from "./UpcomingView";
 import { WeekView } from "./WeekView";
+import { type Deadline, type DeadlineGroup } from "@/server/planner/deadlines";
 import { type PlannerEvent } from "@/server/planner/queries";
 
 /**
@@ -44,13 +46,17 @@ export function PlannerBoard({
   today,
   days,
   events,
+  deadlines,
   subjects,
 }: {
   view: PlannerView;
   anchor: DateKey;
   today: DateKey;
+  /** The calendar views' days. Empty for the deadline list, which has no range. */
   days: DateKey[];
   events: PlannerEvent[];
+  /** The deadline list, already grouped and scored. Null for a calendar view. */
+  deadlines: { groups: DeadlineGroup[]; countdown: Deadline | null } | null;
   subjects: PlannerSubject[];
 }) {
   const router = useRouter();
@@ -99,7 +105,7 @@ export function PlannerBoard({
    * Somebody scrolled forward to March and pressing add is adding something in
    * March; defaulting to today would silently file it three months back.
    */
-  const addDefault = days.includes(today) ? today : anchor;
+  const addDefault = asCalendarSpan(view) === null || days.includes(today) ? today : anchor;
 
   return (
     <div className="flex flex-col gap-4">
@@ -112,6 +118,18 @@ export function PlannerBoard({
           New event
         </Button>
       </div>
+
+      {view === "upcoming" && deadlines && (
+        <UpcomingView
+          groups={deadlines.groups}
+          countdown={deadlines.countdown}
+          today={today}
+          onOpenEvent={openEvent}
+          onAddOn={addOn}
+          onToggleDone={toggleDone}
+          busyId={busyId}
+        />
+      )}
 
       {view === "month" && (
         <MonthGrid

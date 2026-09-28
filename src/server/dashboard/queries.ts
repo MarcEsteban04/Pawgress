@@ -5,7 +5,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { LOW_EVIDENCE_QUESTIONS } from "@/types";
 import { addDays, dateKeyAt, weekdayLabel } from "@/features/planner/dates";
+import { groupDeadlines, listDeadlines } from "@/server/planner/deadlines";
 import { getStudentToday } from "@/server/planner/queries";
+import { type UrgencyBand } from "@/features/planner/urgency";
 import { getProfile } from "@/server/profile/queries";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 
@@ -45,7 +47,11 @@ export type UpcomingItem = {
   colorSlot: 1 | 2 | 3 | 4 | 5;
   kind: string;
   dueOn: string;
+  /** Whole days from the STUDENT's today. Negative is overdue. */
   inDays: number;
+  /** Sprint 62: how hard this is pressing, and why. See `urgency.ts`. */
+  band: UrgencyBand;
+  reason: string | null;
 };
 
 export type PlanBlock = {
@@ -86,14 +92,6 @@ export type DashboardData = {
   planMinutesRemaining: number;
 };
 
-/** Days from today to a `date` column, in whole days. */
-function daysUntil(dueOn: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(`${dueOn}T00:00:00`);
-  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
-}
-
 export const getDashboardData = cache(async (): Promise<DashboardData> => {
   await requireSession();
   const supabase = await createSupabaseServerClient();
@@ -108,7 +106,7 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
      1am local can sit on the far side of UTC midnight. */
   const weekAgo = addDays(today, -7);
 
-  const [subjectRows, topicMastery, subjectMastery, eventRows, planRows, sessionRows, scoredRows] =
+  const [subjectRows, topicMastery, subjectMastery, deadlines, planRows, sessionRows, scoredRows] =
     await Promise.all([
       supabase
         .from("subjects")
@@ -120,13 +118,22 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
          hub read, so all three show the same number. */
       getTopicMastery(),
       getSubjectMastery(),
-      supabase
-        .from("planner_events")
-        .select("id, title, kind, due_on, subjects(name, color_slot)")
-        .is("completed_at", null)
-        .gte("due_on", today)
-        .order("due_on", { ascending: true })
-        .limit(5),
+      /**
+       * The SAME deadline read the planner uses (Sprint 62).
+       *
+       * It was a query of its own, and it was wrong in two ways that only
+       * showed up once there was a planner to compare it against. It computed
+       * "in N days" from `new Date()` — the SERVER's local midnight, not the
+       * student's — which is the exact class of bug Sprint 60 went through
+       * the app to remove; and `gte(due_on, today)` dropped overdue work
+       * silently, so the one panel a student glances at each morning hid the
+       * thing they had already missed.
+       *
+       * Every loader underneath is request-cached and already read on this
+       * page, so sharing it costs nothing and removes the second definition
+       * of "what is coming up".
+       */
+      listDeadlines(),
       supabase
         .from("study_plans")
         .select(
@@ -290,15 +297,23 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
     masteryBands,
     topicsTracked: progress.length,
     readiness,
-    upcoming: (eventRows.data ?? []).map((row) => ({
-      id: row.id,
-      title: row.title,
-      subject: row.subjects?.name ?? null,
-      colorSlot: (row.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
-      kind: row.kind,
-      dueOn: row.due_on,
-      inDays: daysUntil(row.due_on),
-    })),
+    /* Overdue first, then soonest — `groupDeadlines` already orders within
+       each bucket, and flattening the groups keeps that order. Five, because
+       this is a glance rather than the list; the planner has all of them. */
+    upcoming: groupDeadlines(deadlines)
+      .flatMap((group) => group.deadlines)
+      .slice(0, 5)
+      .map((deadline) => ({
+        id: deadline.id,
+        title: deadline.title,
+        subject: deadline.subjectName,
+        colorSlot: deadline.colorSlot ?? 1,
+        kind: deadline.kind,
+        dueOn: deadline.dueOn,
+        inDays: deadline.daysAway,
+        band: deadline.urgency.band,
+        reason: deadline.reason,
+      })),
     planToday,
     planMinutesRemaining: planToday
       .filter((block) => !block.done)

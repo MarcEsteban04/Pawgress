@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody, PanelBoundary, Skeleton } from "@/components/ui";
 import { PlannerBoard } from "@/features/planner/components/PlannerBoard";
-import { daysFor, rangeFor, readQuery } from "@/features/planner/view";
+import { asCalendarSpan, daysFor, rangeFor, readQuery } from "@/features/planner/view";
+import { groupDeadlines, listDeadlines, nextAssessed } from "@/server/planner/deadlines";
 import { getStudentToday, listEvents } from "@/server/planner/queries";
 import { listSubjects } from "@/server/subjects/queries";
 import { listTopics } from "@/server/topics/queries";
@@ -21,6 +22,12 @@ import { listTopics } from "@/server/topics/queries";
  * Monday before the 1st, and fetching only the month would leave those leading
  * cells reliably, invisibly empty.
  *
+ * **The deadline list is a different question and a different query** (Sprint
+ * 62). It is everything still to do — no start, no end, overdue included —
+ * scored against how ready the student is for each. Only one of the two runs
+ * per request; `asCalendarSpan` is what makes "this view has no range" a type
+ * rather than a convention.
+ *
  * **Everything below the header is one Client Component.** A calendar is
  * click-to-edit in every cell, and threading a dialog through six server
  * components to keep the grid on the server would buy nothing: a month of one
@@ -32,10 +39,15 @@ export const metadata = { title: "Planner" };
 async function Board({ view, date }: { view?: string; date?: string }) {
   const today = await getStudentToday();
   const query = readQuery({ view, date }, today);
-  const range = rangeFor(query.view, query.anchor);
+  /* Null for the deadline list, which is "everything still to do" rather than
+     a window onto a range — so it reads a different query entirely. Typed as
+     null rather than handled with a made-up range, which is the whole reason
+     `CalendarSpan` is narrower than `PlannerView`. */
+  const span = asCalendarSpan(query.view);
 
-  const [events, subjects] = await Promise.all([
-    listEvents(range),
+  const [events, deadlines, subjects] = await Promise.all([
+    span ? listEvents(rangeFor(span, query.anchor)) : Promise.resolve([]),
+    span ? Promise.resolve(null) : listDeadlines(),
     /* Every subject and its topics, so an event can be filed as it is
        written. Not a facet list: the point is filing something under a class
        that has nothing scheduled yet. Both queries are cached. */
@@ -58,8 +70,11 @@ async function Board({ view, date }: { view?: string; date?: string }) {
       view={query.view}
       anchor={query.anchor}
       today={today}
-      days={daysFor(query.view, query.anchor)}
+      days={span ? daysFor(span, query.anchor) : []}
       events={events}
+      deadlines={
+        deadlines ? { groups: groupDeadlines(deadlines), countdown: nextAssessed(deadlines) } : null
+      }
       subjects={subjects}
     />
   );

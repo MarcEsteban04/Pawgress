@@ -169,7 +169,7 @@ src/
       progress/
         page.tsx                        /progress
       planner/
-        page.tsx                        /planner                 Month / week / day, Sprint 61
+        page.tsx                        /planner                 Upcoming / month / week / day
       plan/
         page.tsx                        /plan                    V1
       settings/
@@ -246,7 +246,7 @@ Every screen's states are specified in [`states.md`](states.md).
 | 22 | Progress | `/progress` | Mastery across classes | Open weakest subject | M |
 | 23 | Assistant | `/assistant` | Ask across materials | Ask | M |
 | 24 | Conversation | `/assistant/:id` | Resume a thread | Continue | V1 |
-| 25 | Planner | `/planner` | Month, week and day views of exams and deadlines | Add event | V1 |
+| 25 | Planner | `/planner` | Upcoming deadlines (default), plus month, week and day | Add event | V1 |
 | 26 | Today's plan | `/plan` | The generated plan | Start item | V1 |
 | 27 | Settings | `/settings` | Account, quota usage, sign out | — | M |
 | 28 | Profile | `/settings/profile` | Name, avatar, year, school, session length | Save | V1 |

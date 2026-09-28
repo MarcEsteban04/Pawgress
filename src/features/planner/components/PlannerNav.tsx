@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { Button, Chip, ChipGroup, IconButton } from "@/components/ui";
 import { type DateKey } from "@/features/planner/dates";
 import {
+  asCalendarSpan,
   PLANNER_VIEWS,
   periodLabel,
   plannerHref,
@@ -29,6 +30,12 @@ import { cn } from "@/lib/utils";
  *
  * **"Today" is always offered, even when it would change nothing.** A control
  * that appears only once you are lost is one you have to learn exists first.
+ *
+ * **The deadline list has no arrows, because it has nowhere to go** (Sprint
+ * 62). It is everything still to do, not a window onto a month; a previous
+ * page of it would mean nothing, and disabled arrows would be two controls
+ * inviting a click they cannot honour. The view chips stay, because that is
+ * how you leave it.
  */
 export function PlannerNav({
   view,
@@ -46,6 +53,8 @@ export function PlannerNav({
     startTransition(() => router.push(href, { scroll: false }));
   }
 
+  const span = asCalendarSpan(view);
+
   return (
     <div
       className={cn(
@@ -53,22 +62,24 @@ export function PlannerNav({
         isPending && "opacity-70 transition-opacity",
       )}
     >
-      <div className="flex items-center gap-1">
-        <IconButton
-          label="Previous"
-          size="sm"
-          onClick={() => go(plannerHref(view, shift(view, anchor, -1), today))}
-        >
-          <ChevronLeft aria-hidden />
-        </IconButton>
-        <IconButton
-          label="Next"
-          size="sm"
-          onClick={() => go(plannerHref(view, shift(view, anchor, 1), today))}
-        >
-          <ChevronRight aria-hidden />
-        </IconButton>
-      </div>
+      {span && (
+        <div className="flex items-center gap-1">
+          <IconButton
+            label="Previous"
+            size="sm"
+            onClick={() => go(plannerHref(view, shift(span, anchor, -1), today))}
+          >
+            <ChevronLeft aria-hidden />
+          </IconButton>
+          <IconButton
+            label="Next"
+            size="sm"
+            onClick={() => go(plannerHref(view, shift(span, anchor, 1), today))}
+          >
+            <ChevronRight aria-hidden />
+          </IconButton>
+        </div>
+      )}
 
       {/* `aria-live` because the arrows change this and nothing else visible
           announces the move. Polite: a student paging quickly should not have
@@ -77,12 +88,14 @@ export function PlannerNav({
         aria-live="polite"
         className="min-w-0 flex-1 truncate font-display text-lg font-semibold tracking-[-0.015em]"
       >
-        {periodLabel(view, anchor)}
+        {span ? periodLabel(span, anchor) : "Everything still to do"}
       </p>
 
-      <Button variant="subtle" size="sm" onClick={() => go(plannerHref(view, today, today))}>
-        Today
-      </Button>
+      {span && (
+        <Button variant="subtle" size="sm" onClick={() => go(plannerHref(view, today, today))}>
+          Today
+        </Button>
+      )}
 
       <ChipGroup inset>
         {PLANNER_VIEWS.map((option) => (

@@ -253,10 +253,19 @@ export function timeLabel(time: string | null): string | null {
 /*  works under. `view.ts` keeps the part that is genuinely about the URL.     */
 /* -------------------------------------------------------------------------- */
 
-export const PLANNER_VIEWS = ["month", "week", "day"] as const;
-export type PlannerView = (typeof PLANNER_VIEWS)[number];
+/**
+ * The three spans that are a RANGE OF DAYS.
+ *
+ * Narrower than the planner's set of views, which also includes the deadline
+ * list (Sprint 62) — that one is "everything still to do" and has no start,
+ * no end and nothing to page through. Keeping the arithmetic typed to the
+ * three that genuinely have a range is what stops `rangeFor("upcoming")` from
+ * being a case someone has to invent an answer for.
+ */
+export const CALENDAR_SPANS = ["month", "week", "day"] as const;
+export type CalendarSpan = (typeof CALENDAR_SPANS)[number];
 
-export function isPlannerView(value: string | undefined): value is PlannerView {
+export function isCalendarSpan(value: string | undefined): value is CalendarSpan {
   return value === "month" || value === "week" || value === "day";
 }
 
@@ -270,7 +279,7 @@ export function isPlannerView(value: string | undefined): value is PlannerView {
  * invisibly empty — the bug where an exam on the 1st is missing from the cell
  * you can see it in.
  */
-export function rangeFor(view: PlannerView, anchor: DateKey): { from: DateKey; to: DateKey } {
+export function rangeFor(view: CalendarSpan, anchor: DateKey): { from: DateKey; to: DateKey } {
   if (view === "day") return { from: anchor, to: anchor };
 
   if (view === "week") {
@@ -285,7 +294,7 @@ export function rangeFor(view: PlannerView, anchor: DateKey): { from: DateKey; t
 }
 
 /** The cells a view renders, in order. One day, seven, or a whole grid. */
-export function daysFor(view: PlannerView, anchor: DateKey): DateKey[] {
+export function daysFor(view: CalendarSpan, anchor: DateKey): DateKey[] {
   const { from, to } = rangeFor(view, anchor);
   return eachDay(from, to);
 }
@@ -298,7 +307,7 @@ export function daysFor(view: PlannerView, anchor: DateKey): DateKey[] {
  * May. A week steps by seven days and a day by one, both of which are
  * unambiguous.
  */
-export function shift(view: PlannerView, anchor: DateKey, steps: number): DateKey {
+export function shift(view: CalendarSpan, anchor: DateKey, steps: number): DateKey {
   if (view === "month") return addMonths(anchor, steps);
   return addDays(anchor, steps * (view === "week" ? 7 : 1));
 }
@@ -309,7 +318,7 @@ export function shift(view: PlannerView, anchor: DateKey, steps: number): DateKe
  * A week gets both ends because "week of 12 October" is a date a student has
  * to do arithmetic on to place; "12–18 Oct" is the week itself.
  */
-export function periodLabel(view: PlannerView, anchor: DateKey): string {
+export function periodLabel(view: CalendarSpan, anchor: DateKey): string {
   if (view === "day") return longDayLabel(anchor);
   if (view === "month") return monthLabel(anchor);
 

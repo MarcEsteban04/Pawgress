@@ -1,6 +1,7 @@
-import { CalendarDays } from "lucide-react";
+import { AlertTriangle, CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { Card, CardActions, CardBody, CardHeader, CardTitle, Tag } from "@/components/ui";
+import { countdownText } from "@/features/planner/components/DeadlineRow";
 import { PanelEmpty } from "./PanelEmpty";
 import { type UpcomingItem } from "@/server/dashboard/queries";
 import { cn } from "@/lib/utils";
@@ -13,12 +14,16 @@ const DOT = {
   5: "bg-cat-5",
 } as const;
 
-/** "Today" reads as a deadline; "In 4 days" reads as time you still have. */
-function countdown(inDays: number): string {
-  if (inDays <= 0) return "Today";
-  if (inDays === 1) return "Tomorrow";
-  return `In ${inDays} days`;
-}
+/**
+ * The countdown wording is `countdownText`, shared with the planner's deadline
+ * list (Sprint 62).
+ *
+ * This panel had its own copy, and the copy collapsed everything at or before
+ * today into "Today" — which was almost defensible while the query could not
+ * return an overdue item, and became a lie the moment it could. Two
+ * definitions of "how long have I got" is one more than a product gets to
+ * have.
+ */
 
 export function UpcomingPanel({ items, className }: { items: UpcomingItem[]; className?: string }) {
   return (
@@ -67,7 +72,30 @@ export function UpcomingPanel({ items, className }: { items: UpcomingItem[]; cla
                   <Tag className="bg-surface capitalize">{item.kind.replace("_", " ")}</Tag>
                 </div>
                 <p className="mt-2 leading-snug font-medium">{item.title}</p>
-                <p className="tabular mt-2 text-sm font-medium">{countdown(item.inDays)}</p>
+
+                {/* Overdue named in words and marked with a glyph, not left to
+                    the colour of the countdown — US-I2 asks for "more than
+                    colour", and so does WCAG 1.4.1. */}
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p
+                    className={cn(
+                      "tabular text-sm font-medium",
+                      item.band === "overdue" && "text-bad",
+                      item.band === "critical" && "text-warn",
+                    )}
+                  >
+                    {countdownText(item.inDays)}
+                  </p>
+                  {item.band === "overdue" && (
+                    <span className="inline-flex items-center gap-1 text-[0.6875rem] font-semibold tracking-wide text-bad uppercase">
+                      <AlertTriangle className="size-3" aria-hidden />
+                      Overdue
+                    </span>
+                  )}
+                </div>
+
+                {/* The one thing a calendar could not tell them. */}
+                {item.reason && <p className="mt-1 text-xs text-ink-muted">{item.reason}</p>}
               </li>
             ))}
           </ul>
