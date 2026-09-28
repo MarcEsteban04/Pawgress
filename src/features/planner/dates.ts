@@ -126,3 +126,194 @@ export function dateKeyAt(ms: number, timezone: string | null | undefined): Date
 export function weekdayLabel(key: DateKey, style: "narrow" | "short" = "short"): string {
   return new Date(toNoon(key)).toLocaleDateString(undefined, { weekday: style, timeZone: "UTC" });
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Month and week arithmetic (Sprint 61)                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The first of the month `key` falls in.
+ *
+ * String surgery rather than `Date`, like everything above: a month is a label
+ * on the calendar, and routing it through an instant is how a planner ends up
+ * showing December for a January date in a zone behind UTC.
+ */
+export function startOfMonth(key: DateKey): DateKey {
+  return `${key.slice(0, 7)}-01`;
+}
+
+/** How many days the month containing `key` has. 28, 29, 30 or 31. */
+export function daysInMonth(key: DateKey): number {
+  const [y, m] = key.split("-").map(Number);
+  /* Day 0 of the NEXT month is the last day of this one — the one piece of
+     Date arithmetic that is simpler than counting leap years by hand. At UTC
+     noon, so no zone can move it. */
+  return new Date(Date.UTC(y, m, 0, 12)).getUTCDate();
+}
+
+/**
+ * The same day-of-month, `months` later or earlier, clamped to the month's end.
+ *
+ * Clamped, not rolled over: stepping forward from 31 January must land on 28
+ * February, not on 3 March. A calendar whose "next month" button skips February
+ * is a calendar nobody trusts twice.
+ */
+export function addMonths(key: DateKey, months: number): DateKey {
+  const [y, m, d] = key.split("-").map(Number);
+  const target = new Date(Date.UTC(y, m - 1 + months, 1, 12));
+  const first = `${target.getUTCFullYear()}-${String(target.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  const day = Math.min(d, daysInMonth(first));
+  return `${first.slice(0, 8)}${String(day).padStart(2, "0")}`;
+}
+
+/** The Monday of the week `key` falls in. ISO weeks, as most school timetables run. */
+export function startOfWeek(key: DateKey): DateKey {
+  return addDays(key, -weekday(key));
+}
+
+/**
+ * Every day from `from` to `to`, inclusive.
+ *
+ * Bounded at 400 so a corrupted URL cannot ask the renderer for a decade of
+ * cells. The views never come close: the largest is a six-week month grid.
+ */
+export function eachDay(from: DateKey, to: DateKey): DateKey[] {
+  const days: DateKey[] = [];
+  let cursor = from;
+  for (let i = 0; i <= 400 && daysBetween(cursor, to) >= 0; i += 1) {
+    days.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return days;
+}
+
+/** "October 2026". Formatted at UTC noon so the label cannot drift a month. */
+export function monthLabel(key: DateKey): string {
+  return new Date(toNoon(key)).toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/** "Thursday, 1 October". The heading for one day. */
+export function longDayLabel(key: DateKey): string {
+  return new Date(toNoon(key)).toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
+/** "1 Oct" — compact, for a week column head. */
+export function shortDayLabel(key: DateKey): string {
+  return new Date(toNoon(key)).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+/** The day of the month, as a bare number for a grid cell. */
+export function dayOfMonth(key: DateKey): number {
+  return Number(key.slice(8, 10));
+}
+
+/** Do these two keys fall in the same calendar month? */
+export function sameMonth(a: DateKey, b: DateKey): boolean {
+  return a.slice(0, 7) === b.slice(0, 7);
+}
+
+/**
+ * A deadline's time, as a student reads it.
+ *
+ * `null` for an all-day event — the caller decides what to say instead, because
+ * "all day" is the wrong words for a deadline and "—" is the wrong words for
+ * anything.
+ */
+export function timeLabel(time: string | null): string | null {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  return new Date(Date.UTC(2000, 0, 1, h, m)).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  What a calendar view covers (Sprint 61)                                    */
+/*                                                                            */
+/*  Here rather than in `view.ts` because it is arithmetic, not routing: "what */
+/*  days does a month view show" has one answer whether it was asked by a URL, */
+/*  a test or a component. It also has to live in an IMPORT-FREE module, which */
+/*  is the rule that lets `npm run planner:test` load this file straight from  */
+/*  TypeScript with no build step — the same constraint `quizzes/marking.ts`   */
+/*  works under. `view.ts` keeps the part that is genuinely about the URL.     */
+/* -------------------------------------------------------------------------- */
+
+export const PLANNER_VIEWS = ["month", "week", "day"] as const;
+export type PlannerView = (typeof PLANNER_VIEWS)[number];
+
+export function isPlannerView(value: string | undefined): value is PlannerView {
+  return value === "month" || value === "week" || value === "day";
+}
+
+/**
+ * The days a view covers, and the window to fetch.
+ *
+ * **A month view shows more than a month**, and the range has to admit that:
+ * the grid starts on the Monday before the 1st and ends on the Sunday after
+ * the last day, so up to six days at each end belong to the neighbouring
+ * months. Fetching only the month itself would leave those cells reliably,
+ * invisibly empty — the bug where an exam on the 1st is missing from the cell
+ * you can see it in.
+ */
+export function rangeFor(view: PlannerView, anchor: DateKey): { from: DateKey; to: DateKey } {
+  if (view === "day") return { from: anchor, to: anchor };
+
+  if (view === "week") {
+    const from = startOfWeek(anchor);
+    return { from, to: addDays(from, 6) };
+  }
+
+  const first = startOfMonth(anchor);
+  const from = startOfWeek(first);
+  const last = addDays(first, daysInMonth(first) - 1);
+  return { from, to: addDays(startOfWeek(last), 6) };
+}
+
+/** The cells a view renders, in order. One day, seven, or a whole grid. */
+export function daysFor(view: PlannerView, anchor: DateKey): DateKey[] {
+  const { from, to } = rangeFor(view, anchor);
+  return eachDay(from, to);
+}
+
+/**
+ * One step forward or back, in the unit the view is showing.
+ *
+ * A month steps by a month, not by 30 days, and `addMonths` clamps — so
+ * paging forward from 31 March lands on 30 April rather than skipping into
+ * May. A week steps by seven days and a day by one, both of which are
+ * unambiguous.
+ */
+export function shift(view: PlannerView, anchor: DateKey, steps: number): DateKey {
+  if (view === "month") return addMonths(anchor, steps);
+  return addDays(anchor, steps * (view === "week" ? 7 : 1));
+}
+
+/**
+ * What the period is called, on screen.
+ *
+ * A week gets both ends because "week of 12 October" is a date a student has
+ * to do arithmetic on to place; "12–18 Oct" is the week itself.
+ */
+export function periodLabel(view: PlannerView, anchor: DateKey): string {
+  if (view === "day") return longDayLabel(anchor);
+  if (view === "month") return monthLabel(anchor);
+
+  const from = startOfWeek(anchor);
+  const to = addDays(from, 6);
+  return `${shortDayLabel(from)} – ${shortDayLabel(to)}`;
+}

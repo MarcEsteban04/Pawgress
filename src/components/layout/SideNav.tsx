@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
   ClipboardCheck,
   House,
   Layers,
@@ -68,6 +69,27 @@ const SECTIONS: { heading: string; items: NavItem[] }[] = [
         hint: "Test yourself on a subject",
       },
       { href: "/progress", label: "Progress", Icon: BarChart3, hint: "Mastery and quiz history" },
+    ],
+  },
+  {
+    /**
+     * Its own group, and that is a decision rather than tidiness.
+     *
+     * docs/navigation.md sets a maximum of six destinations, which Study now
+     * hits exactly. The planner is a seventh, and Sprint 67's daily plan will
+     * be an eighth — so either the rule breaks or the rail groups. It groups:
+     * the six above are the study loop, and these are the calendar it runs on.
+     * Six per GROUP is the readable limit the rule was protecting; one list of
+     * eight is what it was protecting against.
+     */
+    heading: "Schedule",
+    items: [
+      {
+        href: "/planner",
+        label: "Planner",
+        Icon: CalendarDays,
+        hint: "Exams, deadlines and study sessions",
+      },
     ],
   },
   {

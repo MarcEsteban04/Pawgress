@@ -1,13 +1,6 @@
 import { CalendarDays } from "lucide-react";
-import {
-  Card,
-  CardActions,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  IconButton,
-  Tag,
-} from "@/components/ui";
+import Link from "next/link";
+import { Card, CardActions, CardBody, CardHeader, CardTitle, Tag } from "@/components/ui";
 import { PanelEmpty } from "./PanelEmpty";
 import { type UpcomingItem } from "@/server/dashboard/queries";
 import { cn } from "@/lib/utils";
@@ -33,9 +26,21 @@ export function UpcomingPanel({ items, className }: { items: UpcomingItem[]; cla
       <CardHeader>
         <CardTitle>Upcoming</CardTitle>
         <CardActions>
-          <IconButton label="Open planner" size="sm" disabled>
-            <CalendarDays aria-hidden />
-          </IconButton>
+          {/* A real link since Sprint 61. It was a disabled icon for six
+              sprints because there was nowhere to go; leaving it disabled once
+              there is would be the panel lying about its own feature. */}
+          <Link
+            href="/planner"
+            aria-label="Open planner"
+            title="Open planner"
+            className={cn(
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-full",
+              "border border-rule bg-surface text-ink-muted",
+              "transition-colors hover:border-rule-strong hover:text-ink",
+            )}
+          >
+            <CalendarDays className="size-3.5" aria-hidden />
+          </Link>
         </CardActions>
       </CardHeader>
 
@@ -45,7 +50,7 @@ export function UpcomingPanel({ items, className }: { items: UpcomingItem[]; cla
             Icon={CalendarDays}
             title="Nothing scheduled"
             description="Exams, quizzes and deadlines you add show up here, soonest first, with how ready you are for each."
-            awaiting="The planner arrives later in the roadmap."
+            action={{ href: "/planner", label: "Open the planner" }}
           />
         ) : (
           <ul className="flex flex-col gap-2.5">

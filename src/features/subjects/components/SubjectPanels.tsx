@@ -248,7 +248,7 @@ export function UpcomingPanel({ items }: { items: SubjectUpcoming[] }) {
             Icon={CalendarDays}
             title="Nothing scheduled"
             description="Exams and deadlines for this subject appear here, soonest first, with how ready you are for each."
-            awaiting="The planner arrives later in the roadmap."
+            action={{ href: "/planner", label: "Add one in the planner" }}
           />
         ) : (
           <ul className="flex flex-col gap-2.5">

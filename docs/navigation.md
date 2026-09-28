@@ -34,21 +34,24 @@ Three shells, chosen by what the student is doing.
 1024 px and up, an icon rail from 768 px, and a slide-in drawer below that. Same destinations, same
 order, one implementation.
 
-**MVP:**
+**As built**, after Sprints 47, 49 and 61 — grouped, because the flat list ran out of room:
 
 ```text
-Home        Subjects        Ask        Progress
+Study      Home   Subjects   Reviewers   Quizzes   Ask   Progress
+Schedule   Planner
+Account    Settings
 ```
 
-**V1 adds:**
-
-```text
-Plan        Planner
-```
+Sprint 67's daily plan joins **Schedule**.
 
 Rules:
 
-- **Six destinations maximum.** A seventh means something belongs inside a screen, not beside it.
+- **Six destinations maximum PER GROUP.** Originally six in total, which the rail hit exactly at
+  Sprint 49 — Reviewers and Quizzes became top-level destinations rather than nested screens (see
+  the correction below), and the planner would have been a seventh. Six is the number a person can
+  scan without reading; one list of eight is what the rule was protecting against, and two labelled
+  groups of six and one is not. A group that reaches seven still means something belongs inside a
+  screen rather than beside it. A seventh means something belongs inside a screen, not beside it.
 - **No bottom tab bar.** Bottom tabs are a native-app idiom; on a website they read as a fake app and
   they compete with browser chrome and the on-screen keyboard.
 - The drawer under 768 px is the conventional web pattern, and it costs one tap. To pay that back,
@@ -166,7 +169,7 @@ src/
       progress/
         page.tsx                        /progress
       planner/
-        page.tsx                        /planner                 V1
+        page.tsx                        /planner                 Month / week / day, Sprint 61
       plan/
         page.tsx                        /plan                    V1
       settings/
@@ -243,7 +246,7 @@ Every screen's states are specified in [`states.md`](states.md).
 | 22 | Progress | `/progress` | Mastery across classes | Open weakest subject | M |
 | 23 | Assistant | `/assistant` | Ask across materials | Ask | M |
 | 24 | Conversation | `/assistant/:id` | Resume a thread | Continue | V1 |
-| 25 | Planner | `/planner` | Calendar and deadlines | Add event | V1 |
+| 25 | Planner | `/planner` | Month, week and day views of exams and deadlines | Add event | V1 |
 | 26 | Today's plan | `/plan` | The generated plan | Start item | V1 |
 | 27 | Settings | `/settings` | Account, quota usage, sign out | — | M |
 | 28 | Profile | `/settings/profile` | Name, avatar, year, school, session length | Save | V1 |
