@@ -35,6 +35,8 @@ import {
   type TopicMastery,
 } from "@/server/progress/queries";
 import { cn } from "@/lib/utils";
+import { PlanAnalytics } from "@/features/plan/components/PlanAnalytics";
+import { getPlanAnalytics } from "@/server/plan/analytics";
 
 /**
  * Progress (FR-P1–P3, US-H1, Sprint 58).
@@ -60,7 +62,7 @@ import { cn } from "@/lib/utils";
 export const metadata = { title: "Progress" };
 
 export default async function Page() {
-  const data = await getProgressOverview();
+  const [data, plans] = await Promise.all([getProgressOverview(), getPlanAnalytics()]);
 
   if (data.totalSessions === 0) {
     return (
@@ -102,6 +104,13 @@ export default async function Page() {
       <section className="flex flex-col gap-3">
         <SectionLabel>Study time</SectionLabel>
         <StudyTime data={data} />
+      </section>
+
+      {/* Sprint 69: how the daily plans have gone. Beside study time, because
+          it is the same minutes seen from the other side — what was meant. */}
+      <section className="flex flex-col gap-3">
+        <SectionLabel>Study plans</SectionLabel>
+        <PlanAnalytics data={plans} />
       </section>
 
       <section className="flex flex-col gap-3">

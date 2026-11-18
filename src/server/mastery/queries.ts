@@ -239,3 +239,12 @@ export const getRecentResults = cache(async (): Promise<Map<string, RecentResult
     daysBetween(dateKeyAt(Date.parse(iso), profile?.timezone), today),
   );
 });
+
+/**
+ * Every marked answer, as evidence (Sprint 69).
+ *
+ * The same request-cached read every loader above shares — exported for plan
+ * analytics, which asks a question mastery does not: how a topic went BEFORE
+ * and AFTER a given day.
+ */
+export const getAnswerEvidence = cache(async (): Promise<Evidence[]> => (await load()).evidence);

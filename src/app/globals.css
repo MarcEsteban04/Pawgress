@@ -76,6 +76,10 @@
   --cat-2-soft: #fdedf1;
   --cat-3-soft: #ebf2ff;
   --cat-4-soft: #e7f7f1;
+  /* Sprint 69: the planned-minutes track behind a completed fill. The soft
+     step is too faint to carry a value (1.1:1); this one passes the palette
+     validator against the fill (ΔE ≥ 15), contrast relieved by labels + table. */
+  --cat-4-track: #6fc9a4;
   --cat-5-soft: #fdefe7;
 
   /* Mastery — ordinal ramp, weak -> strong, plus a neutral for "no data".
@@ -162,6 +166,10 @@
     --cat-2-soft: #2d181f;
     --cat-3-soft: #16223a;
     --cat-4-soft: #0f2620;
+    /* Sprint 69: the planned-minutes track behind a completed fill. The soft
+       step is too faint to carry a value (1.1:1); this one passes the palette
+       validator against the fill (ΔE ≥ 15), contrast relieved by labels + table. */
+    --cat-4-track: #08704a;
     --cat-5-soft: #2c1c13;
 
     --mastery-1: #175e5a;
@@ -226,6 +234,10 @@
   --cat-2-soft: #2d181f;
   --cat-3-soft: #16223a;
   --cat-4-soft: #0f2620;
+  /* Sprint 69: the planned-minutes track behind a completed fill. The soft
+     step is too faint to carry a value (1.1:1); this one passes the palette
+     validator against the fill (ΔE ≥ 15), contrast relieved by labels + table. */
+  --cat-4-track: #08704a;
   --cat-5-soft: #2c1c13;
 
   --mastery-1: #175e5a;
@@ -281,6 +293,7 @@
   --color-cat-2-soft: var(--cat-2-soft);
   --color-cat-3-soft: var(--cat-3-soft);
   --color-cat-4-soft: var(--cat-4-soft);
+  --color-cat-4-track: var(--cat-4-track);
   --color-cat-5-soft: var(--cat-5-soft);
 
   --color-mastery-1: var(--mastery-1);

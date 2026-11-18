@@ -8,6 +8,7 @@
  * that an empty plan says why rather than inventing work.
  */
 import assert from "node:assert/strict";
+import { summarisePlans } from "../src/features/plan/analytics.ts";
 import {
   adaptSessions,
   difficultyAfter,
@@ -377,6 +378,118 @@ check("no recent result, no change", () => {
   const { sessions, changed } = adapt(input, []);
   assert.deepEqual(sessions, input);
   assert.equal(changed, 0);
+});
+
+console.log("\nplan analytics");
+
+const item = (activity, minutes, completed, topicId = null) => ({
+  activity,
+  minutes,
+  completed,
+  topicId,
+});
+const DAYS3 = ["2026-11-17", "2026-11-18", "2026-11-19"];
+const summarise = (plans, evidence = []) =>
+  summarisePlans({ plans, days: DAYS3, evidence, dayOf: (iso) => iso.slice(0, 10) });
+
+check("completion is counted in minutes, not blocks", () => {
+  const result = summarise([
+    { date: "2026-11-18", items: [item("review", 10, false), item("practice", 30, true)] },
+  ]);
+  assert.equal(result.plannedMinutes, 40);
+  assert.equal(result.completedMinutes, 30);
+  assert.equal(result.completionRate, 0.75);
+  assert.equal(result.planDays, 1);
+  assert.equal(result.fullDays, 0);
+});
+
+check("nothing planned is no rate, not zero", () => {
+  const result = summarise([{ date: "2026-11-18", items: [] }]);
+  assert.equal(result.completionRate, null);
+  assert.equal(result.planDays, 0);
+});
+
+check("every day is drawn, including days with no plan", () => {
+  const result = summarise([{ date: "2026-11-18", items: [item("quiz", 20, true)] }]);
+  assert.deepEqual(
+    result.daily.map((day) => [day.date, day.planned, day.completed]),
+    [
+      ["2026-11-17", 0, 0],
+      ["2026-11-18", 20, 20],
+      ["2026-11-19", 0, 0],
+    ],
+  );
+  assert.equal(result.fullDays, 1);
+});
+
+check("kinds of block come in the plan's order, with their own minutes", () => {
+  const result = summarise([
+    {
+      date: "2026-11-18",
+      items: [item("quiz", 20, false), item("review", 10, true), item("review", 10, false)],
+    },
+  ]);
+  assert.deepEqual(result.byActivity, [
+    { activity: "review", planned: 20, completed: 10 },
+    { activity: "quiz", planned: 20, completed: 0 },
+  ]);
+});
+
+const ans = (day, correct, topicId = "genetics") => ({
+  questionId: `${day}-${Math.random()}`,
+  topicId,
+  subjectId: "bio",
+  correct,
+  answeredAt: `2026-11-${day}T09:00:00Z`,
+  difficulty: "medium",
+});
+
+check("a topic's accuracy before and after its first finished block, pooled", () => {
+  const result = summarise(
+    [{ date: "2026-11-10", items: [item("practice", 30, true, "genetics")] }],
+    [
+      ans("03", true),
+      ans("05", false),
+      ans("07", false),
+      ans("09", false),
+      /* The block's own day counts as after. */
+      ans("10", true),
+      ans("12", true),
+      ans("14", true),
+      ans("16", false),
+    ],
+  );
+  assert.deepEqual(result.improvement, {
+    topics: 1,
+    before: 0.25,
+    after: 0.75,
+    improved: 1,
+    held: 0,
+    dropped: 0,
+  });
+});
+
+check("a topic without three answers on both sides is not counted", () => {
+  const result = summarise(
+    [{ date: "2026-11-10", items: [item("practice", 30, true, "genetics")] }],
+    [ans("05", false), ans("07", false), ans("12", true), ans("13", true), ans("14", true)],
+  );
+  assert.equal(result.improvement, null);
+});
+
+check("topics the plan never finished a block on are not counted", () => {
+  const result = summarise(
+    [{ date: "2026-11-10", items: [item("practice", 30, false, "genetics")] }],
+    [
+      ans("05", false),
+      ans("06", false),
+      ans("07", false),
+      ans("12", true),
+      ans("13", true),
+      ans("14", true),
+    ],
+  );
+  assert.equal(result.improvement, null);
 });
 
 console.log(`\n${passed} checks passed\n`);
