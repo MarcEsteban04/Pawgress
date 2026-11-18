@@ -197,3 +197,104 @@ export async function deleteEventAction(eventId: string): Promise<PlannerResult>
   revalidatePath("/", "layout");
   return { status: "ok", eventId };
 }
+
+/**
+ * Add suggested study sessions to the planner (FR-N5, Sprint 64).
+ *
+ * One press for a row, or "Add all" for the week. Each becomes an ordinary
+ * `study_session` event — editable, deletable, startable from the planner
+ * (Sprint 63) — with the reason it was suggested kept in its notes, so a
+ * student looking at "Revise Genetics" on Thursday can still see why.
+ *
+ * **Validated as events, not trusted as suggestions.** The browser sends back
+ * what it was shown, and a Server Action is a public endpoint: every pick goes
+ * through the same schema as a hand-made event, and every topic is checked
+ * against the subject it is filed under, in one query for the batch.
+ */
+export type SessionPick = {
+  dueOn: string;
+  subjectId: string;
+  topicId: string | null;
+  title: string;
+  notes: string | null;
+};
+
+/** A week at three a day is 21; anything past this is not a person pressing a button. */
+const MAX_PICKS = 30;
+
+export async function addSuggestedSessionsAction(
+  picks: SessionPick[],
+): Promise<
+  { status: "ok"; added: number } | { status: "error"; message: string; nextStep: string }
+> {
+  const session = await requireSession();
+
+  if (!Array.isArray(picks) || picks.length === 0 || picks.length > MAX_PICKS) {
+    return {
+      status: "error",
+      message: "There was nothing to add.",
+      nextStep: "Refresh the planner and try again.",
+    };
+  }
+
+  const rows: EventRow[] = [];
+  for (const pick of picks) {
+    const parsed = eventInputSchema.safeParse({
+      title: pick.title,
+      kind: "study_session",
+      subjectId: pick.subjectId,
+      topicId: pick.topicId,
+      dueOn: pick.dueOn,
+      dueTime: null,
+      notes: pick.notes,
+    });
+    if (!parsed.success || !parsed.data.subjectId) {
+      return {
+        status: "error",
+        message: "One of those sessions is not valid any more.",
+        nextStep: "Refresh the planner — the suggestions will be worked out again.",
+      };
+    }
+    rows.push({
+      title: parsed.data.title,
+      kind: "study_session",
+      subject_id: parsed.data.subjectId,
+      topic_id: parsed.data.topicId,
+      due_on: parsed.data.dueOn,
+      due_time: null,
+      notes: parsed.data.notes || null,
+    });
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const topicIds = [...new Set(rows.map((row) => row.topic_id).filter((id): id is string => !!id))];
+  if (topicIds.length > 0) {
+    const { data: topics } = await supabase
+      .from("topics")
+      .select("id, subject_id")
+      .in("id", topicIds);
+    const subjectOf = new Map((topics ?? []).map((topic) => [topic.id, topic.subject_id]));
+    if (rows.some((row) => row.topic_id && subjectOf.get(row.topic_id) !== row.subject_id)) {
+      return {
+        status: "error",
+        message: "A topic in those sessions has moved or been deleted.",
+        nextStep: "Refresh the planner — the suggestions will be worked out again.",
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from("planner_events")
+    .insert(rows.map((row) => ({ ...row, user_id: session.userId })));
+
+  if (error) {
+    return {
+      status: "error",
+      message: "We could not add those sessions.",
+      nextStep: "Try again in a moment.",
+    };
+  }
+
+  revalidatePath("/", "layout");
+  return { status: "ok", added: rows.length };
+}

@@ -5,6 +5,7 @@ import { PlannerBoard } from "@/features/planner/components/PlannerBoard";
 import { asCalendarSpan, daysFor, rangeFor, readQuery } from "@/features/planner/view";
 import { groupDeadlines, listDeadlines, nextAssessed } from "@/server/planner/deadlines";
 import { getStudentToday, listEvents } from "@/server/planner/queries";
+import { getSuggestions } from "@/server/planner/suggestions";
 import { listSubjects } from "@/server/subjects/queries";
 import { listTopics } from "@/server/topics/queries";
 
@@ -45,9 +46,12 @@ async function Board({ view, date }: { view?: string; date?: string }) {
      `CalendarSpan` is narrower than `PlannerView`. */
   const span = asCalendarSpan(query.view);
 
-  const [events, deadlines, subjects] = await Promise.all([
+  const [events, deadlines, suggestions, subjects] = await Promise.all([
     span ? listEvents(rangeFor(span, query.anchor)) : Promise.resolve([]),
     span ? Promise.resolve(null) : listDeadlines(),
+    /* Sprint 64. Only on the deadline list — it reads the same cached
+       deadlines, so it costs the week's events and nothing else. */
+    span ? Promise.resolve(null) : getSuggestions(),
     /* Every subject and its topics, so an event can be filed as it is
        written. Not a facet list: the point is filing something under a class
        that has nothing scheduled yet. Both queries are cached. */
@@ -73,7 +77,13 @@ async function Board({ view, date }: { view?: string; date?: string }) {
       days={span ? daysFor(span, query.anchor) : []}
       events={events}
       deadlines={
-        deadlines ? { groups: groupDeadlines(deadlines), countdown: nextAssessed(deadlines) } : null
+        deadlines && suggestions
+          ? {
+              groups: groupDeadlines(deadlines),
+              countdown: nextAssessed(deadlines),
+              suggestions,
+            }
+          : null
       }
       subjects={subjects}
     />

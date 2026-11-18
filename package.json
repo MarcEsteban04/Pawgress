@@ -33,7 +33,8 @@
     "analytics:test": "node scripts/analytics-test.mjs",
     "mastery:test": "node scripts/mastery-test.mjs",
     "planner:test": "node scripts/planner-test.mjs",
-    "session:test": "node scripts/session-test.mjs"
+    "session:test": "node scripts/session-test.mjs",
+    "schedule:test": "node scripts/schedule-test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

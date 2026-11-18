@@ -5,6 +5,8 @@ import { Button, Card, CardBody, EmptyState } from "@/components/ui";
 import { type DateKey } from "@/features/planner/dates";
 import { DeadlineRow } from "./DeadlineRow";
 import { ExamCountdown } from "./ExamCountdown";
+import { SuggestedSessions } from "./SuggestedSessions";
+import { type SuggestionSet } from "@/server/planner/suggestions";
 import { type Deadline, type DeadlineGroup } from "@/server/planner/deadlines";
 import { type PlannerEvent } from "@/server/planner/queries";
 
@@ -33,6 +35,7 @@ export function UpcomingView({
   onAddOn,
   onToggleDone,
   busyId,
+  suggestions,
 }: {
   groups: DeadlineGroup[];
   /** The soonest assessed event, or null when nothing is being marked. */
@@ -42,30 +45,44 @@ export function UpcomingView({
   onAddOn: (day: DateKey) => void;
   onToggleDone: (event: PlannerEvent) => void;
   busyId: string | null;
+  /** Sprint 64's suggested sessions for the week. */
+  suggestions: SuggestionSet;
 }) {
   if (groups.length === 0) {
     return (
-      <Card>
-        <CardBody className="py-4">
-          <EmptyState
-            Icon={PartyPopper}
-            title="Nothing due"
-            description="No exams, deadlines or sessions ahead of you — and nothing overdue behind you. Add what is coming and this becomes the list you check first."
-            action={
-              <Button variant="accent" onClick={() => onAddOn(today)}>
-                <CalendarPlus aria-hidden />
-                Add an event
-              </Button>
-            }
-          />
-        </CardBody>
-      </Card>
+      <div className="flex flex-col gap-5">
+        {/* Nothing due can still mean a weak topic worth a session. Shown only
+          when there is something to suggest — above an empty list, a second
+          empty card would just say the same thing twice. */}
+        {suggestions.suggestions.length > 0 && (
+          <SuggestedSessions set={suggestions} today={today} />
+        )}
+        <Card>
+          <CardBody className="py-4">
+            <EmptyState
+              Icon={PartyPopper}
+              title="Nothing due"
+              description="No exams, deadlines or sessions ahead of you — and nothing overdue behind you. Add what is coming and this becomes the list you check first."
+              action={
+                <Button variant="accent" onClick={() => onAddOn(today)}>
+                  <CalendarPlus aria-hidden />
+                  Add an event
+                </Button>
+              }
+            />
+          </CardBody>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-5">
       {countdown && <ExamCountdown deadline={countdown} />}
+
+      {/* After the countdown, before the list: the countdown says what is
+          coming, this says what to do about it this week. */}
+      <SuggestedSessions set={suggestions} today={today} />
 
       {groups.map((group) => (
         <section key={group.when} className="flex flex-col gap-2">

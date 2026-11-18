@@ -15,6 +15,7 @@ import { UpcomingView } from "./UpcomingView";
 import { WeekView } from "./WeekView";
 import { type Deadline, type DeadlineGroup } from "@/server/planner/deadlines";
 import { type PlannerEvent } from "@/server/planner/queries";
+import { type SuggestionSet } from "@/server/planner/suggestions";
 
 /**
  * The calendar, and the one dialog it opens (Sprint 61).
@@ -56,7 +57,11 @@ export function PlannerBoard({
   days: DateKey[];
   events: PlannerEvent[];
   /** The deadline list, already grouped and scored. Null for a calendar view. */
-  deadlines: { groups: DeadlineGroup[]; countdown: Deadline | null } | null;
+  deadlines: {
+    groups: DeadlineGroup[];
+    countdown: Deadline | null;
+    suggestions: SuggestionSet;
+  } | null;
   subjects: PlannerSubject[];
 }) {
   const router = useRouter();
@@ -128,6 +133,7 @@ export function PlannerBoard({
           onAddOn={addOn}
           onToggleDone={toggleDone}
           busyId={busyId}
+          suggestions={deadlines.suggestions}
         />
       )}
 
