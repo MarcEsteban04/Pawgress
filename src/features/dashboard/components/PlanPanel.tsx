@@ -148,6 +148,8 @@ function BuiltFrom({ rationale }: { rationale: PlanRationale }) {
       `${rationale.forDeadlines} for ${rationale.forDeadlines === 1 ? "a deadline" : "deadlines"}`,
     rationale.forTopics > 0 &&
       `${rationale.forTopics} for ${rationale.forTopics === 1 ? "a weak topic" : "weak topics"}`,
+    /* Sprint 68: how much of today was shaped by the last results. */
+    (rationale.adapted ?? 0) > 0 && `${rationale.adapted} changed by recent results`,
   ].filter(Boolean);
 
   const time = `${rationale.perDay} × ${rationale.blockMinutes} min a day${

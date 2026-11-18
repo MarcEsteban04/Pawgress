@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
-import { getAttention } from "@/server/mastery/queries";
+import { getAttention, getRecentResults } from "@/server/mastery/queries";
+import { difficultyAfter } from "@/features/plan/adapt";
 import { generateReviewerAction } from "@/features/reviewers/server/actions";
 import { createQuizAction } from "@/features/quizzes/server/actions";
 import { type Difficulty } from "@/features/mastery/formula";
@@ -148,12 +149,15 @@ async function launchQuiz(
   );
   if (unsat) return { status: "ok", href: `/quizzes/${unsat.id}` };
 
-  /* The difficulty the pattern of mistakes calls for, when there is one —
-     Sprint 59's reading. Medium when the topic is not flagged. */
+  /* Sprint 68: one step up from a run that went well, one down from one that
+     did not — the same reading the plan used when it wrote "harder questions
+     now", so the quiz keeps the block's promise. With no recent run, the
+     difficulty Sprint 59 read from the pattern of mistakes; medium failing that. */
   let difficulty: Difficulty = "medium";
   if (topicId) {
-    const flagged = await getAttention({ limit: 50 });
-    difficulty = flagged.find((item) => item.topicId === topicId)?.difficulty ?? "medium";
+    const [flagged, results] = await Promise.all([getAttention({ limit: 50 }), getRecentResults()]);
+    const pattern = flagged.find((item) => item.topicId === topicId)?.difficulty ?? "medium";
+    difficulty = difficultyAfter(results.get(topicId), pattern);
   }
 
   const result = await createQuizAction({ subjectId, topicId, difficulty, count: 10 });

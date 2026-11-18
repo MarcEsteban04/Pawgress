@@ -6,7 +6,13 @@ import { requireSession } from "@/server/auth/session";
 import { dateKeyAt, type DateKey } from "@/features/planner/dates";
 import { buildDayPlan, sessionKey, type DayPlan, type DaySession } from "@/features/plan/build";
 import { type Basis } from "@/features/planner/suggest";
-import { getAttention, getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
+import {
+  getAttention,
+  getRecentResults,
+  getSubjectMastery,
+  getTopicMastery,
+} from "@/server/mastery/queries";
+import { adaptSessions } from "@/features/plan/adapt";
 import { getProfile } from "@/server/profile/queries";
 import { getStudentToday, listEvents } from "@/server/planner/queries";
 import { getSuggestions } from "@/server/planner/suggestions";
@@ -41,6 +47,11 @@ export type PlanRationale = {
   forTopics: number;
   alsoToday: string[];
   leftOver: number;
+  /**
+   * Sessions a recent result added or changed (Sprint 68). Optional: plans
+   * built before it have no such field, and are still version 1.
+   */
+  adapted?: number;
   empty: DayPlan["empty"];
 };
 
@@ -71,6 +82,8 @@ export const draftTodayPlan = cache(async (): Promise<TodayPlanDraft> => {
     { count: materials },
     { data: recent },
     { data: plan },
+    results,
+    { data: topicRows },
   ] = await Promise.all([
     getSuggestions(),
     listEvents({ from: today, to: today }),
@@ -90,6 +103,15 @@ export const draftTodayPlan = cache(async (): Promise<TodayPlanDraft> => {
       .select("id, study_plan_items(subject_id, topic_id, position, minutes, completed_at)")
       .eq("plan_date", today)
       .maybeSingle(),
+    /* Sprint 68: the last run on each topic, and the topics a strong result
+       could move the plan on to, in their subject's order. */
+    getRecentResults(),
+    supabase
+      .from("topics")
+      .select(
+        "id, name, subject_id, position, materials(count), subjects!inner(name, color_slot, archived_at)",
+      )
+      .is("subjects.archived_at", null),
   ]);
 
   /* Minutes studied on the student's today — read wide, filtered by THEIR
@@ -144,9 +166,27 @@ export const draftTodayPlan = cache(async (): Promise<TodayPlanDraft> => {
   const items = plan?.study_plan_items ?? [];
   const completed = items.filter((item) => item.completed_at !== null);
 
+  /* The plan reacts to the last result (Sprint 68): follow-ups on poor runs,
+     harder work or the next topic after strong ones. The student's own
+     sessions still lead. */
+  const adapted = adaptSessions({
+    sessions: [...planned, ...suggested],
+    results,
+    topics: (topicRows ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      subjectId: row.subject_id,
+      subjectName: row.subjects?.name ?? "",
+      colorSlot: (row.subjects?.color_slot ?? 1) as 1 | 2 | 3 | 4 | 5,
+      position: row.position,
+      band: topicMastery.get(row.id)?.band ?? null,
+      hasMaterial: (row.materials?.[0]?.count ?? 0) > 0,
+    })),
+  });
+
   const built = buildDayPlan({
     /* The student's own sessions lead: they chose them. */
-    sessions: [...planned, ...suggested],
+    sessions: adapted.sessions,
     blockMinutes: profile?.preferredSessionMinutes ?? 30,
     perDay: week.perDay,
     studiedMinutes,
@@ -171,6 +211,7 @@ export const draftTodayPlan = cache(async (): Promise<TodayPlanDraft> => {
       forTopics: suggestedToday.filter((s) => s.forDeadline === null).length,
       alsoToday: built.alsoToday,
       leftOver: built.leftOver,
+      adapted: adapted.changed,
       empty: built.empty,
     },
     existing: plan

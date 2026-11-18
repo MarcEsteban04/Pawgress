@@ -3,6 +3,9 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { getProfile } from "@/server/profile/queries";
+import { dateKeyAt, daysBetween, todayIn } from "@/features/planner/dates";
+import { latestResults, type RecentResult } from "@/features/plan/adapt";
 import {
   detectAttention,
   masteryBy,
@@ -63,7 +66,7 @@ const load = cache(async (): Promise<Loaded> => {
     const { data } = await supabase
       .from("quiz_answers")
       .select(
-        "question_id, is_correct, answered_at, quiz_questions!inner(topic_id, topics(name), quizzes!inner(subject_id, difficulty, subjects(name, color_slot)))",
+        "question_id, attempt_id, is_correct, answered_at, quiz_questions!inner(topic_id, topics(name), quizzes!inner(subject_id, difficulty, subjects(name, color_slot)))",
       )
       /* A null verdict is a question seen but never marked. It is not
          evidence of anything, least of all of being wrong. */
@@ -85,6 +88,7 @@ const load = cache(async (): Promise<Loaded> => {
         correct: row.is_correct === true,
         answeredAt: row.answered_at,
         difficulty: toDifficulty(quiz.difficulty),
+        attemptId: row.attempt_id,
       });
 
       if (question.topic_id && question.topics && !topics.has(question.topic_id)) {
@@ -216,3 +220,22 @@ export const getAttention = cache(
       });
   },
 );
+
+/* -------------------------------------------------------------------------- */
+/*  The last result on each topic (Sprint 68)                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The most recent run on each topic, from the same answers mastery reads.
+ *
+ * Mastery is the slow reading; this is the fast one — what happened LAST time
+ * — and the plan reacts to it (`features/plan/adapt.ts`). Days are counted on
+ * the student's calendar, so "yesterday" means their yesterday.
+ */
+export const getRecentResults = cache(async (): Promise<Map<string, RecentResult>> => {
+  const [{ evidence }, profile] = await Promise.all([load(), getProfile()]);
+  const today = todayIn(profile?.timezone);
+  return latestResults(evidence, (iso) =>
+    daysBetween(dateKeyAt(Date.parse(iso), profile?.timezone), today),
+  );
+});

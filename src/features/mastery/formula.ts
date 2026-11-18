@@ -71,6 +71,12 @@ export type Evidence = {
   correct: boolean;
   answeredAt: string;
   difficulty: Difficulty;
+  /**
+   * The run it was answered in (Sprint 68). Optional because the formula does
+   * not need it — mastery is per question, across runs — but "how did the
+   * LAST quiz go" can only be answered by grouping answers by the run.
+   */
+  attemptId?: string;
 };
 
 export type Mastery = {

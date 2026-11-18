@@ -46,7 +46,8 @@ export type DaySession = {
   title: string;
   basis: Basis;
   reason: string;
-  source: "planned" | "suggested";
+  /** `adapted` — added or changed by a recent result (Sprint 68, `adapt.ts`). */
+  source: "planned" | "suggested" | "adapted";
 };
 
 export type PlanItemDraft = {
@@ -161,7 +162,14 @@ export function splitSession(
 const REASON_LIMIT = 300;
 
 function reasonFor(session: DaySession, activity: PlanActivity): string {
-  const lead = session.source === "planned" ? `You planned "${session.title}"` : session.reason;
+  /* A planned session keeps saying it was the student's choice; if a recent
+     result changed it (Sprint 68), the block says that too. */
+  const lead =
+    session.source !== "planned"
+      ? session.reason
+      : session.reason === session.title
+        ? `You planned "${session.title}"`
+        : `You planned "${session.title}" · ${session.reason}`;
   const text = `${lead} — ${PURPOSE[activity]}`;
   /* The column holds 300 characters; a long exam title must not fail the save. */
   return text.length > REASON_LIMIT ? `${text.slice(0, REASON_LIMIT - 1)}…` : text;
