@@ -12,6 +12,7 @@ import {
   ACTIVITY_MIX,
   buildDayPlan,
   MIN_BLOCK_MINUTES,
+  pickBlockToTick,
   splitSession,
 } from "../src/features/plan/build.ts";
 
@@ -147,6 +148,66 @@ check("no subjects, then no material, then nothing due", () => {
 check("a long exam title cannot break the 300-character reason column", () => {
   const plan = build({ sessions: [session({ reason: "x".repeat(400) })] });
   assert.ok(plan.items.every((item) => item.reason.length <= 300));
+});
+
+console.log("\nticking off finished work");
+
+const block = (id, topicId, activity = "practice", position = 0, subjectId = "bio") => ({
+  id,
+  subjectId,
+  topicId,
+  activity,
+  position,
+});
+
+check("the exact topic's block is ticked first", () => {
+  const picked = pickBlockToTick(
+    [block("whole", null, "practice", 0), block("gen", "genetics", "practice", 1)],
+    { subjectId: "bio", topicId: "genetics", activity: "practice" },
+  );
+  assert.equal(picked?.id, "gen");
+});
+
+check("a whole-subject block is satisfied by work on one of its topics", () => {
+  const picked = pickBlockToTick([block("whole", null)], {
+    subjectId: "bio",
+    topicId: "genetics",
+    activity: "practice",
+  });
+  assert.equal(picked?.id, "whole");
+});
+
+check("whole-subject work ticks a topic block — it is what the launcher opens", () => {
+  const picked = pickBlockToTick([block("gen", "genetics")], {
+    subjectId: "bio",
+    topicId: null,
+    activity: "practice",
+  });
+  assert.equal(picked?.id, "gen");
+});
+
+check("another topic's work does not tick a topic block", () => {
+  const picked = pickBlockToTick([block("gen", "genetics")], {
+    subjectId: "bio",
+    topicId: "cells",
+    activity: "practice",
+  });
+  assert.equal(picked, null);
+});
+
+check("a different activity or subject ticks nothing", () => {
+  const review = [block("gen", "genetics", "review")];
+  const done = { subjectId: "bio", topicId: "genetics", activity: "practice" };
+  assert.equal(pickBlockToTick(review, done), null);
+  assert.equal(pickBlockToTick([block("gen", "genetics")], { ...done, subjectId: "chem" }), null);
+});
+
+check("one finished activity ticks one block, the earliest", () => {
+  const picked = pickBlockToTick(
+    [block("later", "genetics", "practice", 4), block("first", "genetics", "practice", 1)],
+    { subjectId: "bio", topicId: "genetics", activity: "practice" },
+  );
+  assert.equal(picked?.id, "first");
 });
 
 console.log(`\n${passed} checks passed\n`);

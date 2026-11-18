@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { tickPlanBlock } from "@/server/plan/tick";
 
 /**
  * Recording that studying happened, and how it went (FR-P1, US-H1).
@@ -139,6 +140,17 @@ export async function recordStudySessionAction(input: RecordSessionInput): Promi
      verdicts written above, at read time — see `src/features/mastery`. The
      old `record_practice` tally could only ever add, so it could not forget an
      old result, weigh a hard question, or follow a mark the student overruled. */
+
+  /* Today's plan keeps up with the work (Sprint 67): a finished practice set
+     or deck ticks the block that asked for it. Matching boards are not a plan
+     activity, so they tick nothing. */
+  if (input.activity === "practice" || input.activity === "flashcards") {
+    await tickPlanBlock({
+      subjectId: input.subjectId,
+      topicId: input.topicId,
+      activity: input.activity,
+    });
+  }
 
   /* The dashboard and the progress page both read this. Revalidated here
      rather than left to a reload, because the whole complaint was that

@@ -221,3 +221,47 @@ export function buildDayPlan(input: DayPlanInput): DayPlan {
 
   return { items, totalMinutes, budgetMinutes, alsoToday, leftOver, empty };
 }
+
+/* ------------------------------------------------------------------------ */
+/*  Ticking a block off from finished work (Sprint 67)                      */
+/* ------------------------------------------------------------------------ */
+
+export type OpenBlock = {
+  id: string;
+  subjectId: string | null;
+  topicId: string | null;
+  activity: PlanActivity;
+  position: number;
+};
+
+/**
+ * Which unfinished block a finished activity completes, if any.
+ *
+ * Same subject and same activity, always. Then the topic:
+ *
+ *  - the exact topic first;
+ *  - a whole-subject block is satisfied by work on any of its topics;
+ *  - work on the WHOLE subject (a whole-subject reviewer's practice set)
+ *    satisfies a topic block too — that is exactly what the launcher opens
+ *    when a topic has no files of its own (Sprint 66), and a block that can
+ *    never be ticked by doing what it opened would be a broken promise.
+ *
+ * Earliest position wins within a tier, so the plan is ticked off in the
+ * order it was written. One block per finished activity: two practice blocks
+ * planned and one practice set done is one still to do.
+ */
+export function pickBlockToTick(
+  blocks: OpenBlock[],
+  done: { subjectId: string; topicId: string | null; activity: PlanActivity },
+): OpenBlock | null {
+  const candidates = blocks
+    .filter((block) => block.subjectId === done.subjectId && block.activity === done.activity)
+    .sort((a, b) => a.position - b.position);
+
+  return (
+    candidates.find((block) => block.topicId === done.topicId) ??
+    candidates.find((block) => block.topicId === null) ??
+    (done.topicId === null ? candidates[0] : undefined) ??
+    null
+  );
+}

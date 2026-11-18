@@ -1,24 +1,34 @@
 "use client";
 
-import { ArrowRight, BookOpen, Layers, ListChecks, Timer } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Layers, ListChecks, Timer } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { TintRow } from "@/components/ui";
+import { setPlanBlockDoneAction } from "@/features/plan/server/actions";
 import { launchPlanBlockAction } from "@/features/plan/server/launch";
 import { type PlanBlock } from "@/server/dashboard/queries";
 import { cn } from "@/lib/utils";
 
 /**
- * One block of today's plan, and the door to it (FR-L2, Sprint 66).
+ * One block of today's plan, the door to it, and the box to tick
+ * (FR-L2, FR-L3, Sprints 66–67).
  *
- * **The whole row is the button.** A plan block is a thing to DO; making the
- * student hunt for a small "Start" inside it would be asking them to read the
- * plan twice. The arrow is there to say the row goes somewhere, not as a
- * separate target.
+ * **Two targets, side by side, never nested.** The row opens the activity;
+ * the box beside it ticks the block off. A checkbox inside a button is
+ * invalid HTML and, worse, a press that does two things depending on exactly
+ * where the thumb landed.
  *
- * **What it opens is decided on the server, on the click** — see
- * `launchPlanBlockAction`. The wait can include writing a quiz or starting a
- * reviewer, so the row says so rather than looking frozen.
+ * **The tick is optimistic.** It is the most frequent thing anyone does to a
+ * plan, and waiting a round trip to see a tick appear makes it feel broken.
+ * If the write fails, the box goes back and says why.
+ *
+ * **"Up next" is the one accent on the dashboard.** The blue is reserved for
+ * the thing to press (docs/branding.md), and on this screen the next block is
+ * exactly that.
+ *
+ * Practice, flashcards and quizzes tick themselves when they are finished
+ * (`tickPlanBlock`); review has no "finished" the product can see, so its box
+ * is the way. Any box can be ticked, though — the student knows what they did.
  */
 
 const ACTIVITY: Record<string, { label: string; Icon: typeof BookOpen; wait: string }> = {
@@ -28,19 +38,23 @@ const ACTIVITY: Record<string, { label: string; Icon: typeof BookOpen; wait: str
   quiz: { label: "Quiz", Icon: Timer, wait: "Writing your quiz…" },
 };
 
-export function PlanBlockRow({ block }: { block: PlanBlock }) {
+export function PlanBlockRow({ block, next }: { block: PlanBlock; next: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [opening, startOpening] = useTransition();
+  const [, startTicking] = useTransition();
+  const [done, setOptimisticDone] = useOptimistic(block.done);
+
   const activity = ACTIVITY[block.activity] ?? {
     label: block.activity,
     Icon: BookOpen,
     wait: "Opening…",
   };
+  const name = block.topic ?? block.subject ?? "this block";
 
   function open() {
     setError(null);
-    startTransition(async () => {
+    startOpening(async () => {
       const result = await launchPlanBlockAction(block.id);
       if (result.status === "error") {
         setError(`${result.message} ${result.nextStep}`);
@@ -50,57 +64,104 @@ export function PlanBlockRow({ block }: { block: PlanBlock }) {
     });
   }
 
+  function toggle() {
+    setError(null);
+    const target = !done;
+    startTicking(async () => {
+      setOptimisticDone(target);
+      const result = await setPlanBlockDoneAction(block.id, target);
+      if (result.status === "error") {
+        setError(`${result.message} ${result.nextStep}`);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <TintRow
       tone={block.colorSlot}
-      className={cn("p-0 transition-opacity", block.done && "opacity-55")}
+      className={cn(
+        "p-0 transition-opacity",
+        done && "opacity-55",
+        next && "shadow-[inset_0_0_0_2px_var(--color-accent)]",
+      )}
     >
-      <button
-        type="button"
-        onClick={open}
-        disabled={isPending}
-        aria-label={`${activity.label}: ${block.topic ?? block.subject ?? ""}, ${block.minutes} minutes`}
-        className={cn(
-          "group block w-full rounded-[var(--radius-tile)] p-3.5 text-left transition-shadow",
-          "hover:shadow-[inset_0_0_0_1px_var(--color-rule-strong)] disabled:cursor-progress",
-        )}
-      >
-        <span className="flex items-start gap-2">
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-medium text-ink-muted">{block.subject}</span>
-            <span
-              className={cn("mt-0.5 block leading-snug font-medium", block.done && "line-through")}
-            >
-              {/* The topic, or "Whole subject" — never the activity name, which
-                  has its own line below and read as a title of "practice". */}
-              {block.topic ?? "Whole subject"}
-            </span>
+      <div className="flex items-start">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-pressed={done}
+          aria-label={done ? `Mark ${name} not done` : `Mark ${name} done`}
+          className="flex shrink-0 items-start py-3.5 pr-1 pl-3.5"
+        >
+          <span
+            className={cn(
+              "flex size-5 items-center justify-center rounded-[0.375rem] border transition-colors",
+              done
+                ? "border-ok bg-ok text-on-ink"
+                : "border-rule-strong bg-surface hover:border-ink",
+            )}
+          >
+            {done && <Check className="size-3.5" aria-hidden />}
           </span>
-          <ArrowRight
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-ink-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-ink"
-          />
-        </span>
+        </button>
 
-        <span className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-muted">
-          <activity.Icon className="size-3.5" aria-hidden />
-          {isPending ? (
-            activity.wait
-          ) : (
-            <>
-              <span className="tabular-nums">{block.minutes} min</span>
-              <span aria-hidden>·</span>
-              {activity.label}
-            </>
+        <button
+          type="button"
+          onClick={open}
+          disabled={opening}
+          aria-label={`${activity.label}: ${name}, ${block.minutes} minutes`}
+          className={cn(
+            "group block min-w-0 flex-1 rounded-[var(--radius-tile)] py-3.5 pr-3.5 pl-2 text-left",
+            "disabled:cursor-progress",
           )}
-        </span>
-
-        {block.reason && (
-          <span className="mt-2.5 block border-t border-ink/5 pt-2.5 text-xs text-ink-muted">
-            {block.reason}
+        >
+          <span className="flex items-start gap-2">
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-xs font-medium text-ink-muted">
+                <span className="truncate">{block.subject}</span>
+                {next && (
+                  <span className="shrink-0 rounded-[var(--radius-pill)] bg-accent px-1.5 py-px text-[0.625rem] font-semibold tracking-wide text-on-accent uppercase">
+                    Up next
+                  </span>
+                )}
+              </span>
+              <span className={cn("mt-0.5 block leading-snug font-medium", done && "line-through")}>
+                {/* The topic, or "Whole subject" — never the activity name,
+                    which has its own line below. */}
+                {block.topic ?? "Whole subject"}
+              </span>
+            </span>
+            <ArrowRight
+              aria-hidden
+              className={cn(
+                "mt-0.5 size-4 shrink-0 transition-transform group-hover:translate-x-0.5",
+                next ? "text-accent" : "text-ink-subtle group-hover:text-ink",
+              )}
+            />
           </span>
-        )}
-      </button>
+
+          <span className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-muted">
+            <activity.Icon className="size-3.5" aria-hidden />
+            {opening ? (
+              activity.wait
+            ) : (
+              <>
+                <span className="tabular-nums">{block.minutes} min</span>
+                <span aria-hidden>·</span>
+                {activity.label}
+              </>
+            )}
+          </span>
+
+          {block.reason && !done && (
+            <span className="mt-2.5 block border-t border-ink/5 pt-2.5 text-xs text-ink-muted">
+              {block.reason}
+            </span>
+          )}
+        </button>
+      </div>
 
       {error && (
         <p role="alert" className="px-3.5 pb-3 text-xs text-bad">

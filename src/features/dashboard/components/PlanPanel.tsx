@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
  *
  * Built by Sprint 65's engine (`features/plan/build.ts`) when the student
  * presses "Plan my day". Each block opens its activity in one click (Sprint
- * 66, `PlanBlockRow`). Ticking blocks off writes `completed_at`, which is
- * Sprint 67; until then a rebuild is how the plan catches up with the day.
+ * 66, `PlanBlockRow`), and is ticked off by hand or by finishing the work it
+ * names (Sprint 67) — with the first unfinished block marked "Up next".
  *
  * **Under the minutes, what the plan was built from** — how many sessions came
  * from the student's own planner, how many from deadlines and weak topics, and
@@ -38,6 +38,13 @@ export function PlanPanel({
   className?: string;
 }) {
   const rationale = plan.rationale;
+  /* Sprint 67: the first unfinished block, in the order the plan was written.
+     Not the shortest or the easiest — the plan's order IS its advice. */
+  const left = blocks.filter((block) => !block.done);
+  const nextId = left[0]?.id ?? null;
+  const totalMinutes = blocks.reduce((sum, block) => sum + block.minutes, 0);
+  const doneMinutes = totalMinutes - minutesRemaining;
+
   return (
     <Card className={cn("flex flex-col", className)}>
       <CardHeader>
@@ -68,21 +75,56 @@ export function PlanPanel({
           )
         ) : (
           <>
-            <div className="flex items-baseline gap-2">
-              <span className="tabular font-display text-2xl font-semibold">
-                {minutesRemaining}m
-              </span>
-              <span className="text-sm text-ink-muted">
-                left across {blocks.filter((b) => !b.done).length} blocks
-              </span>
-            </div>
+            {left.length === 0 ? (
+              /* Finished. Said in words, with the accent nowhere — celebration
+                 is copy, never a character (docs/branding.md). */
+              <div className="flex flex-col gap-1">
+                <span className="font-display text-xl font-semibold">
+                  Today&apos;s plan is done
+                </span>
+                <span className="text-sm text-ink-muted">
+                  {totalMinutes} minutes across {blocks.length}{" "}
+                  {blocks.length === 1 ? "block" : "blocks"}. Anything more today is extra.
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="tabular font-display text-2xl font-semibold">
+                    {minutesRemaining}m
+                  </span>
+                  <span className="text-sm text-ink-muted">
+                    left across {left.length} {left.length === 1 ? "block" : "blocks"}
+                  </span>
+                  <span className="ml-auto text-xs text-ink-subtle tabular-nums">
+                    {blocks.length - left.length} of {blocks.length} done
+                  </span>
+                </div>
+                {/* Minutes, not blocks: a 30-minute block done is more of the
+                    day than a 10-minute one. Ink, not a mastery colour — this
+                    is how much of the plan is behind you, not how good it was. */}
+                <div
+                  role="progressbar"
+                  aria-label="Today's plan"
+                  aria-valuemin={0}
+                  aria-valuemax={totalMinutes}
+                  aria-valuenow={doneMinutes}
+                  className="h-1.5 overflow-hidden rounded-full bg-surface-sunken"
+                >
+                  <div
+                    className="h-full rounded-full bg-ink transition-[width] duration-500"
+                    style={{ width: `${totalMinutes ? (doneMinutes / totalMinutes) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {rationale && <BuiltFrom rationale={rationale} />}
 
             <ul className="thin-scroll -mx-1 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-1">
               {blocks.map((block) => (
                 <li key={block.id}>
-                  <PlanBlockRow block={block} />
+                  <PlanBlockRow block={block} next={block.id === nextId} />
                 </li>
               ))}
             </ul>

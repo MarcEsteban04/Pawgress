@@ -93,3 +93,37 @@ function failed(): BuildPlanResult {
     nextStep: "Try again in a moment.",
   };
 }
+
+/**
+ * Tick a block off by hand, or untick it (Sprint 67).
+ *
+ * Finished practice, flashcards and quizzes tick their own blocks (see
+ * `tickPlanBlock`). Review has no moment of "finished" the product can see —
+ * reading a reviewer is not an event — so its blocks are ticked here, and any
+ * block can be, because the student knows what they did better than the
+ * product does.
+ */
+export async function setPlanBlockDoneAction(
+  itemId: string,
+  done: boolean,
+): Promise<BuildPlanResult> {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("study_plan_items")
+    .update({ completed_at: done ? new Date().toISOString() : null })
+    .eq("id", itemId)
+    .select("id");
+
+  if (error || !data?.length) {
+    return {
+      status: "error",
+      message: "We could not update that block.",
+      nextStep: "Refresh and try again.",
+    };
+  }
+
+  revalidatePath("/", "layout");
+  return { status: "ok", items: data.length };
+}
