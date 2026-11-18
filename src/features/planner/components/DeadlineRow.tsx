@@ -7,6 +7,7 @@ import { EVENT_KIND_INFO } from "@/features/planner/schema";
 import { timeLabel } from "@/features/planner/dates";
 import { type UrgencyBand } from "@/features/planner/urgency";
 import { EventKindIcon } from "./EventChip";
+import { StartSessionButton } from "@/features/study/components/SessionControl";
 import { type Deadline } from "@/server/planner/deadlines";
 import { cn } from "@/lib/utils";
 
@@ -151,6 +152,14 @@ export function DeadlineRow({
               </span>
             )}
           </button>
+
+          {deadline.kind === "study_session" && deadline.daysAway <= 0 && (
+            <StartSessionButton
+              subjectId={deadline.subjectId}
+              topicId={deadline.topicId}
+              title={deadline.title}
+            />
+          )}
 
           <div className="flex shrink-0 items-center gap-1 pl-1">
             <span className={cn("tabular text-sm font-semibold whitespace-nowrap", band.text)}>

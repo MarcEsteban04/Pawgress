@@ -215,7 +215,9 @@ export const listSubjectActivity = cache(
       ...(sessions.data ?? []).map((row) => ({
         id: `session-${row.id}`,
         kind: "session" as const,
-        title: row.activity,
+        /* "Studied timed session", not "Studied review": `review` is the
+           Sprint 63 timed session, and the enum's name is not the student's. */
+        title: row.activity === "review" ? "timed session" : row.activity,
         detail: row.duration_seconds ? `${Math.round(row.duration_seconds / 60)}m` : null,
         at: row.ended_at!,
       })),

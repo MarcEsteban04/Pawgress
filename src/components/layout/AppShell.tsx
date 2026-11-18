@@ -17,6 +17,9 @@ import {
   UserPill,
 } from "@/components/ui";
 import { SignOutItem } from "@/features/auth/components/SignOutItem";
+import { SessionControl } from "@/features/study/components/SessionControl";
+import { StudySessionProvider } from "@/features/study/components/StudySessionProvider";
+import { type RunningSession, type SessionTarget } from "@/server/study/queries";
 import { cn } from "@/lib/utils";
 
 /**
@@ -64,9 +67,15 @@ export type AppShellProps = {
    * expand-then-snap that a client-only preference always produces.
    */
   initialSidebar: SidebarState;
+  /**
+   * The timed study session, if one is running, and the subjects one can be
+   * started against (Sprint 63). Lives on the shell because the shell is what
+   * survives navigation — a clock owned by a page stops when the page does.
+   */
+  study: { running: RunningSession | null; targets: SessionTarget[] };
 };
 
-export function AppShell({ children, toolbar, user, quota, initialSidebar }: AppShellProps) {
+export function AppShell({ children, toolbar, user, quota, initialSidebar, study }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebar, setSidebar] = useState<SidebarState>(initialSidebar);
 
@@ -77,100 +86,107 @@ export function AppShell({ children, toolbar, user, quota, initialSidebar }: App
   }
 
   return (
-    <div className="min-h-dvh md:h-dvh">
-      <div
-        className={cn(
-          // Full-bleed. A radius and a shadow at the viewport edge are
-          // invisible, and the gutter was costing real width on the widest
-          // panel the product has.
-          "flex min-h-dvh overflow-hidden bg-frame sm:min-h-0",
-          "md:h-full",
-        )}
-      >
-        {/* Persistent sidebar — 768px and up */}
-        <div className="hidden shrink-0 md:block">
-          <SideNav state={sidebar} onToggle={toggleSidebar} quota={quota} />
-        </div>
-
-        {/* Drawer — below 768px */}
-        {drawerOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <button
-              aria-label="Close navigation"
-              className="absolute inset-0 bg-[var(--scrim)]"
-              onClick={() => setDrawerOpen(false)}
-            />
-            <div className="absolute inset-y-0 left-0 shadow-[var(--shadow-pop)]">
-              <SideNav
-                drawer
-                state="expanded"
-                quota={quota}
-                onNavigate={() => setDrawerOpen(false)}
-              />
-            </div>
+    <StudySessionProvider running={study.running} targets={study.targets}>
+      <div className="min-h-dvh md:h-dvh">
+        <div
+          className={cn(
+            // Full-bleed. A radius and a shadow at the viewport edge are
+            // invisible, and the gutter was costing real width on the widest
+            // panel the product has.
+            "flex min-h-dvh overflow-hidden bg-frame sm:min-h-0",
+            "md:h-full",
+          )}
+        >
+          {/* Persistent sidebar — 768px and up */}
+          <div className="hidden shrink-0 md:block">
+            <SideNav state={sidebar} onToggle={toggleSidebar} quota={quota} />
           </div>
-        )}
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 shrink-0 items-center gap-3 px-4 sm:px-6 md:h-[4.5rem]">
-            <button
-              aria-label="Open navigation"
-              aria-expanded={drawerOpen}
-              onClick={() => setDrawerOpen(true)}
-              className="-ml-1 flex size-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink md:hidden"
-            >
-              {drawerOpen ? <X className="size-5" /> : <MenuIcon className="size-5" />}
-            </button>
+          {/* Drawer — below 768px */}
+          {drawerOpen && (
+            <div className="fixed inset-0 z-50 md:hidden">
+              <button
+                aria-label="Close navigation"
+                className="absolute inset-0 bg-[var(--scrim)]"
+                onClick={() => setDrawerOpen(false)}
+              />
+              <div className="absolute inset-y-0 left-0 shadow-[var(--shadow-pop)]">
+                <SideNav
+                  drawer
+                  state="expanded"
+                  quota={quota}
+                  onNavigate={() => setDrawerOpen(false)}
+                />
+              </div>
+            </div>
+          )}
 
-            {/* The sidebar carries the brand from 768px up, so repeating it in
+          <div className="flex min-w-0 flex-1 flex-col">
+            <header className="flex h-16 shrink-0 items-center gap-3 px-4 sm:px-6 md:h-[4.5rem]">
+              <button
+                aria-label="Open navigation"
+                aria-expanded={drawerOpen}
+                onClick={() => setDrawerOpen(true)}
+                className="-ml-1 flex size-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink md:hidden"
+              >
+                {drawerOpen ? <X className="size-5" /> : <MenuIcon className="size-5" />}
+              </button>
+
+              {/* The sidebar carries the brand from 768px up, so repeating it in
                 the top bar would be the wordmark twice on one screen. */}
-            <Link href="/dashboard" className="shrink-0 md:hidden">
-              <Logo />
-            </Link>
+              <Link href="/dashboard" className="shrink-0 md:hidden">
+                <Logo />
+              </Link>
 
-            {/* Page-owned control, centred the way the reference centres its
+              {/* Page-owned control, centred the way the reference centres its
                 range switcher. Hidden below `lg` — at that width the page
                 header renders the same control inline instead. */}
-            <div className="flex flex-1 justify-center max-lg:hidden">{toolbar}</div>
-            <div className="flex-1 lg:hidden" />
+              <div className="flex flex-1 justify-center max-lg:hidden">{toolbar}</div>
+              <div className="flex-1 lg:hidden" />
 
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <IconButton label="Notifications" className="max-sm:hidden">
-                <Bell aria-hidden />
-              </IconButton>
-              <IconButton label="Help" className="max-sm:hidden">
-                <CircleHelp aria-hidden />
-              </IconButton>
-              <ThemeToggle />
+              <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <SessionControl />
+                <IconButton label="Notifications" className="max-sm:hidden">
+                  <Bell aria-hidden />
+                </IconButton>
+                <IconButton label="Help" className="max-sm:hidden">
+                  <CircleHelp aria-hidden />
+                </IconButton>
+                <ThemeToggle />
 
-              <Menu>
-                <MenuTrigger
-                  aria-label="Account"
-                  className="rounded-[var(--radius-pill)] pl-0.5 transition-colors hover:bg-surface-sunken sm:pr-2.5"
-                >
-                  <UserPill name={user.name} meta={user.email} src={user.avatarUrl ?? undefined} />
-                </MenuTrigger>
-                <MenuContent>
-                  <div className="px-2.5 py-2">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="truncate text-xs text-ink-subtle">{user.email}</p>
-                  </div>
-                  <MenuSeparator />
-                  <MenuItem asChild>
-                    <Link href="/settings">Settings</Link>
-                  </MenuItem>
-                  <MenuSeparator />
-                  <SignOutItem />
-                </MenuContent>
-              </Menu>
-            </div>
-          </header>
+                <Menu>
+                  <MenuTrigger
+                    aria-label="Account"
+                    className="rounded-[var(--radius-pill)] pl-0.5 transition-colors hover:bg-surface-sunken sm:pr-2.5"
+                  >
+                    <UserPill
+                      name={user.name}
+                      meta={user.email}
+                      src={user.avatarUrl ?? undefined}
+                    />
+                  </MenuTrigger>
+                  <MenuContent>
+                    <div className="px-2.5 py-2">
+                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="truncate text-xs text-ink-subtle">{user.email}</p>
+                    </div>
+                    <MenuSeparator />
+                    <MenuItem asChild>
+                      <Link href="/settings">Settings</Link>
+                    </MenuItem>
+                    <MenuSeparator />
+                    <SignOutItem />
+                  </MenuContent>
+                </Menu>
+              </div>
+            </header>
 
-          <main className="thin-scroll min-w-0 flex-1 px-4 pt-2 pb-8 sm:px-6 md:overflow-y-auto md:pb-10 lg:px-8">
-            {children}
-          </main>
+            <main className="thin-scroll min-w-0 flex-1 px-4 pt-2 pb-8 sm:px-6 md:overflow-y-auto md:pb-10 lg:px-8">
+              {children}
+            </main>
+          </div>
         </div>
       </div>
-    </div>
+    </StudySessionProvider>
   );
 }

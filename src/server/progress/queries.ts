@@ -314,6 +314,11 @@ async function readAllSessions(supabase: Awaited<ReturnType<typeof createSupabas
       .select(
         "id, activity, started_at, duration_seconds, items_total, items_correct, topic_id, subject_id, topics(name), subjects(id, name, color_slot)",
       )
+      /* Finished sessions only. Since Sprint 63 a timed session is written
+         when it STARTS, with no end; until it is finished it is not studying
+         that happened, and counting it would put a "0 min" row in the history
+         and keep a streak alive on a clock someone forgot to stop. */
+      .not("ended_at", "is", null)
       .order("started_at", { ascending: false })
       .range(page * PAGE, page * PAGE + PAGE - 1);
 

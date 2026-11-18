@@ -60,6 +60,10 @@ Rules:
 - Profile and settings live behind the avatar in the top bar, never in the primary nav — students open
   settings rarely and subjects constantly.
 - The top bar carries global search and the account menu, and stays visible at every width.
+- The top bar also carries the **study-session clock** (Sprint 63): a quiet timer icon when idle, an ink
+  pill with the subject and the running time when a session is on. It is the only place a running
+  session is shown, so it lives in the shell, which survives navigation. The Focus shell hides it
+  during a quiz; the session keeps running on the server and reappears on the way out.
 
 ### Web-app affordances
 

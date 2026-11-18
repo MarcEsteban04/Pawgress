@@ -482,7 +482,9 @@ const ACTIVITY_LABEL: Record<string, string> = {
   practice: "Practice",
   quiz: "Quiz",
   matching: "Matching",
-  review: "Review",
+  /* A timed session from the top bar (Sprint 63) — time on a subject, with
+     no score. Nothing else writes `review`. */
+  review: "Study session",
   reading: "Reading",
 };
 
@@ -505,6 +507,8 @@ function SessionRow({ session }: { session: RecentSession }) {
           <ListChecks className="size-4" aria-hidden />
         ) : session.activity === "matching" ? (
           <Shuffle className="size-4" aria-hidden />
+        ) : session.activity === "review" ? (
+          <Timer className="size-4" aria-hidden />
         ) : (
           <CalendarCheck className="size-4" aria-hidden />
         )}

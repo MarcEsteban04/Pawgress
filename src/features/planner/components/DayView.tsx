@@ -6,6 +6,7 @@ import { SUBJECT_TONE } from "@/features/subjects/components/SubjectIcon";
 import { EVENT_KIND_INFO } from "@/features/planner/schema";
 import { longDayLabel, timeLabel, type DateKey } from "@/features/planner/dates";
 import { EventKindIcon } from "./EventChip";
+import { StartSessionButton } from "@/features/study/components/SessionControl";
 import { type PlannerEvent } from "@/server/planner/queries";
 import { cn } from "@/lib/utils";
 
@@ -144,6 +145,17 @@ export function DayView({
                       </span>
                     )}
                   </button>
+
+                  {/* A planned study session due now can be started from
+                      where it was planned (Sprint 63). */}
+                  {event.kind === "study_session" &&
+                    (event.when === "today" || event.when === "overdue") && (
+                      <StartSessionButton
+                        subjectId={event.subjectId}
+                        topicId={event.topicId}
+                        title={event.title}
+                      />
+                    )}
                 </CardBody>
               </div>
             </Card>

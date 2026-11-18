@@ -4,6 +4,7 @@ import { parseSidebarState, SIDEBAR_COOKIE } from "@/features/shell/sidebar";
 import { getQuotaStatus } from "@/lib/ai";
 import { requireSession } from "@/server/auth/session";
 import { getProfile } from "@/server/profile/queries";
+import { getRunningSession, listSessionTargets } from "@/server/study/queries";
 
 /**
  * The authenticated shell.
@@ -26,6 +27,9 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
   // Real usage from the AI call log (Sprint 31). A limit a student cannot see
   // coming is a limit that feels like a bug (NFR-C1).
   const quota = await getQuotaStatus("generations");
+  // The timed session lives in the top bar on every page (Sprint 63), so the
+  // shell reads it — together, since neither depends on the other.
+  const [running, targets] = await Promise.all([getRunningSession(), listSessionTargets()]);
 
   return (
     <AppShell
@@ -37,6 +41,7 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
       toolbar={toolbar}
       initialSidebar={sidebar}
       quota={{ used: quota.used, limit: quota.limit, resetsAt: quota.resetsAt }}
+      study={{ running, targets }}
     >
       {children}
     </AppShell>
