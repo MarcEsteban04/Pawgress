@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { draftTodayPlan } from "@/server/plan/today";
+import { grantAchievements } from "@/server/achievements/queries";
 
 /**
  * Build today's plan, or rebuild it (FR-L1, US-J1, Sprint 65).
@@ -123,6 +124,9 @@ export async function setPlanBlockDoneAction(
       nextStep: "Refresh and try again.",
     };
   }
+
+  /* Sprint 72: ticking the last block can finish a whole day's plan. */
+  if (done) await grantAchievements();
 
   revalidatePath("/", "layout");
   return { status: "ok", items: data.length };

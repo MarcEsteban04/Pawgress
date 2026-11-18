@@ -36,7 +36,8 @@
     "session:test": "node scripts/session-test.mjs",
     "schedule:test": "node scripts/schedule-test.mjs",
     "plan:test": "node scripts/plan-test.mjs",
-    "readiness:test": "node scripts/readiness-test.mjs"
+    "readiness:test": "node scripts/readiness-test.mjs",
+    "achievements:test": "node scripts/achievements-test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

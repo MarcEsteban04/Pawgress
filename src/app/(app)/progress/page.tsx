@@ -37,6 +37,8 @@ import {
 import { cn } from "@/lib/utils";
 import { PlanAnalytics } from "@/features/plan/components/PlanAnalytics";
 import { getPlanAnalytics } from "@/server/plan/analytics";
+import { Milestones } from "@/features/achievements/components/Milestones";
+import { listAchievements } from "@/server/achievements/queries";
 
 /**
  * Progress (FR-P1–P3, US-H1, Sprint 58).
@@ -62,7 +64,11 @@ import { getPlanAnalytics } from "@/server/plan/analytics";
 export const metadata = { title: "Progress" };
 
 export default async function Page() {
-  const [data, plans] = await Promise.all([getProgressOverview(), getPlanAnalytics()]);
+  const [data, plans, milestones] = await Promise.all([
+    getProgressOverview(),
+    getPlanAnalytics(),
+    listAchievements(),
+  ]);
 
   if (data.totalSessions === 0) {
     return (
@@ -127,6 +133,13 @@ export default async function Page() {
         <SectionLabel>By topic</SectionLabel>
         <TopicMasteryPanel topics={data.topics} />
         <EveryTopic topics={data.topics} />
+      </section>
+
+      {/* Sprint 72. Near the end: a milestone is a moment worth noticing,
+          not the first thing a student should read about their progress. */}
+      <section className="flex flex-col gap-3">
+        <SectionLabel>Milestones</SectionLabel>
+        <Milestones data={milestones} now={renderedAt()} />
       </section>
 
       <section className="flex flex-col gap-3">
@@ -562,4 +575,9 @@ function formatWhen(iso: string): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return then.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+/** One clock reading for the render — what "new for a week" is measured against. */
+function renderedAt(): number {
+  return Date.now();
 }

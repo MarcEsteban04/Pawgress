@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { grantAchievements } from "@/server/achievements/queries";
 import { getProfile } from "@/server/profile/queries";
 import { dateKeyAt } from "@/features/planner/dates";
 import {
@@ -215,6 +216,9 @@ export async function finishTimedSessionAction(
     startedAt,
     endedAt,
   });
+
+  /* Sprint 72: hours and streaks are earned by timed sessions too. */
+  await grantAchievements();
 
   revalidatePath("/", "layout");
   return { status: "ok", seconds: settled.seconds, capped: settled.capped, completedPlan };
