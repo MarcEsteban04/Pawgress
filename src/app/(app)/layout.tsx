@@ -5,6 +5,7 @@ import { getQuotaStatus } from "@/lib/ai";
 import { requireSession } from "@/server/auth/session";
 import { getProfile } from "@/server/profile/queries";
 import { getRunningSession, listSessionTargets } from "@/server/study/queries";
+import { CELEBRATION_COOKIE, parseCelebration } from "@/features/achievements/celebration";
 
 /**
  * The authenticated shell.
@@ -42,6 +43,8 @@ export default async function AppLayout({ children, toolbar }: LayoutProps<"/">)
       initialSidebar={sidebar}
       quota={{ used: quota.used, limit: quota.limit, resetsAt: quota.resetsAt }}
       study={{ running, targets }}
+      /* Sprint 73: a milestone a server action just granted, shown once. */
+      celebrations={parseCelebration(cookieStore.get(CELEBRATION_COOKIE)?.value)}
     >
       {children}
     </AppShell>

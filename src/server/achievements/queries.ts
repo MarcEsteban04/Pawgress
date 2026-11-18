@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
@@ -8,16 +9,17 @@ import {
   ACHIEVEMENTS,
   earnedFrom,
   kindOf,
-  longestRun,
   READY_SCORE,
   turnedAround,
   type AchievementFacts,
   type AchievementKind,
 } from "@/features/achievements/catalogue";
 import { getAnswerEvidence, getTopicMastery } from "@/server/mastery/queries";
+import { bestStreak } from "@/features/study/streak";
 import { getProfile } from "@/server/profile/queries";
 import { getSubjectReadiness } from "@/server/readiness/queries";
 import { listSessionTargets } from "@/server/study/queries";
+import { CELEBRATION_COOKIE, type Celebration } from "@/features/achievements/celebration";
 
 /**
  * Achievements — facts, grants and the list (Sprint 72).
@@ -82,7 +84,9 @@ export const getAchievementFacts = cache(async (): Promise<AchievementFacts> => 
     totalMinutes: Math.round(
       sessions.reduce((sum, row) => sum + (row.duration_seconds ?? 0), 0) / 60,
     ),
-    longestStreak: longestRun(
+    /* Sprint 73: the same rule the streak on screen uses — one rest day a
+       week — so "7 days" on the tile and the 7-day milestone always agree. */
+    longestStreak: bestStreak(
       sessions.map((row) => dateKeyAt(Date.parse(row.started_at), profile?.timezone)),
     ),
     quizzesHandedIn: quizzes.count ?? 0,
@@ -125,7 +129,17 @@ export const getAchievementFacts = cache(async (): Promise<AchievementFacts> => 
  * recorded, and a badge granted on the next finished session instead of this
  * one is a smaller failure than a hand-in that errors over a badge.
  */
-export async function grantAchievements(): Promise<void> {
+export async function grantAchievements({
+  celebrate = true,
+}: {
+  /**
+   * Whether the work that earned these deserves a celebration (Sprint 73).
+   * False after a poor result: the milestone is still earned, and shows as
+   * "New" on Progress, but a quiz at 30% does not end on a congratulation —
+   * "never on a failure" (docs/branding.md).
+   */
+  celebrate?: boolean;
+} = {}): Promise<void> {
   try {
     const session = await requireSession();
     const supabase = await createSupabaseServerClient();
@@ -133,15 +147,46 @@ export async function grantAchievements(): Promise<void> {
     if (earned.length === 0) return;
 
     /* `ignoreDuplicates`: the unique (user_id, code) turns a second grant
-       into nothing, and the original `earned_at` stands. */
-    await supabase.from("achievements").upsert(
-      earned.map((item) => ({
-        user_id: session.userId,
-        code: item.code,
-        metadata: item.metadata,
-      })),
-      { onConflict: "user_id,code", ignoreDuplicates: true },
-    );
+       into nothing, and the original `earned_at` stands. With it, the rows
+       returned are exactly the ones this call inserted — the NEW ones. */
+    const { data: inserted } = await supabase
+      .from("achievements")
+      .upsert(
+        earned.map((item) => ({
+          user_id: session.userId,
+          code: item.code,
+          metadata: item.metadata,
+        })),
+        { onConflict: "user_id,code", ignoreDuplicates: true },
+      )
+      .select("code, metadata");
+
+    if (!celebrate || !inserted?.length) return;
+
+    const fresh: Celebration[] = inserted.flatMap((row) => {
+      const kind = kindOf(row.code);
+      if (!kind) return [];
+      const metadata = (row.metadata ?? {}) as Record<string, unknown>;
+      return [
+        {
+          title: kind.title,
+          name: typeof metadata.name === "string" ? metadata.name : null,
+          earned: kind.earned,
+        },
+      ];
+    });
+    if (fresh.length === 0) return;
+
+    /* Left for the next page the student sees, which shows it once and
+       clears it. A cookie rather than a return value, because the actions
+       that grant are four different shapes, and the page that should show it
+       is wherever the student goes next. */
+    const store = await cookies();
+    store.set(CELEBRATION_COOKIE, encodeURIComponent(JSON.stringify(fresh.slice(0, 3))), {
+      path: "/",
+      maxAge: 300,
+      sameSite: "lax",
+    });
   } catch {
     /* See the header. */
   }

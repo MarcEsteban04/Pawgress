@@ -204,11 +204,11 @@ function Overview({ data }: { data: ProgressOverview }) {
       />
       <StatTile
         label="Day streak"
-        value={data.streak}
+        value={data.streak.current}
         Icon={Flame}
-        /* Said plainly, because a streak that looks like it might already be
-           lost is a streak someone stops trying to keep. */
-        hint={data.streak > 0 ? "Study today to keep it" : "Finish something to start one"}
+        /* Said plainly, and never as a threat (Sprint 73): one rest day a week
+           is part of the rule, so "keep it" is the strongest word here. */
+        hint={streakHint(data.streak)}
       />
       <StatTile
         label="Quiz average"
@@ -233,6 +233,7 @@ function StudyTime({ data }: { data: ProgressOverview }) {
   return (
     <Card>
       <CardBody className="flex flex-col gap-5 py-5">
+        <ThisWeek days={data.thisWeek} best={data.streak.best} />
         <ActivityChart days={data.activity} />
 
         {/* The lifetime facts, as a line under the chart rather than as more
@@ -580,4 +581,61 @@ function formatWhen(iso: string): string {
 /** One clock reading for the render — what "new for a week" is measured against. */
 function renderedAt(): number {
   return Date.now();
+}
+
+/** The streak tile's line, by status — see `features/study/streak.ts`. */
+function streakHint(streak: ProgressOverview["streak"]): string {
+  switch (streak.status) {
+    case "today":
+      return streak.best > streak.current ? `Best: ${streak.best} days` : "Your best yet";
+    case "pending":
+      return "Study today to add to it";
+    case "at-risk":
+      return "Yesterday was your rest day — study today to keep it";
+    default:
+      return "Finish something to start one — one rest day a week is allowed";
+  }
+}
+
+/**
+ * Monday to Sunday, as seven marks (Sprint 73).
+ *
+ * A week rather than a chain: "four days this week" is something a student
+ * can plan around. Studied days are filled in ink; today has a ring, so the
+ * row says where in the week you are. Not a chart — seven yes/no marks — so
+ * the days are named in text for anyone not reading the marks.
+ */
+function ThisWeek({ days, best }: { days: ProgressOverview["thisWeek"]; best: number }) {
+  const count = days.filter((day) => day.studied).length;
+  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+      <div>
+        <p className="text-xs text-ink-subtle">This week</p>
+        <p className="font-medium tabular-nums">
+          {count} of 7 days
+          {best > 0 ? <span className="text-ink-muted"> · best streak {best}</span> : null}
+        </p>
+      </div>
+      <ol className="flex gap-1.5" aria-label={`Studied on ${count} of 7 days this week`}>
+        {days.map((day, index) => (
+          <li key={day.date} className="flex flex-col items-center gap-1">
+            <span
+              aria-hidden
+              className={cn(
+                "size-5 rounded-full border",
+                day.studied ? "border-ink bg-ink" : "border-rule-strong bg-surface",
+                day.today && "ring-2 ring-accent ring-offset-2 ring-offset-surface",
+              )}
+            />
+            <span className="text-[0.625rem] text-ink-subtle">
+              {names[index]}
+              <span className="sr-only">{day.studied ? ": studied" : ": no study"}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }

@@ -205,12 +205,14 @@ async function NextExamTile() {
 }
 
 async function WeekTile() {
-  const { minutesThisWeek } = await getStudyActivity();
+  const { minutesThisWeek, streak, daysThisWeek } = await getStudyActivity();
   return (
     <StatTile
       label="Studied this week"
       value={hoursAndMinutes(minutesThisWeek)}
-      hint="Last 7 days, every finished session"
+      /* Days, then the streak — a week is something to plan around; the
+         streak allows a rest day a week, so it is never a threat (Sprint 73). */
+      hint={`${daysThisWeek} of 7 days${streak.current > 0 ? ` · ${streak.current}-day streak` : ""}`}
       Icon={Clock}
       href="/progress"
     />

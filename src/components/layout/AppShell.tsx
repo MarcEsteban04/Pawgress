@@ -18,6 +18,8 @@ import {
 } from "@/components/ui";
 import { SignOutItem } from "@/features/auth/components/SignOutItem";
 import { SessionControl } from "@/features/study/components/SessionControl";
+import { CelebrationToast } from "@/features/achievements/components/CelebrationToast";
+import { type Celebration } from "@/features/achievements/celebration";
 import { StudySessionProvider } from "@/features/study/components/StudySessionProvider";
 import { type RunningSession, type SessionTarget } from "@/server/study/queries";
 import { cn } from "@/lib/utils";
@@ -73,9 +75,19 @@ export type AppShellProps = {
    * survives navigation — a clock owned by a page stops when the page does.
    */
   study: { running: RunningSession | null; targets: SessionTarget[] };
+  /** Milestones just earned, to celebrate once (Sprint 73). */
+  celebrations?: Celebration[];
 };
 
-export function AppShell({ children, toolbar, user, quota, initialSidebar, study }: AppShellProps) {
+export function AppShell({
+  children,
+  toolbar,
+  user,
+  quota,
+  initialSidebar,
+  study,
+  celebrations = [],
+}: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sidebar, setSidebar] = useState<SidebarState>(initialSidebar);
 
@@ -187,6 +199,13 @@ export function AppShell({ children, toolbar, user, quota, initialSidebar, study
           </div>
         </div>
       </div>
+      {/* Keyed on what it says, so a milestone arriving after the shell has
+          mounted — the usual case — gets a fresh toast rather than an old one
+          holding stale state. */}
+      <CelebrationToast
+        key={celebrations.map((item) => `${item.title}|${item.name ?? ""}`).join(";")}
+        items={celebrations}
+      />
     </StudySessionProvider>
   );
 }

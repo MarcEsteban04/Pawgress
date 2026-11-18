@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
+import { getProfile } from "@/server/profile/queries";
+import { dateKeyAt } from "@/features/planner/dates";
 
 /**
  * Timed study sessions, read (FR-N4, US-I3, Sprint 63).
@@ -107,4 +109,32 @@ export const listSessionTargets = cache(async (): Promise<SessionTarget[]> => {
       .sort((a, b) => a.position - b.position)
       .map((topic) => ({ id: topic.id, name: topic.name })),
   }));
+});
+
+/**
+ * Every calendar day the student finished a session on, in THEIR timezone
+ * (Sprint 73) — what streaks are counted from.
+ *
+ * Read in pages for the same reason the Progress page reads sessions in pages:
+ * a long history must not be cut off at PostgREST's row cap, and the longest
+ * history belongs to the student whose streak is longest.
+ */
+export const getStudyDays = cache(async (): Promise<string[]> => {
+  await requireSession();
+  const supabase = await createSupabaseServerClient();
+  const profile = await getProfile();
+
+  const days = new Set<string>();
+  for (let page = 0; page < 20; page++) {
+    const { data } = await supabase
+      .from("study_sessions")
+      .select("started_at")
+      .not("ended_at", "is", null)
+      .order("started_at", { ascending: false })
+      .range(page * 1000, page * 1000 + 999);
+    for (const row of data ?? [])
+      days.add(dateKeyAt(Date.parse(row.started_at), profile?.timezone));
+    if ((data ?? []).length < 1000) break;
+  }
+  return [...days];
 });

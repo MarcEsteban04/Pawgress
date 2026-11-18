@@ -16,6 +16,8 @@ import { type UrgencyBand } from "@/features/planner/urgency";
 import { getProfile } from "@/server/profile/queries";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
 import { readRationale, type PlanRationale } from "@/server/plan/today";
+import { getStudyDays } from "@/server/study/queries";
+import { streakOf, weekOf, type Streak } from "@/features/study/streak";
 
 /**
  * Everything the dashboard reads, from the real database (FR-D1, FR-D3).
@@ -196,6 +198,9 @@ export type StudyActivity = {
   minutesThisWeek: number;
   /** Every finished practice set and quiz, once each. */
   quizzesTaken: number;
+  /** Sprint 73: the streak and this week's study days, by the shared rule. */
+  streak: Streak;
+  daysThisWeek: number;
 };
 
 export const getStudyActivity = cache(async (): Promise<StudyActivity> => {
@@ -211,7 +216,7 @@ export const getStudyActivity = cache(async (): Promise<StudyActivity> => {
      1am local can sit on the far side of UTC midnight. */
   const weekAgo = addDays(today, -7);
 
-  const [{ data: sessionRows }, { data: scoredRows }] = await Promise.all([
+  const [{ data: sessionRows }, { data: scoredRows }, studyDays] = await Promise.all([
     supabase
       .from("study_sessions")
       .select("started_at, duration_seconds")
@@ -234,6 +239,7 @@ export const getStudyActivity = cache(async (): Promise<StudyActivity> => {
       .gt("items_total", 0)
       .order("started_at", { ascending: true })
       .limit(30),
+    getStudyDays(),
   ]);
 
   /**
@@ -273,6 +279,8 @@ export const getStudyActivity = cache(async (): Promise<StudyActivity> => {
     studyByDay,
     minutesThisWeek: studyByDay.reduce((sum, day) => sum + day.minutes, 0),
     quizzesTaken: scored.length,
+    streak: streakOf(studyDays, today),
+    daysThisWeek: weekOf(studyDays, today).filter((day) => day.studied).length,
   };
 });
 

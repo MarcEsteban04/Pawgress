@@ -6,6 +6,7 @@ import { requireSession } from "@/server/auth/session";
 import { gradeAnswers } from "@/server/quizzes/grade";
 import { tickPlanBlock } from "@/server/plan/tick";
 import { grantAchievements } from "@/server/achievements/queries";
+import { CELEBRATE_FROM } from "@/features/achievements/celebration";
 
 /**
  * Handing a quiz in (FR-Q5, FR-Q7, US-G3, Sprint 52).
@@ -168,7 +169,9 @@ export async function submitQuizAction(input: {
   /* A handed-in quiz ticks today's quiz block for it (Sprint 67). */
   await tickPlanBlock({ subjectId: quiz.subject_id, topicId: quiz.topic_id, activity: "quiz" });
   /* Sprint 72: a first quiz, ten quizzes, a mock exam, a subject now ready. */
-  await grantAchievements();
+  await grantAchievements({
+    celebrate: graded.length > 0 && correct / graded.length >= CELEBRATE_FROM,
+  });
 
   /* No mastery write: mastery is computed from the quiz_answers rows above
      (Sprint 56). That is what lets a whole-subject quiz count toward the topics

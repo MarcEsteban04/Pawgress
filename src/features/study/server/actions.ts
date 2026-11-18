@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireSession } from "@/server/auth/session";
 import { tickPlanBlock } from "@/server/plan/tick";
 import { grantAchievements } from "@/server/achievements/queries";
+import { CELEBRATE_FROM } from "@/features/achievements/celebration";
 
 /**
  * Recording that studying happened, and how it went (FR-P1, US-H1).
@@ -155,7 +156,7 @@ export async function recordStudySessionAction(input: RecordSessionInput): Promi
 
   /* Sprint 72: anything this session earned. After the work is recorded,
      and best-effort — see `grantAchievements`. */
-  await grantAchievements();
+  await grantAchievements({ celebrate: correct / input.total >= CELEBRATE_FROM });
 
   /* The dashboard and the progress page both read this. Revalidated here
      rather than left to a reload, because the whole complaint was that

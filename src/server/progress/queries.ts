@@ -9,7 +9,8 @@ import { getOverallMastery, getSubjectMastery, getTopicMastery } from "@/server/
 import { listAllQuizAttempts } from "@/server/quizzes/queries";
 import { LOW_EVIDENCE_QUESTIONS as EVIDENCE } from "@/types";
 import { getProfile } from "@/server/profile/queries";
-import { addDays, dateKeyAt, todayIn, weekdayLabel, type DateKey } from "@/features/planner/dates";
+import { streakOf, weekOf, type Streak } from "@/features/study/streak";
+import { addDays, dateKeyAt, todayIn, weekdayLabel } from "@/features/planner/dates";
 
 /**
  * Everything the Progress page shows (FR-P1–P3, US-H1, Sprints 57–58).
@@ -106,8 +107,13 @@ export type ProgressOverview = {
   correct: number;
   cardsSeen: number;
   cardsKnown: number;
-  /** Consecutive days ending today (or yesterday) with at least one session. */
-  streak: number;
+  /**
+   * Days studied in a row, one rest day a week allowed (Sprint 73) — the same
+   * rule the dashboard and the streak milestones use. See `features/study/streak.ts`.
+   */
+  streak: Streak;
+  /** Monday to Sunday of this week, which days had study in them, and which is today. */
+  thisWeek: { date: string; studied: boolean; today: boolean }[];
   activity: ActivityDay[];
   subjects: SubjectProgress[];
   topics: TopicMastery[];
@@ -239,6 +245,7 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     }
   }
 
+  const studyDays = sessions.map((row) => dayOf(row.started_at));
   const quizSummary = summariseAttempts(quizAttempts);
 
   return {
@@ -264,10 +271,8 @@ export const getProgressOverview = cache(async (): Promise<ProgressOverview> => 
     correct,
     cardsSeen,
     cardsKnown,
-    streak: streakFrom(
-      sessions.map((row) => dayOf(row.started_at)),
-      today,
-    ),
+    streak: streakOf(studyDays, today),
+    thisWeek: weekOf(studyDays, today),
     activity: [...buckets.values()],
     subjects: [...subjects.values()].sort((a, b) => b.minutes - a.minutes),
     topics: [...topicMastery.values()]
@@ -327,27 +332,4 @@ async function readAllSessions(supabase: Awaited<ReturnType<typeof createSupabas
     if (batch.length < PAGE) break;
   }
   return rows;
-}
-
-/**
- * Consecutive days studied, counting back from the student's today.
- *
- * **Yesterday still counts as alive.** A streak that breaks the moment midnight
- * passes punishes someone who has not studied *yet today*, which is most of the
- * day for most people — and a counter that resets while you are asleep is a
- * counter nobody trusts.
- */
-function streakFrom(dayKeys: DateKey[], today: DateKey): number {
-  const days = new Set(dayKeys);
-  if (days.size === 0) return 0;
-
-  const yesterday = addDays(today, -1);
-  if (!days.has(today) && !days.has(yesterday)) return 0;
-
-  let streak = 0;
-  for (let i = days.has(today) ? 0 : 1; ; i++) {
-    if (!days.has(addDays(today, -i))) break;
-    streak += 1;
-  }
-  return streak;
 }
