@@ -23,6 +23,7 @@ import {
   WeakTopicsPanel,
 } from "@/features/subjects/components/SubjectPanels";
 import { UploadDialog } from "@/features/materials/components/UploadDialog";
+import { getSubjectReadiness } from "@/server/readiness/queries";
 import { TopicDialog } from "@/features/topics/components/TopicDialog";
 import { TopicList } from "@/features/topics/components/TopicList";
 import {
@@ -94,8 +95,13 @@ function TopicsSkeleton() {
 }
 
 async function Progress({ subjectId }: { subjectId: string }) {
-  const progress = await getSubjectProgress(subjectId);
-  return <ProgressPanel progress={progress} />;
+  /* Sprint 71: the same readiness loader the dashboard reads, so the two can
+     never show this subject different numbers. */
+  const [progress, readiness] = await Promise.all([
+    getSubjectProgress(subjectId),
+    getSubjectReadiness(),
+  ]);
+  return <ProgressPanel progress={progress} readiness={readiness.get(subjectId) ?? null} />;
 }
 
 /**

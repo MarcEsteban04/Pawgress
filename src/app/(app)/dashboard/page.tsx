@@ -17,8 +17,10 @@ import {
   getMasteryOverview,
   getPlanToday,
   getStudyActivity,
+  type DashboardSubject,
 } from "@/server/dashboard/queries";
 import { getAttention } from "@/server/mastery/queries";
+import { getSubjectReadiness } from "@/server/readiness/queries";
 import { getProfile } from "@/server/profile/queries";
 import { formatPercent } from "@/lib/utils";
 
@@ -105,11 +107,9 @@ export default async function Page() {
               <ActivitySlot />
             </Panel>
           </div>
-          {/* Already in hand — the library read it — so no boundary of its own
-              is needed for loading; it still gets one for rendering. */}
-          <PanelBoundary title="Readiness by subject">
-            <ReadinessPanel subjects={library.subjects} />
-          </PanelBoundary>
+          <Panel title="Readiness by subject" fallback={<PanelSkeleton />}>
+            <ReadinessSlot subjects={library.subjects} />
+          </Panel>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -144,13 +144,29 @@ function Panel({
 
 /* ------------------------------------------------------------------ tiles */
 
+/**
+ * Readiness across subjects (Sprint 71) — the mean of each subject's score,
+ * over the subjects that HAVE one. A subject below the evidence threshold is
+ * left out rather than counted as zero; the hint says how many are in it.
+ */
 async function ReadinessTile() {
-  const { readiness, topicsTracked } = await getMasteryOverview();
+  const readiness = await getSubjectReadiness();
+  const scores = [...readiness.values()].flatMap((row) =>
+    row.readiness ? [row.readiness.score] : [],
+  );
+  const overall = scores.length
+    ? scores.reduce((sum, value) => sum + value, 0) / scores.length
+    : null;
+
   return (
     <StatTile
       label="Readiness"
-      value={readiness === null ? "—" : formatPercent(readiness)}
-      hint={readiness === null ? "Needs 10+ answers on a topic" : `across ${topicsTracked} topics`}
+      value={overall === null ? "—" : formatPercent(overall)}
+      hint={
+        overall === null
+          ? "Needs 10+ answers in a subject"
+          : `across ${scores.length} of ${readiness.size} subjects — see why below`
+      }
       Icon={Target}
       tone="accent"
     />
@@ -249,6 +265,11 @@ async function ActivitySlot() {
       minutesThisWeek={data.minutesThisWeek}
     />
   );
+}
+
+async function ReadinessSlot({ subjects }: { subjects: DashboardSubject[] }) {
+  const readiness = await getSubjectReadiness();
+  return <ReadinessPanel subjects={subjects} readiness={readiness} />;
 }
 
 async function UpcomingSlot() {

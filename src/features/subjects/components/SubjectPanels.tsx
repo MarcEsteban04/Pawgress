@@ -14,6 +14,8 @@ import {
 import { PanelEmpty } from "@/features/dashboard/components/PanelEmpty";
 import { AttentionList } from "@/features/mastery/components/AttentionList";
 import { type AttentionItem } from "@/server/mastery/queries";
+import { ReadinessBreakdown } from "@/features/readiness/components/ReadinessBreakdown";
+import { type SubjectReadiness } from "@/server/readiness/queries";
 import {
   type SubjectActivityItem,
   type SubjectMaterial,
@@ -50,14 +52,30 @@ function relative(iso: string): string {
 
 /* ------------------------------------------------------------------ progress */
 
-export function ProgressPanel({ progress }: { progress: SubjectProgress }) {
+/**
+ * Readiness for this subject, and what it is made of (Sprint 71).
+ *
+ * The score and its breakdown come from `getSubjectReadiness`, the loader the
+ * dashboard reads. An archived subject has no readiness (it is not being
+ * prepared for), so it falls back to its mastery, labelled as mastery.
+ */
+export function ProgressPanel({
+  progress,
+  readiness,
+}: {
+  progress: SubjectProgress;
+  readiness: SubjectReadiness | null;
+}) {
+  const score = readiness?.readiness?.score ?? null;
+  const shown = score ?? progress.mastery;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Readiness</CardTitle>
       </CardHeader>
       <CardBody>
-        {progress.mastery === null ? (
+        {progress.mastery === null || shown === null ? (
           <PanelEmpty
             Icon={Gauge}
             title="Nothing measured yet"
@@ -66,18 +84,14 @@ export function ProgressPanel({ progress }: { progress: SubjectProgress }) {
           />
         ) : (
           <div className="flex flex-col gap-4">
-            <MasteryBar
-              value={progress.mastery}
-              questionCount={progress.questionsAnswered}
-              hideEvidence
-            />
+            <MasteryBar value={shown} questionCount={progress.questionsAnswered} hideEvidence />
             <dl className="flex gap-8">
               <div>
                 <dd className="tabular font-display text-2xl leading-none font-semibold">
-                  {formatPercent(progress.mastery)}
+                  {formatPercent(shown)}
                 </dd>
                 <dt className="mt-1.5 text-[0.6875rem] font-medium tracking-[0.09em] text-ink-subtle uppercase">
-                  Readiness
+                  {score === null ? "Mastery" : "Readiness"}
                 </dt>
               </div>
               <div>
@@ -89,14 +103,17 @@ export function ProgressPanel({ progress }: { progress: SubjectProgress }) {
                 </dt>
               </div>
             </dl>
-            {/* The figure is a ratio of totals, so it is only as complete as
-                the topics behind it. Saying which ones are missing stops it
-                being read as a verdict on the whole subject. */}
-            {progress.measuredTopics < progress.topicCount && (
-              <p className="text-sm text-ink-muted">
-                Based on {progress.questionsAnswered} answers across {progress.measuredTopics} of{" "}
-                {progress.topicCount} topics. The rest have not been practised enough to count.
-              </p>
+            {/* The inputs, always open here — this page is about one subject,
+                and "why this number" is the question it exists to answer. */}
+            {readiness ? (
+              <ReadinessBreakdown data={readiness} />
+            ) : (
+              progress.measuredTopics < progress.topicCount && (
+                <p className="text-sm text-ink-muted">
+                  Based on {progress.questionsAnswered} answers across {progress.measuredTopics} of{" "}
+                  {progress.topicCount} topics. The rest have not been practised enough to count.
+                </p>
+              )
             )}
           </div>
         )}

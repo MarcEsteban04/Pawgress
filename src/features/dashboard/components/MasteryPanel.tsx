@@ -52,7 +52,10 @@ export function MasteryPanel({
           <Donut
             segments={bands.filter((band) => band.value > 0)}
             centerValue={readiness === null ? "—" : formatPercent(readiness)}
-            centerLabel={readiness === null ? "not enough data" : "ready"}
+            /* "mastery", not "ready": since Sprint 71 readiness is its own
+               score with more inputs, and the tile above shows it. Two
+               different figures both called ready would be one too many. */
+            centerLabel={readiness === null ? "not enough data" : "mastery"}
           />
         )}
       </CardBody>
