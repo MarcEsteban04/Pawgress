@@ -107,7 +107,25 @@ export type Suggestion = {
   reason: string;
   /** The deadline it prepares for, if any. */
   forDeadline: string | null;
+  /**
+   * WHY this session exists, as a category rather than a sentence — what
+   * Sprint 65's day plan reads to choose the activities inside it. A weak
+   * topic is reviewed before it is practised; a strong one is confirmed with
+   * a mock; an untested one is practised first, because a measurement is
+   * what it lacks.
+   */
+  basis: Basis;
 };
+
+/**
+ * The reason behind a session, as a category.
+ *
+ * Sprint 59's attention kinds when a specific flagged topic is the target;
+ * Sprint 56's readiness band when it is a deadline revised as a whole; `work`
+ * for time on something handed in, which is not studying in the sense the day
+ * plan's activities mean.
+ */
+export type Basis = AttentionKind | Band | "work";
 
 export type Schedule = {
   suggestions: Suggestion[];
@@ -143,7 +161,7 @@ type Demand = {
   subjectName: string;
   colorSlot: 1 | 2 | 3 | 4 | 5;
   /** One entry per session: the topic it targets (null = whole subject), and why. */
-  targets: { topicId: string | null; topicName: string | null; reason: string }[];
+  targets: { topicId: string | null; topicName: string | null; reason: string; basis: Basis }[];
   title: (target: { topicName: string | null }) => string;
   forDeadline: string | null;
   source: string;
@@ -243,6 +261,7 @@ export function suggestSessions(input: ScheduleInput): Schedule {
         topicId: deadline.topicId,
         topicName: deadline.topicName,
         reason: `due ${countdown(deadline.daysAway)}`,
+        basis: "work" as const,
       }));
     } else if (deadline.topicId) {
       const weak = deadline.readiness === "weak" ? ` · you are weak on ${deadline.topicName}` : "";
@@ -250,6 +269,7 @@ export function suggestSessions(input: ScheduleInput): Schedule {
         topicId: deadline.topicId,
         topicName: deadline.topicName,
         reason: `${due}${weak}`,
+        basis: deadline.readiness ?? "unmeasured",
       }));
     } else {
       /* A whole-subject exam: rotate through that subject's flagged topics,
@@ -265,9 +285,15 @@ export function suggestSessions(input: ScheduleInput): Schedule {
             topicId: focus.topicId,
             topicName: focus.topicName,
             reason: `${due} · ${focusReason(focus)}`,
+            basis: focus.kind,
           };
         }
-        return { topicId: null, topicName: null, reason: due };
+        return {
+          topicId: null,
+          topicName: null,
+          reason: due,
+          basis: deadline.readiness ?? "unmeasured",
+        };
       });
     }
 
@@ -303,7 +329,14 @@ export function suggestSessions(input: ScheduleInput): Schedule {
       subjectId: focus.subjectId,
       subjectName: focus.subjectName,
       colorSlot: focus.colorSlot,
-      targets: [{ topicId: focus.topicId, topicName: focus.topicName, reason: focusReason(focus) }],
+      targets: [
+        {
+          topicId: focus.topicId,
+          topicName: focus.topicName,
+          reason: focusReason(focus),
+          basis: focus.kind,
+        },
+      ],
       title: (target) => `Practise ${target.topicName}`,
       forDeadline: null,
       source: `focus:${focus.topicId}`,
@@ -369,6 +402,7 @@ export function suggestSessions(input: ScheduleInput): Schedule {
         title: demand.title(target),
         reason: target.reason,
         forDeadline: demand.forDeadline,
+        basis: target.basis,
         order: -demand.priority,
       });
     }

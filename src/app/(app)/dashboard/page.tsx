@@ -89,6 +89,7 @@ export default async function Page() {
           blocks={data.planToday}
           minutesRemaining={data.planMinutesRemaining}
           hasSubjects={hasSubjects}
+          plan={data.plan}
           className="xl:sticky xl:top-0 xl:max-h-[calc(100dvh-12rem)]"
         />
 

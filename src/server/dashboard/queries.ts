@@ -10,6 +10,7 @@ import { getStudentToday } from "@/server/planner/queries";
 import { type UrgencyBand } from "@/features/planner/urgency";
 import { getProfile } from "@/server/profile/queries";
 import { getSubjectMastery, getTopicMastery } from "@/server/mastery/queries";
+import { readRationale, type PlanRationale } from "@/server/plan/today";
 
 /**
  * Everything the dashboard reads, from the real database (FR-D1, FR-D3).
@@ -90,6 +91,12 @@ export type DashboardData = {
   upcoming: UpcomingItem[];
   planToday: PlanBlock[];
   planMinutesRemaining: number;
+  /**
+   * Whether today's plan has been built, and what it was built from (Sprint
+   * 65). `built` with no blocks is a real state — a plan that found nothing
+   * to do and said why — and must not render as "no plan yet".
+   */
+  plan: { built: boolean; rationale: PlanRationale | null };
 };
 
 export const getDashboardData = cache(async (): Promise<DashboardData> => {
@@ -137,7 +144,7 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
       supabase
         .from("study_plans")
         .select(
-          "id, plan_date, study_plan_items(id, activity, minutes, reason, completed_at, position, topics(name), subjects(name, color_slot))",
+          "id, plan_date, rationale, study_plan_items(id, activity, minutes, reason, completed_at, position, topics(name), subjects(name, color_slot))",
         )
         .eq("plan_date", today)
         .maybeSingle(),
@@ -318,5 +325,9 @@ export const getDashboardData = cache(async (): Promise<DashboardData> => {
     planMinutesRemaining: planToday
       .filter((block) => !block.done)
       .reduce((sum, block) => sum + block.minutes, 0),
+    plan: {
+      built: planRows.data !== null && planRows.data !== undefined,
+      rationale: readRationale(planRows.data?.rationale),
+    },
   };
 });
