@@ -1,6 +1,7 @@
 import { CalendarCheck, Coffee, FileUp, PartyPopper } from "lucide-react";
-import { Card, CardActions, CardBody, CardHeader, CardTitle, TintRow } from "@/components/ui";
+import { Card, CardActions, CardBody, CardHeader, CardTitle } from "@/components/ui";
 import { BuildPlanButton } from "@/features/plan/components/BuildPlanButton";
+import { PlanBlockRow } from "@/features/plan/components/PlanBlockRow";
 import { PanelEmpty } from "./PanelEmpty";
 import { type PlanBlock } from "@/server/dashboard/queries";
 import { type PlanRationale } from "@/server/plan/today";
@@ -14,7 +15,8 @@ import { cn } from "@/lib/utils";
  * reasoning (docs/branding.md §1).
  *
  * Built by Sprint 65's engine (`features/plan/build.ts`) when the student
- * presses "Plan my day". Ticking blocks off writes `completed_at`, which is
+ * presses "Plan my day". Each block opens its activity in one click (Sprint
+ * 66, `PlanBlockRow`). Ticking blocks off writes `completed_at`, which is
  * Sprint 67; until then a rebuild is how the plan catches up with the day.
  *
  * **Under the minutes, what the plan was built from** — how many sessions came
@@ -80,28 +82,7 @@ export function PlanPanel({
             <ul className="thin-scroll -mx-1 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-1">
               {blocks.map((block) => (
                 <li key={block.id}>
-                  <TintRow
-                    tone={block.colorSlot}
-                    className={cn("transition-opacity", block.done && "opacity-55")}
-                  >
-                    <p className="text-xs font-medium text-ink-muted">{block.subject}</p>
-                    <p
-                      className={cn(
-                        "mt-0.5 leading-snug font-medium",
-                        block.done && "line-through",
-                      )}
-                    >
-                      {block.topic ?? block.activity}
-                    </p>
-                    <p className="mt-1.5 text-xs text-ink-muted">
-                      {block.minutes}m {block.activity}
-                    </p>
-                    {block.reason && (
-                      <p className="mt-2.5 border-t border-ink/5 pt-2.5 text-xs text-ink-muted">
-                        {block.reason}
-                      </p>
-                    )}
-                  </TintRow>
+                  <PlanBlockRow block={block} />
                 </li>
               ))}
             </ul>
